@@ -1,14 +1,21 @@
 package utils
 
 import (
-	"fmt"
 	"io"
 	"mime/multipart"
 	"os"
 	"path"
+
+	"github.com/google/uuid"
 )
 
+const DefaultAvatarFileName = "default_avatar.png"
+
 func SaveImage(h *multipart.FileHeader) (fileName string, err error) {
+	if h == nil {
+		return DefaultAvatarFileName, nil
+	}
+
 	wd, err := os.Getwd()
 	if err != nil {
 		return
@@ -19,10 +26,8 @@ func SaveImage(h *multipart.FileHeader) (fileName string, err error) {
 		return
 	}
 
-	fileName = RandStringRunes(32) + path.Ext(h.Filename)
+	fileName = uuid.NewString() + path.Ext(h.Filename)
 	filePath := path.Join(wd, "static", fileName)
-
-	fmt.Println(fileName, filePath)
 
 	file, err := os.Create(filePath)
 	if err != nil {
@@ -33,4 +38,16 @@ func SaveImage(h *multipart.FileHeader) (fileName string, err error) {
 	io.Copy(file, img)
 
 	return
+}
+
+func GetImageURL(fileName string) (URL string, err error) {
+	protocol := os.Getenv("PROTOCOL")
+	host := os.Getenv("HOST")
+	port := os.Getenv("PORT")
+	if len(protocol) == 0 || len(host) == 0 || len(port) == 0 {
+		err = ErrEternal
+		return
+	}
+
+	return protocol + host + port + "/static/" + fileName, nil
 }

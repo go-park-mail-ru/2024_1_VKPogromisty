@@ -14,23 +14,28 @@ func ValidateUserInput(userInput RegistrationInput, service *AuthService) (err e
 
 	_, err = mail.ParseAddress(userInput.Email)
 	if err != nil {
-		err = utils.ErrInvalidData
+		err = utils.ErrInvalidEmail
 		return
 	}
 
 	if userInput.Password != userInput.RepeatPassword {
-		err = utils.ErrInvalidData
+		err = utils.ErrNotMatchingPasswords
+		return
+	}
+
+	if len(userInput.Password) < 6 {
+		err = utils.ErrPasswordMinLength
 		return
 	}
 
 	if _, ok := service.users.Load(userInput.Email); ok {
-		err = utils.ErrInvalidData
+		err = utils.ErrEmailsDuplicate
 		return
 	}
 
 	dateOfBirth, err := time.Parse(utils.DateFormat, userInput.DateOfBirth)
 	if err != nil || dateOfBirth.After(time.Now()) {
-		err = utils.ErrInvalidData
+		err = utils.ErrInvalidBirthDate
 		return
 	}
 

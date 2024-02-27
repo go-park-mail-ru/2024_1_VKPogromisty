@@ -2,10 +2,12 @@ package services
 
 import (
 	"mime/multipart"
-	"os"
+	"net/http"
 	"socio/utils"
 	"sync"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type RegistrationInput struct {
@@ -28,6 +30,7 @@ type User struct {
 	FirstName        string           `json:"firstName"`
 	LastName         string           `json:"lastName"`
 	Password         string           `json:"-"`
+	Salt             string           `json:"-"`
 	Email            string           `json:"email"`
 	RegistrationDate utils.CustomTime `json:"registrationDate,omitempty"`
 	//Avatar stores the URL of the image that serves as user avatar
@@ -48,11 +51,13 @@ func NewAuthService() (authService *AuthService) {
 		nextUserId: 2,
 	}
 
+	salt1 := uuid.NewString()
 	user1 := &User{
 		ID:        0,
 		FirstName: "Petr",
 		LastName:  "Mitin",
-		Password:  "admin",
+		Password:  utils.HashPassword("admin", []byte(salt1)),
+		Salt:      salt1,
 		Email:     "petr09mitin@mail.ru",
 		RegistrationDate: utils.CustomTime{
 			Time: time.Now(),
@@ -64,11 +69,13 @@ func NewAuthService() (authService *AuthService) {
 	}
 	authService.users.Store(user1.Email, user1)
 
+	salt2 := uuid.NewString()
 	user2 := &User{
 		ID:        1,
 		FirstName: "Alexey",
 		LastName:  "Gorbunov",
-		Password:  "admin2",
+		Password:  utils.HashPassword("admin2", []byte(salt2)),
+		Salt:      salt2,
 		Email:     "lexagorbunov14@gmail.com",
 		RegistrationDate: utils.CustomTime{
 			Time: time.Now(),
@@ -83,19 +90,28 @@ func NewAuthService() (authService *AuthService) {
 	return
 }
 
-func (a *AuthService) newSession(userID uint) (sessionID string) {
-	sessionID = utils.RandStringRunes(32)
+func (a *AuthService) newSession(userID uint) (session *http.Cookie) {
+	sessionID := uuid.NewString()
 	a.sessions.Store(sessionID, userID)
+
+	session = &http.Cookie{
+		Name:     "session_id",
+		Value:    sessionID,
+		Expires:  time.Now().Add(10 * time.Hour),
+		HttpOnly: true,
+		Secure:   true,
+	}
 	return
 }
 
-func (a *AuthService) RegistrateUser(userInput RegistrationInput) (user *User, err error) {
+func (a *AuthService) RegistrateUser(userInput RegistrationInput) (user *User, session *http.Cookie, err error) {
 	if err = ValidateUserInput(userInput, a); err != nil {
 		return
 	}
 
 	dateOfBirth, err := time.Parse(utils.DateFormat, userInput.DateOfBirth)
 	if err != nil {
+		err = utils.ErrInvalidBirthDate
 		return
 	}
 
@@ -103,13 +119,19 @@ func (a *AuthService) RegistrateUser(userInput RegistrationInput) (user *User, e
 	if err != nil {
 		return
 	}
-	avatarURL := os.Getenv("PROTOCOL") + os.Getenv("HOST") + os.Getenv("PORT") + "/static/" + fileName
 
+	avatarURL, err := utils.GetImageURL(fileName)
+	if err != nil {
+		return
+	}
+
+	salt := uuid.NewString()
 	user = &User{
 		ID:        a.nextUserId,
 		FirstName: userInput.FirstName,
 		LastName:  userInput.LastName,
-		Password:  userInput.Password,
+		Password:  utils.HashPassword(userInput.Password, []byte(salt)),
+		Salt:      salt,
 		Email:     userInput.Email,
 		RegistrationDate: utils.CustomTime{
 			Time: time.Now(),
@@ -123,10 +145,12 @@ func (a *AuthService) RegistrateUser(userInput RegistrationInput) (user *User, e
 
 	a.users.Store(user.Email, user)
 
+	session = a.newSession(user.ID)
+
 	return
 }
 
-func (a *AuthService) Login(loginInput LoginInput) (sessionID string, err error) {
+func (a *AuthService) Login(loginInput LoginInput) (session *http.Cookie, err error) {
 	userData, ok := a.users.Load(loginInput.Email)
 	if !ok {
 		err = utils.ErrInvalidLoginData
@@ -134,20 +158,24 @@ func (a *AuthService) Login(loginInput LoginInput) (sessionID string, err error)
 	}
 
 	user, ok := userData.(*User)
-	if !ok || user.Password != loginInput.Password {
+	if !ok || !utils.MatchPasswords(user.Password, loginInput.Password, []byte(user.Salt)) {
 		err = utils.ErrInvalidLoginData
 		return
 	}
 
+	user.Salt = uuid.NewString()
+	user.Password = utils.HashPassword(loginInput.Password, []byte(user.Salt))
+
 	return a.newSession(user.ID), nil
 }
 
-func (a *AuthService) Logout(sessionID string) (err error) {
-	_, ok := a.sessions.LoadAndDelete(sessionID)
+func (a *AuthService) Logout(session *http.Cookie) (err error) {
+	_, ok := a.sessions.LoadAndDelete(session.Value)
 	if !ok {
 		err = utils.ErrInvalidData
 		return
 	}
 
+	session.Expires = time.Now().AddDate(0, 0, -1)
 	return
 }

@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"math/rand"
 	"time"
 )
 
@@ -10,7 +9,6 @@ type CustomTime struct {
 }
 
 var (
-	Runes      = []rune("1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 	DateFormat = "2006-01-02"
 )
 
@@ -21,12 +19,4 @@ func (t *CustomTime) UnmarshalJSON(b []byte) (err error) {
 	}
 	t.Time = date
 	return
-}
-
-func RandStringRunes(n int) string {
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = Runes[rand.Intn(len(Runes))]
-	}
-	return string(b)
 }

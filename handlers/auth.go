@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 	"socio/services"
-	"time"
+	"strings"
 )
 
 type AuthHandler struct {
@@ -27,26 +27,26 @@ func (api *AuthHandler) HandleRegistration(w http.ResponseWriter, r *http.Reques
 	}
 
 	var regInput services.RegistrationInput
-	regInput.FirstName = r.PostFormValue("firstName")
-	regInput.LastName = r.PostFormValue("lastName")
-	regInput.Email = r.PostFormValue("email")
+	regInput.FirstName = strings.Trim(r.PostFormValue("firstName"), " \n\r\t")
+	regInput.LastName = strings.Trim(r.PostFormValue("lastName"), " \n\r\t")
+	regInput.Email = strings.Trim(r.PostFormValue("email"), " \n\r\t")
 	regInput.Password = r.PostFormValue("password")
 	regInput.RepeatPassword = r.PostFormValue("repeatPassword")
-	regInput.DateOfBirth = r.PostFormValue("dateOfBirth")
+	regInput.DateOfBirth = strings.Trim(r.PostFormValue("dateOfBirth"), " \n\r\t")
 	_, regInput.Avatar, err = r.FormFile("avatar")
 	if err != nil && err != http.ErrMissingFile {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	user, err := api.service.RegistrateUser(regInput)
+	user, session, err := api.service.RegistrateUser(regInput)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
+	http.SetCookie(w, session)
 	json.NewEncoder(w).Encode(user)
-
 }
 
 func (api *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
@@ -62,36 +62,28 @@ func (api *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sessionID, err := api.service.Login(*loginInput)
+	session, err := api.service.Login(*loginInput)
 	if err != nil {
 		log.Printf("login error: %s", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	cookie := &http.Cookie{
-		Name:     "session_id",
-		Value:    sessionID,
-		Expires:  time.Now().Add(10 * time.Hour),
-		HttpOnly: true,
-		Secure:   true,
-	}
-	http.SetCookie(w, cookie)
-	w.Write([]byte(sessionID))
+	http.SetCookie(w, session)
+	w.Write([]byte(session.Value))
 }
 
 func (api *AuthHandler) HandleLogout(w http.ResponseWriter, r *http.Request) {
-	sessionID, err := r.Cookie("session_id")
+	session, err := r.Cookie("session_id")
 	if err == http.ErrNoCookie {
 		http.Error(w, "no session_id cookie", http.StatusUnauthorized)
 		return
 	}
 
-	if err = api.service.Logout(sessionID.Value); err != nil {
+	if err = api.service.Logout(session); err != nil {
 		http.Error(w, "no session_id cookie", http.StatusUnauthorized)
 		return
 	}
 
-	sessionID.Expires = time.Now().AddDate(0, 0, -1)
-	http.SetCookie(w, sessionID)
+	http.SetCookie(w, session)
 }
