@@ -1,20 +1,21 @@
 package services
 
 import (
-	"math/rand"
+	"mime/multipart"
+	"os"
 	"socio/utils"
 	"sync"
 	"time"
 )
 
 type RegistrationInput struct {
-	FirstName      string           `json:"firstName,string"`
-	LastName       string           `json:"lastName,string"`
-	Password       string           `json:"-"`
-	RepeatPassword string           `json:"-"`
-	Email          string           `json:"email,string"`
-	Avatar         string           `json:"avatar,string"`
-	DateOfBirth    utils.CustomTime `json:"dateOfBirth,omitempty"`
+	FirstName      string
+	LastName       string
+	Password       string
+	RepeatPassword string
+	Email          string
+	Avatar         *multipart.FileHeader
+	DateOfBirth    string
 }
 
 type LoginInput struct {
@@ -23,14 +24,14 @@ type LoginInput struct {
 }
 
 type User struct {
-	ID               uint             `json:"userId,string"`
-	FirstName        string           `json:"firstName,string"`
-	LastName         string           `json:"lastName,string"`
+	ID               uint             `json:"userId"`
+	FirstName        string           `json:"firstName"`
+	LastName         string           `json:"lastName"`
 	Password         string           `json:"-"`
-	Email            string           `json:"email,string"`
+	Email            string           `json:"email"`
 	RegistrationDate utils.CustomTime `json:"registrationDate,omitempty"`
 	//Avatar stores the URL of the image that serves as user avatar
-	Avatar      string           `json:"avatar,string"`
+	Avatar      string           `json:"avatar"`
 	DateOfBirth utils.CustomTime `json:"dateOfBirth,omitempty"`
 }
 
@@ -38,18 +39,6 @@ type AuthService struct {
 	users      sync.Map
 	sessions   sync.Map
 	nextUserId uint
-}
-
-var (
-	runes = []rune("1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-)
-
-func RandStringRunes(n int) string {
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = runes[rand.Intn(len(runes))]
-	}
-	return string(b)
 }
 
 func NewAuthService() (authService *AuthService) {
@@ -95,17 +84,28 @@ func NewAuthService() (authService *AuthService) {
 }
 
 func (a *AuthService) newSession(userID uint) (sessionID string) {
-	sessionID = RandStringRunes(32)
+	sessionID = utils.RandStringRunes(32)
 	a.sessions.Store(sessionID, userID)
 	return
 }
 
-func (a *AuthService) RegistrateUser(userInput RegistrationInput) (err error) {
-	if err = ValidateUserInput(userInput); err != nil {
+func (a *AuthService) RegistrateUser(userInput RegistrationInput) (user *User, err error) {
+	if err = ValidateUserInput(userInput, a); err != nil {
 		return
 	}
 
-	newUser := &User{
+	dateOfBirth, err := time.Parse(utils.DateFormat, userInput.DateOfBirth)
+	if err != nil {
+		return
+	}
+
+	fileName, err := utils.SaveImage(userInput.Avatar)
+	if err != nil {
+		return
+	}
+	avatarURL := os.Getenv("PROTOCOL") + os.Getenv("HOST") + os.Getenv("PORT") + "/static/" + fileName
+
+	user = &User{
 		ID:        a.nextUserId,
 		FirstName: userInput.FirstName,
 		LastName:  userInput.LastName,
@@ -114,12 +114,14 @@ func (a *AuthService) RegistrateUser(userInput RegistrationInput) (err error) {
 		RegistrationDate: utils.CustomTime{
 			Time: time.Now(),
 		},
-		Avatar:      userInput.Avatar,
-		DateOfBirth: userInput.DateOfBirth,
+		Avatar: avatarURL,
+		DateOfBirth: utils.CustomTime{
+			Time: dateOfBirth,
+		},
 	}
 	a.nextUserId++
 
-	a.users.Store(newUser.Email, newUser)
+	a.users.Store(user.Email, user)
 
 	return
 }

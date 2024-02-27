@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"socio/services"
@@ -21,8 +20,33 @@ func NewAuthHandler() (handler *AuthHandler) {
 }
 
 func (api *AuthHandler) HandleRegistration(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("registration")
-	w.Write([]byte{})
+	err := r.ParseMultipartForm(4 * 1024 * 1024)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	var regInput services.RegistrationInput
+	regInput.FirstName = r.PostFormValue("firstName")
+	regInput.LastName = r.PostFormValue("lastName")
+	regInput.Email = r.PostFormValue("email")
+	regInput.Password = r.PostFormValue("password")
+	regInput.RepeatPassword = r.PostFormValue("repeatPassword")
+	regInput.DateOfBirth = r.PostFormValue("dateOfBirth")
+	_, regInput.Avatar, err = r.FormFile("avatar")
+	if err != nil && err != http.ErrMissingFile {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	user, err := api.service.RegistrateUser(regInput)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	json.NewEncoder(w).Encode(user)
+
 }
 
 func (api *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
