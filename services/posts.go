@@ -14,6 +14,11 @@ type Post struct {
 	CreationDate utils.CustomTime `json:"creationDate,omitempty"`
 }
 
+type PostWithAuthor struct {
+	Post   *Post
+	Author *User
+}
+
 type PostsService struct {
 	posts  sync.Map
 	nextID uint
@@ -68,6 +73,43 @@ func NewPostsService() (postsService *PostsService) {
 	return
 }
 
-func (p *PostsService) ListPosts() []*Post {
-	return nil
+func (p *PostsService) augmentPostsWithAuthors() (postsWithAuthors []PostWithAuthor, err error) {
+	author := &User{
+		ID:        0,
+		FirstName: "Petr",
+		LastName:  "Mitin",
+		Email:     "petr09mitin@mail.ru",
+		RegistrationDate: utils.CustomTime{
+			Time: time.Now(),
+		},
+		Avatar: "default_avatar.png",
+		DateOfBirth: utils.CustomTime{
+			Time: time.Now(),
+		},
+	}
+
+	p.posts.Range(func(key any, value any) bool {
+		postsWithAuthors = append(postsWithAuthors, PostWithAuthor{
+			Post:   value.(*Post),
+			Author: author,
+		})
+		return true
+	})
+
+	return
+}
+
+func (p *PostsService) ListPosts() (postsWithAuthors []PostWithAuthor, err error) {
+	var posts []*Post
+	p.posts.Range(func(key any, value any) bool {
+		posts = append(posts, value.(*Post))
+		return true
+	})
+
+	postsWithAuthors, err = p.augmentPostsWithAuthors()
+	if err != nil {
+		return
+	}
+
+	return
 }

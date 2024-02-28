@@ -85,3 +85,20 @@ func (api *AuthHandler) HandleLogout(w http.ResponseWriter, r *http.Request) {
 
 	http.SetCookie(w, session)
 }
+
+func (api *AuthHandler) CheckIsAuthorized(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		session, err := r.Cookie("session_id")
+		if err == http.ErrNoCookie {
+			errors.ServeHttpError(&w, err)
+			return
+		}
+
+		if err := api.service.IsAuthorized(session); err != nil {
+			errors.ServeHttpError(&w, err)
+			return
+		}
+
+		h.ServeHTTP(w, r)
+	})
+}

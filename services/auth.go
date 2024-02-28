@@ -98,7 +98,7 @@ func (a *AuthService) newSession(userID uint) (session *http.Cookie) {
 	session = &http.Cookie{
 		Name:     "session_id",
 		Value:    sessionID,
-		Expires:  time.Now().Add(10 * time.Hour),
+		MaxAge:   10 * 60 * 60,
 		HttpOnly: true,
 		Secure:   true,
 	}
@@ -173,5 +173,19 @@ func (a *AuthService) Logout(session *http.Cookie) (err error) {
 	}
 
 	session.Expires = time.Now().AddDate(0, 0, -1)
+	return
+}
+
+func (a *AuthService) IsAuthorized(session *http.Cookie) (err error) {
+	_, ok := a.sessions.Load(session.Value)
+	if !ok {
+		err = errors.ErrUnauthorized
+		return
+	}
+
+	if errCookie := session.Valid(); errCookie != nil {
+		err = errors.ErrUnauthorized
+		return
+	}
 	return
 }
