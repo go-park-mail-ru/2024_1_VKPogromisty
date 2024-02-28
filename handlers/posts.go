@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
+	"socio/errors"
 	"socio/services"
 )
 
@@ -17,5 +19,15 @@ func NewPostsHandler() (handler *PostsHandler) {
 }
 
 func (api *PostsHandler) HandleListPosts(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("posts"))
+	posts, err := api.service.ListPosts()
+	if err != nil {
+		errors.ServeHttpError(&w, err)
+		return
+	}
+
+	err = json.NewEncoder(w).Encode(posts)
+	if err != nil {
+		errors.ServeHttpError(&w, err)
+		return
+	}
 }
