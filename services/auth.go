@@ -3,6 +3,7 @@ package services
 import (
 	"mime/multipart"
 	"net/http"
+	"socio/errors"
 	"socio/utils"
 	"sync"
 	"time"
@@ -111,7 +112,7 @@ func (a *AuthService) RegistrateUser(userInput RegistrationInput) (user *User, s
 
 	dateOfBirth, err := time.Parse(utils.DateFormat, userInput.DateOfBirth)
 	if err != nil {
-		err = utils.ErrInvalidBirthDate
+		err = errors.ErrInvalidDate
 		return
 	}
 
@@ -153,13 +154,13 @@ func (a *AuthService) RegistrateUser(userInput RegistrationInput) (user *User, s
 func (a *AuthService) Login(loginInput LoginInput) (session *http.Cookie, err error) {
 	userData, ok := a.users.Load(loginInput.Email)
 	if !ok {
-		err = utils.ErrInvalidLoginData
+		err = errors.ErrInvalidLoginData
 		return
 	}
 
 	user, ok := userData.(*User)
 	if !ok || !utils.MatchPasswords(user.Password, loginInput.Password, []byte(user.Salt)) {
-		err = utils.ErrInvalidLoginData
+		err = errors.ErrInvalidLoginData
 		return
 	}
 
@@ -172,7 +173,7 @@ func (a *AuthService) Login(loginInput LoginInput) (session *http.Cookie, err er
 func (a *AuthService) Logout(session *http.Cookie) (err error) {
 	_, ok := a.sessions.LoadAndDelete(session.Value)
 	if !ok {
-		err = utils.ErrInvalidData
+		err = errors.ErrInvalidData
 		return
 	}
 

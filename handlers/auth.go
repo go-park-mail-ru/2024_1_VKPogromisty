@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
+	"socio/errors"
 	"socio/services"
 	"strings"
 )
@@ -22,7 +22,7 @@ func NewAuthHandler() (handler *AuthHandler) {
 func (api *AuthHandler) HandleRegistration(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseMultipartForm(4 * 1024 * 1024)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		errors.ServeHttpError(&w, errors.ErrInvalidBody)
 		return
 	}
 
@@ -35,13 +35,13 @@ func (api *AuthHandler) HandleRegistration(w http.ResponseWriter, r *http.Reques
 	regInput.DateOfBirth = strings.Trim(r.PostFormValue("dateOfBirth"), " \n\r\t")
 	_, regInput.Avatar, err = r.FormFile("avatar")
 	if err != nil && err != http.ErrMissingFile {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		errors.ServeHttpError(&w, errors.ErrInvalidBody)
 		return
 	}
 
 	user, session, err := api.service.RegistrateUser(regInput)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		errors.ServeHttpError(&w, err)
 		return
 	}
 
@@ -57,15 +57,13 @@ func (api *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	loginInput := new(services.LoginInput)
 	err := decoder.Decode(loginInput)
 	if err != nil {
-		log.Printf("error while unmarshalling JSON: %s", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		errors.ServeHttpError(&w, errors.ErrJSONUnmarshalling)
 		return
 	}
 
 	session, err := api.service.Login(*loginInput)
 	if err != nil {
-		log.Printf("login error: %s", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		errors.ServeHttpError(&w, err)
 		return
 	}
 
@@ -76,12 +74,12 @@ func (api *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 func (api *AuthHandler) HandleLogout(w http.ResponseWriter, r *http.Request) {
 	session, err := r.Cookie("session_id")
 	if err == http.ErrNoCookie {
-		http.Error(w, "no session_id cookie", http.StatusUnauthorized)
+		errors.ServeHttpError(&w, err)
 		return
 	}
 
 	if err = api.service.Logout(session); err != nil {
-		http.Error(w, "no session_id cookie", http.StatusUnauthorized)
+		errors.ServeHttpError(&w, err)
 		return
 	}
 

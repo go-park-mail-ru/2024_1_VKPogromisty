@@ -1,4 +1,4 @@
-package utils
+package errors
 
 import "errors"
 
@@ -10,8 +10,10 @@ var (
 	ErrNotMatchingPasswords = errors.New("password and repeated password are not equal")
 	ErrPasswordMinLength    = errors.New("password should contain at least 6 characters")
 	ErrEmailsDuplicate      = errors.New("uses with such email already exists")
-	ErrInvalidBirthDate     = errors.New("invalid date of birth")
-	ErrNotFound             = errors.New("not found")
-	ErrBadRequest           = errors.New("bad request")
-	ErrEternal              = errors.New("eternal server error")
+	ErrInvalidDate          = errors.New("invalid date provided")
+	ErrJSONUnmarshalling    = errors.New("unable to unmarshal json")
+	ErrInvalidFilePathGen   = errors.New("unable to open file with generated filepath")
+	ErrInvalidBody          = errors.New("invalid request body provided")
+	ErrInternal             = errors.New("internal server error")
+	ErrInvalidFileName      = errors.New("invalid file name")
 )

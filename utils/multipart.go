@@ -5,6 +5,7 @@ import (
 	"mime/multipart"
 	"os"
 	"path"
+	"socio/errors"
 
 	"github.com/google/uuid"
 )
@@ -18,6 +19,7 @@ func SaveImage(h *multipart.FileHeader) (fileName string, err error) {
 
 	wd, err := os.Getwd()
 	if err != nil {
+		err = errors.ErrInternal
 		return
 	}
 
@@ -45,7 +47,7 @@ func GetImageURL(fileName string) (URL string, err error) {
 	host := os.Getenv("HOST")
 	port := os.Getenv("PORT")
 	if len(protocol) == 0 || len(host) == 0 || len(port) == 0 {
-		err = ErrEternal
+		err = errors.ErrInternal
 		return
 	}
 
