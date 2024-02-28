@@ -15,8 +15,8 @@ type Post struct {
 }
 
 type PostWithAuthor struct {
-	Post   *Post
-	Author *User
+	Post   *Post `json:"post"`
+	Author *User `json:"author"`
 }
 
 type PostsService struct {
