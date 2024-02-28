@@ -63,7 +63,7 @@ func NewAuthService() (authService *AuthService) {
 		RegistrationDate: utils.CustomTime{
 			Time: time.Now(),
 		},
-		Avatar: "",
+		Avatar: "default_avatar.png",
 		DateOfBirth: utils.CustomTime{
 			Time: time.Now(),
 		},
@@ -81,7 +81,7 @@ func NewAuthService() (authService *AuthService) {
 		RegistrationDate: utils.CustomTime{
 			Time: time.Now(),
 		},
-		Avatar: "",
+		Avatar: "leha.jpg",
 		DateOfBirth: utils.CustomTime{
 			Time: time.Now(),
 		},
@@ -121,11 +121,6 @@ func (a *AuthService) RegistrateUser(userInput RegistrationInput) (user *User, s
 		return
 	}
 
-	avatarURL, err := utils.GetImageURL(fileName)
-	if err != nil {
-		return
-	}
-
 	salt := uuid.NewString()
 	user = &User{
 		ID:        a.nextUserId,
@@ -137,7 +132,7 @@ func (a *AuthService) RegistrateUser(userInput RegistrationInput) (user *User, s
 		RegistrationDate: utils.CustomTime{
 			Time: time.Now(),
 		},
-		Avatar: avatarURL,
+		Avatar: fileName,
 		DateOfBirth: utils.CustomTime{
 			Time: dateOfBirth,
 		},
