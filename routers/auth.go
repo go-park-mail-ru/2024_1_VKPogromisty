@@ -6,9 +6,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func MountAuthRouter(rootRouter *mux.Router) {
+func MountAuthRouter(rootRouter *mux.Router, h *handlers.AuthHandler) {
 	r := rootRouter.PathPrefix("/auth").Subrouter()
-	h := handlers.NewAuthHandler()
 
 	r.HandleFunc("/login", h.HandleLogin).Methods("POST")
 	r.HandleFunc("/signup", h.HandleRegistration).Methods("POST")
