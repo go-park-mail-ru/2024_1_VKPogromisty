@@ -22,7 +22,8 @@ func NewAuthHandler() (handler *AuthHandler) {
 func (api *AuthHandler) HandleRegistration(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseMultipartForm(4 * 1024 * 1024)
 	if err != nil {
-		errors.ServeHttpError(&w, errors.ErrInvalidBody)
+		msg, status := errors.ServeHttpError(errors.ErrInvalidBody)
+		http.Error(w, msg, status)
 		return
 	}
 
@@ -35,13 +36,15 @@ func (api *AuthHandler) HandleRegistration(w http.ResponseWriter, r *http.Reques
 	regInput.DateOfBirth = strings.Trim(r.PostFormValue("dateOfBirth"), " \n\r\t")
 	_, regInput.Avatar, err = r.FormFile("avatar")
 	if err != nil && err != http.ErrMissingFile {
-		errors.ServeHttpError(&w, errors.ErrInvalidBody)
+		msg, status := errors.ServeHttpError(errors.ErrInvalidBody)
+		http.Error(w, msg, status)
 		return
 	}
 
 	user, session, err := api.service.RegistrateUser(regInput)
 	if err != nil {
-		errors.ServeHttpError(&w, err)
+		msg, status := errors.ServeHttpError(err)
+		http.Error(w, msg, status)
 		return
 	}
 
@@ -57,13 +60,15 @@ func (api *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	loginInput := new(services.LoginInput)
 	err := decoder.Decode(loginInput)
 	if err != nil {
-		errors.ServeHttpError(&w, errors.ErrJSONUnmarshalling)
+		msg, status := errors.ServeHttpError(errors.ErrJSONUnmarshalling)
+		http.Error(w, msg, status)
 		return
 	}
 
 	session, err := api.service.Login(*loginInput)
 	if err != nil {
-		errors.ServeHttpError(&w, err)
+		msg, status := errors.ServeHttpError(err)
+		http.Error(w, msg, status)
 		return
 	}
 
@@ -74,12 +79,14 @@ func (api *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 func (api *AuthHandler) HandleLogout(w http.ResponseWriter, r *http.Request) {
 	session, err := r.Cookie("session_id")
 	if err == http.ErrNoCookie {
-		errors.ServeHttpError(&w, err)
+		msg, status := errors.ServeHttpError(err)
+		http.Error(w, msg, status)
 		return
 	}
 
 	if err = api.service.Logout(session); err != nil {
-		errors.ServeHttpError(&w, err)
+		msg, status := errors.ServeHttpError(err)
+		http.Error(w, msg, status)
 		return
 	}
 

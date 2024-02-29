@@ -1,7 +1,6 @@
 package errors
 
 import (
-	"fmt"
 	"net/http"
 )
 
@@ -22,13 +21,13 @@ var HTTPErrors = map[error]int{
 	ErrInternal:             http.StatusInternalServerError,
 }
 
-func ServeHttpError(w *http.ResponseWriter, err error) {
+func ServeHttpError(err error) (msg string, status int) {
 	status, ok := HTTPErrors[err]
 	if !ok {
 		status = 500
 	}
 
-	fmt.Printf("handled error: %s\n", err.Error())
+	msg = err.Error()
 
-	http.Error(*w, err.Error(), status)
+	return
 }
