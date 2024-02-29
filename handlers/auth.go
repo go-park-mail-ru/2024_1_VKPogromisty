@@ -97,12 +97,14 @@ func (api *AuthHandler) CheckIsAuthorized(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		session, err := r.Cookie("session_id")
 		if err == http.ErrNoCookie {
-			errors.ServeHttpError(&w, err)
+			msg, status := errors.ServeHttpError(err)
+			http.Error(w, msg, status)
 			return
 		}
 
 		if err := api.service.IsAuthorized(session); err != nil {
-			errors.ServeHttpError(&w, err)
+			msg, status := errors.ServeHttpError(err)
+			http.Error(w, msg, status)
 			return
 		}
 
