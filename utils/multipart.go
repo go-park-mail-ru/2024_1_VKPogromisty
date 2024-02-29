@@ -41,3 +41,15 @@ func SaveImage(h *multipart.FileHeader) (fileName string, err error) {
 
 	return
 }
+
+func GetImageURL(fileName string) (URL string, err error) {
+	protocol := os.Getenv("PROTOCOL")
+	host := os.Getenv("HOST")
+	port := os.Getenv("PORT")
+	if len(protocol) == 0 || len(host) == 0 || len(port) == 0 {
+		err = errors.ErrInternal
+		return
+	}
+
+	return protocol + host + port + "/static/" + fileName, nil
+}

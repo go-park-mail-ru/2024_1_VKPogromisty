@@ -1,6 +1,7 @@
 package utils
 
 const (
-	HOST = "localhost"
-	PORT = ":8080"
+	PROTOCOL = "http://"
+	HOST     = "localhost"
+	PORT     = ":8080"
 )

@@ -27,7 +27,7 @@
   <li>бэкенд:</li>
         Коноплюк Владимир - https://github.com/TheVovchenskiy
   <li>дизайн:</li>
-        Галина Мартынова - https://t.me/g_martynovaa
+        ... - ...
 </ul>
 
 Ссылки на репозитории проектов:
@@ -37,6 +37,3 @@
   <li>бэкенд:</li>
     https://github.com/go-park-mail-ru/2024_1_VKPogromisty
 </ul>
-
-Ссылка на `Figma`:
-https://www.figma.com/team_invite/redeem/hy0ulPbEV6KUagSWyjBc0E
