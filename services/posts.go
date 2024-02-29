@@ -63,7 +63,7 @@ func NewPostsService() (postsService *PostsService) {
 	})
 
 	postsService.posts.Store(4, &Post{
-		ID:           3,
+		ID:           4,
 		AuthorID:     0,
 		Text:         "Белые розы, белые розы... Не совсем белые, но все равно прекрасно)",
 		Attachments:  []string{"rose.jpeg"},
