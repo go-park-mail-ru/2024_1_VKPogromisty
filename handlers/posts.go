@@ -1,10 +1,9 @@
 package handlers
 
 import (
-	"encoding/json"
 	"net/http"
-	"socio/errors"
 	"socio/services"
+	"socio/utils"
 )
 
 type PostsHandler struct {
@@ -21,15 +20,9 @@ func NewPostsHandler() (handler *PostsHandler) {
 func (api *PostsHandler) HandleListPosts(w http.ResponseWriter, r *http.Request) {
 	posts, err := api.service.ListPosts()
 	if err != nil {
-		msg, status := errors.ServeHttpError(err)
-		http.Error(w, msg, status)
+		utils.ServeJSONError(w, err)
 		return
 	}
 
-	err = json.NewEncoder(w).Encode(posts)
-	if err != nil {
-		msg, status := errors.ServeHttpError(err)
-		http.Error(w, msg, status)
-		return
-	}
+	utils.ServeJSONBody(w, map[string][]services.PostWithAuthor{"posts": posts})
 }

@@ -3,8 +3,8 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"socio/errors"
 	"socio/services"
+	"socio/utils"
 	"strings"
 )
 
@@ -22,8 +22,7 @@ func NewAuthHandler() (handler *AuthHandler) {
 func (api *AuthHandler) HandleRegistration(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseMultipartForm(4 * 1024 * 1024)
 	if err != nil {
-		msg, status := errors.ServeHttpError(errors.ErrInvalidBody)
-		http.Error(w, msg, status)
+		utils.ServeJSONError(w, err)
 		return
 	}
 
@@ -36,20 +35,18 @@ func (api *AuthHandler) HandleRegistration(w http.ResponseWriter, r *http.Reques
 	regInput.DateOfBirth = strings.Trim(r.PostFormValue("dateOfBirth"), " \n\r\t")
 	_, regInput.Avatar, err = r.FormFile("avatar")
 	if err != nil && err != http.ErrMissingFile {
-		msg, status := errors.ServeHttpError(errors.ErrInvalidBody)
-		http.Error(w, msg, status)
+		utils.ServeJSONError(w, err)
 		return
 	}
 
 	user, session, err := api.service.RegistrateUser(regInput)
 	if err != nil {
-		msg, status := errors.ServeHttpError(err)
-		http.Error(w, msg, status)
+		utils.ServeJSONError(w, err)
 		return
 	}
 
 	http.SetCookie(w, session)
-	json.NewEncoder(w).Encode(user)
+	utils.ServeJSONBody(w, map[string]*services.User{"user": user})
 }
 
 func (api *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
@@ -60,33 +57,29 @@ func (api *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	loginInput := new(services.LoginInput)
 	err := decoder.Decode(loginInput)
 	if err != nil {
-		msg, status := errors.ServeHttpError(errors.ErrJSONUnmarshalling)
-		http.Error(w, msg, status)
+		utils.ServeJSONError(w, err)
 		return
 	}
 
 	session, err := api.service.Login(*loginInput)
 	if err != nil {
-		msg, status := errors.ServeHttpError(err)
-		http.Error(w, msg, status)
+		utils.ServeJSONError(w, err)
 		return
 	}
 
 	http.SetCookie(w, session)
-	w.Write([]byte(session.Value))
+	utils.ServeJSONBody(w, map[string]string{"sessionID": session.Value})
 }
 
 func (api *AuthHandler) HandleLogout(w http.ResponseWriter, r *http.Request) {
 	session, err := r.Cookie("session_id")
 	if err == http.ErrNoCookie {
-		msg, status := errors.ServeHttpError(err)
-		http.Error(w, msg, status)
+		utils.ServeJSONError(w, err)
 		return
 	}
 
 	if err = api.service.Logout(session); err != nil {
-		msg, status := errors.ServeHttpError(err)
-		http.Error(w, msg, status)
+		utils.ServeJSONError(w, err)
 		return
 	}
 
@@ -97,14 +90,12 @@ func (api *AuthHandler) CheckIsAuthorized(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		session, err := r.Cookie("session_id")
 		if err == http.ErrNoCookie {
-			msg, status := errors.ServeHttpError(err)
-			http.Error(w, msg, status)
+			utils.ServeJSONError(w, err)
 			return
 		}
 
 		if err := api.service.IsAuthorized(session); err != nil {
-			msg, status := errors.ServeHttpError(err)
-			http.Error(w, msg, status)
+			utils.ServeJSONError(w, err)
 			return
 		}
 

@@ -19,10 +19,11 @@ var HTTPErrors = map[error]int{
 	ErrInvalidFilePathGen:   http.StatusBadRequest,
 	ErrInvalidFileName:      http.StatusBadRequest,
 	ErrInvalidBody:          http.StatusBadRequest,
+	ErrJSONMarshalling:      http.StatusInternalServerError,
 	ErrInternal:             http.StatusInternalServerError,
 }
 
-func ServeHttpError(err error) (msg string, status int) {
+func ParseHTTPError(err error) (msg string, status int) {
 	status, ok := HTTPErrors[err]
 	if !ok {
 		status = 500
