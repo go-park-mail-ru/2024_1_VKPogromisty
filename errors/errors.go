@@ -7,6 +7,7 @@ var (
 	ErrInvalidData          = errors.New("invalid data")
 	ErrInvalidEmail         = errors.New("invalid email")
 	ErrInvalidLoginData     = errors.New("invalid login data")
+	ErrUnauthorized         = errors.New("unauthorized")
 	ErrNotMatchingPasswords = errors.New("password and repeated password are not equal")
 	ErrPasswordMinLength    = errors.New("password should contain at least 6 characters")
 	ErrEmailsDuplicate      = errors.New("uses with such email already exists")
