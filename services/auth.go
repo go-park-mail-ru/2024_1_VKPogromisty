@@ -63,7 +63,7 @@ func NewAuthService() (authService *AuthService) {
 		RegistrationDate: utils.CustomTime{
 			Time: time.Now(),
 		},
-		Avatar: "default_avatar.png",
+		Avatar: "",
 		DateOfBirth: utils.CustomTime{
 			Time: time.Now(),
 		},
@@ -81,7 +81,7 @@ func NewAuthService() (authService *AuthService) {
 		RegistrationDate: utils.CustomTime{
 			Time: time.Now(),
 		},
-		Avatar: "leha.jpg",
+		Avatar: "",
 		DateOfBirth: utils.CustomTime{
 			Time: time.Now(),
 		},
@@ -98,7 +98,7 @@ func (a *AuthService) newSession(userID uint) (session *http.Cookie) {
 	session = &http.Cookie{
 		Name:     "session_id",
 		Value:    sessionID,
-		MaxAge:   10 * 60 * 60,
+		Expires:  time.Now().Add(10 * time.Hour),
 		HttpOnly: true,
 		Secure:   true,
 	}
@@ -121,6 +121,11 @@ func (a *AuthService) RegistrateUser(userInput RegistrationInput) (user *User, s
 		return
 	}
 
+	avatarURL, err := utils.GetImageURL(fileName)
+	if err != nil {
+		return
+	}
+
 	salt := uuid.NewString()
 	user = &User{
 		ID:        a.nextUserId,
@@ -132,7 +137,7 @@ func (a *AuthService) RegistrateUser(userInput RegistrationInput) (user *User, s
 		RegistrationDate: utils.CustomTime{
 			Time: time.Now(),
 		},
-		Avatar: fileName,
+		Avatar: avatarURL,
 		DateOfBirth: utils.CustomTime{
 			Time: dateOfBirth,
 		},
@@ -173,19 +178,5 @@ func (a *AuthService) Logout(session *http.Cookie) (err error) {
 	}
 
 	session.Expires = time.Now().AddDate(0, 0, -1)
-	return
-}
-
-func (a *AuthService) IsAuthorized(session *http.Cookie) (err error) {
-	_, ok := a.sessions.Load(session.Value)
-	if !ok {
-		err = errors.ErrUnauthorized
-		return
-	}
-
-	if errCookie := session.Valid(); errCookie != nil {
-		err = errors.ErrUnauthorized
-		return
-	}
 	return
 }

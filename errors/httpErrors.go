@@ -5,7 +5,6 @@ import (
 )
 
 var HTTPErrors = map[error]int{
-	ErrUnauthorized:         http.StatusUnauthorized,
 	ErrInvalidLoginData:     http.StatusUnauthorized,
 	http.ErrNoCookie:        http.StatusUnauthorized,
 	ErrMissingFields:        http.StatusBadRequest,

@@ -1,15 +1,16 @@
 package routers
 
 import (
-	"socio/handlers"
+	"encoding/json"
+	"net/http"
 
 	"github.com/gorilla/mux"
 )
 
-func MountPostsRouter(rootRouter *mux.Router, authHandler *handlers.AuthHandler) {
+func MountPostsRouter(rootRouter *mux.Router) {
 	r := rootRouter.PathPrefix("/posts").Subrouter()
-	h := handlers.NewPostsHandler()
 
-	r.Use(authHandler.CheckIsAuthorized)
-	r.HandleFunc("/", h.HandleListPosts).Methods("GET")
+	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode("posts")
+	})
 }
