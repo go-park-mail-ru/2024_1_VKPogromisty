@@ -11,5 +11,5 @@ func MountPostsRouter(rootRouter *mux.Router, authHandler *handlers.AuthHandler)
 	h := handlers.NewPostsHandler()
 
 	r.Use(authHandler.CheckIsAuthorized)
-	r.HandleFunc("/", h.HandleListPosts).Methods("GET")
+	r.HandleFunc("/", h.HandleListPosts).Methods("GET", "OPTIONS")
 }

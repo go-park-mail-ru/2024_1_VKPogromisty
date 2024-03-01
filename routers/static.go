@@ -10,5 +10,5 @@ func MountStaticRouter(rootRouter *mux.Router) {
 	r := rootRouter.PathPrefix("/static").Subrouter()
 	handler := handlers.StaticHandler{}
 
-	r.HandleFunc("/{fileName}", handler.HandleServeStatic).Methods("GET")
+	r.HandleFunc("/{fileName}", handler.HandleServeStatic).Methods("GET", "OPTIONS")
 }
