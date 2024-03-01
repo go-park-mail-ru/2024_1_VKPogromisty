@@ -7,7 +7,7 @@ import (
 )
 
 func NewRootRouter() (rootRouter *mux.Router) {
-	rootRouter = mux.NewRouter()
+	rootRouter = mux.NewRouter().PathPrefix("/api/v1").Subrouter()
 
 	// need auth handler in post router to check if user is authenticated, will be removed when db is added
 	authHandler := handlers.NewAuthHandler()

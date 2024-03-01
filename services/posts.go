@@ -11,7 +11,7 @@ type Post struct {
 	AuthorID     uint             `json:"authorId"`
 	Text         string           `json:"text"`
 	Attachments  []string         `json:"attachments"`
-	CreationDate utils.CustomTime `json:"creationDate,omitempty"`
+	CreationDate utils.CustomTime `json:"creationDate,omitempty" swaggertype:"string" example:"2021-01-01T00:00:00Z" format:"date-time"`
 }
 
 type PostWithAuthor struct {
@@ -22,6 +22,10 @@ type PostWithAuthor struct {
 type PostsService struct {
 	posts  sync.Map
 	nextID uint
+}
+
+type ListPostsResponse struct {
+	Posts []PostWithAuthor `json:"posts"`
 }
 
 func NewPostsService() (postsService *PostsService) {

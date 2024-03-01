@@ -33,16 +33,19 @@ type User struct {
 	Password         string           `json:"-"`
 	Salt             string           `json:"-"`
 	Email            string           `json:"email"`
-	RegistrationDate utils.CustomTime `json:"registrationDate,omitempty"`
-	//Avatar stores the URL of the image that serves as user avatar
-	Avatar      string           `json:"avatar"`
-	DateOfBirth utils.CustomTime `json:"dateOfBirth,omitempty"`
+	RegistrationDate utils.CustomTime `json:"registrationDate,omitempty" swaggertype:"string" example:"2021-01-01T00:00:00Z" format:"date-time"`
+	Avatar           string           `json:"avatar" example:"default_avatar.png"`
+	DateOfBirth      utils.CustomTime `json:"dateOfBirth,omitempty" swaggertype:"string" example:"2021-01-01T00:00:00Z" format:"date-time"`
 }
 
 type AuthService struct {
 	users      sync.Map
 	sessions   sync.Map
 	nextUserId uint
+}
+
+type LoginResponse struct {
+	SessionID string `json:"sessionId"`
 }
 
 func NewAuthService() (authService *AuthService) {
@@ -101,6 +104,7 @@ func (a *AuthService) newSession(userID uint) (session *http.Cookie) {
 		MaxAge:   10 * 60 * 60,
 		HttpOnly: true,
 		Secure:   true,
+		Path:     "/",
 	}
 	return
 }
