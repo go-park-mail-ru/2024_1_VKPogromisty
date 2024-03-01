@@ -19,6 +19,7 @@ var HTTPErrors = map[error]int{
 	ErrInvalidFilePathGen:   http.StatusBadRequest,
 	ErrInvalidFileName:      http.StatusBadRequest,
 	ErrInvalidBody:          http.StatusBadRequest,
+	ErrNotFound:             http.StatusNotFound,
 	ErrJSONMarshalling:      http.StatusInternalServerError,
 	ErrInternal:             http.StatusInternalServerError,
 }

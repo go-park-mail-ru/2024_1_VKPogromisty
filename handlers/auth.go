@@ -150,7 +150,7 @@ func (api *AuthHandler) HandleLogout(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, session)
 }
 
-func (api *AuthHandler) CheckIsAuthorized(h http.Handler) http.Handler {
+func (api *AuthHandler) CheckIsAuthorizedMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		session, err := r.Cookie("session_id")
 		if err == http.ErrNoCookie {

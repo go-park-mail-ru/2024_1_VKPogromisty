@@ -10,6 +10,6 @@ func MountPostsRouter(rootRouter *mux.Router, authHandler *handlers.AuthHandler)
 	r := rootRouter.PathPrefix("/posts").Subrouter()
 	h := handlers.NewPostsHandler()
 
-	r.Use(authHandler.CheckIsAuthorized)
+	r.Use(authHandler.CheckIsAuthorizedMiddleware)
 	r.HandleFunc("/", h.HandleListPosts).Methods("GET")
 }

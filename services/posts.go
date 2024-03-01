@@ -2,6 +2,7 @@ package services
 
 import (
 	"socio/utils"
+	"sort"
 	"sync"
 	"time"
 )
@@ -34,12 +35,14 @@ func NewPostsService() (postsService *PostsService) {
 		nextID: 5,
 	}
 
+	creationDate, _ := time.Parse(utils.DateFormat, "2000-01-01")
+
 	postsService.posts.Store(0, &Post{
 		ID:           0,
 		AuthorID:     0,
 		Text:         "Заснял такие вот красивые деревья)",
 		Attachments:  []string{"tree1.jpeg", "tree2.jpeg", "tree3.jpeg"},
-		CreationDate: utils.CustomTime{Time: time.Now()},
+		CreationDate: utils.CustomTime{Time: creationDate},
 	})
 
 	postsService.posts.Store(1, &Post{
@@ -47,7 +50,7 @@ func NewPostsService() (postsService *PostsService) {
 		AuthorID:     1,
 		Text:         "Озеро недалеко от моего домика в Швейцарии. Красота!",
 		Attachments:  []string{"lake.jpeg"},
-		CreationDate: utils.CustomTime{Time: time.Now()},
+		CreationDate: utils.CustomTime{Time: creationDate},
 	})
 
 	postsService.posts.Store(2, &Post{
@@ -55,7 +58,7 @@ func NewPostsService() (postsService *PostsService) {
 		AuthorID:     1,
 		Text:         "Moя подруга - очень хороший фотограф",
 		Attachments:  []string{"camera.jpeg"},
-		CreationDate: utils.CustomTime{Time: time.Now()},
+		CreationDate: utils.CustomTime{Time: creationDate},
 	})
 
 	postsService.posts.Store(3, &Post{
@@ -63,7 +66,7 @@ func NewPostsService() (postsService *PostsService) {
 		AuthorID:     0,
 		Text:         "Мост в бесконечность",
 		Attachments:  []string{"bridge.jpeg"},
-		CreationDate: utils.CustomTime{Time: time.Now()},
+		CreationDate: utils.CustomTime{Time: creationDate},
 	})
 
 	postsService.posts.Store(4, &Post{
@@ -71,24 +74,25 @@ func NewPostsService() (postsService *PostsService) {
 		AuthorID:     0,
 		Text:         "Белые розы, белые розы... Не совсем белые, но все равно прекрасно)",
 		Attachments:  []string{"rose.jpeg"},
-		CreationDate: utils.CustomTime{Time: time.Now()},
+		CreationDate: utils.CustomTime{Time: creationDate},
 	})
 
 	return
 }
 
 func (p *PostsService) augmentPostsWithAuthors() (postsWithAuthors []PostWithAuthor, err error) {
+	date, _ := time.Parse(utils.DateFormat, "1990-01-01")
 	author := &User{
 		ID:        0,
 		FirstName: "Petr",
 		LastName:  "Mitin",
 		Email:     "petr09mitin@mail.ru",
 		RegistrationDate: utils.CustomTime{
-			Time: time.Now(),
+			Time: date,
 		},
 		Avatar: "default_avatar.png",
 		DateOfBirth: utils.CustomTime{
-			Time: time.Now(),
+			Time: date,
 		},
 	}
 
@@ -98,6 +102,10 @@ func (p *PostsService) augmentPostsWithAuthors() (postsWithAuthors []PostWithAut
 			Author: author,
 		})
 		return true
+	})
+
+	sort.Slice(postsWithAuthors, func(i, j int) bool {
+		return postsWithAuthors[i].Post.ID < postsWithAuthors[j].Post.ID
 	})
 
 	return
