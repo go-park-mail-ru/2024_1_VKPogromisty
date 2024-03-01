@@ -6,6 +6,10 @@ import (
 	"socio/errors"
 )
 
+type JSONResponse struct {
+	Body any `json:"body"`
+}
+
 func MarshalResponseBody(value any) (data []byte, err error) {
 	data, err = json.Marshal(map[string]any{"body": value})
 	if err != nil {

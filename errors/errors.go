@@ -2,6 +2,10 @@ package errors
 
 import "errors"
 
+type HTTPError struct {
+	Error string `json:"error"`
+}
+
 var (
 	ErrMissingFields        = errors.New("provided data missing required fields")
 	ErrInvalidData          = errors.New("invalid data")

@@ -1,0 +1,208 @@
+basePath: /api/v1
+definitions:
+  errors.HTTPError:
+    properties:
+      error:
+        type: string
+    type: object
+  services.LoginResponse:
+    properties:
+      sessionId:
+        type: string
+    type: object
+  services.User:
+    properties:
+      avatar:
+        example: default_avatar.png
+        type: string
+      dateOfBirth:
+        example: "2021-01-01T00:00:00Z"
+        format: date-time
+        type: string
+      email:
+        type: string
+      firstName:
+        type: string
+      lastName:
+        type: string
+      registrationDate:
+        example: "2021-01-01T00:00:00Z"
+        format: date-time
+        type: string
+      userId:
+        type: integer
+    type: object
+  utils.JSONResponse:
+    properties:
+      body: {}
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: petr09mitin@mail.ru
+    name: Petr Mitin
+    url: https://github.com/Petr09Mitin
+  description: First version of Socio API
+  title: Socio API
+  version: "1.0"
+paths:
+  /auth/login/:
+    post:
+      consumes:
+      - application/json
+      description: login user by email and password
+      operationId: auth/login
+      parameters:
+      - description: Email of the user
+        in: body
+        name: email
+        required: true
+        schema:
+          type: string
+      - description: Password of the user
+        in: body
+        name: password
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          headers:
+            Set-Cookie:
+              description: session_id=some_session_id; Path=/; Max-Age=36000; HttpOnly;
+              type: string
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.JSONResponse'
+            - properties:
+                body:
+                  $ref: '#/definitions/services.LoginResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: handle user's login
+      tags:
+      - auth
+  /auth/logout/:
+    delete:
+      consumes:
+      - application/json
+      description: logout user that is authorized
+      operationId: auth/logout
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          headers:
+            Set-Cookie:
+              description: session_id=some_session_id; Path=/; HttpOnly; Expires=Thu,
+                01 Jan 1970 00:00:00 GMT;
+              type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: handle user's logout
+      tags:
+      - auth
+  /auth/signup/:
+    post:
+      consumes:
+      - multipart/form-data
+      description: registrate user by his data
+      operationId: auth/signup
+      parameters:
+      - description: First name of the user
+        in: formData
+        name: firstName
+        required: true
+        type: string
+      - description: Last name of the user
+        in: formData
+        name: lastName
+        required: true
+        type: string
+      - description: Email of the user
+        in: formData
+        name: email
+        required: true
+        type: string
+      - description: Password of the user
+        in: formData
+        minLength: 6
+        name: password
+        required: true
+        type: string
+      - description: Repeat password of the user
+        in: formData
+        minLength: 6
+        name: repeatPassword
+        required: true
+        type: string
+      - description: Date of birth of the user
+        example: "2021-01-01"
+        format: date
+        in: formData
+        name: dateOfBirth
+        required: true
+        type: string
+      - description: Avatar of the user
+        in: formData
+        name: avatar
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          headers:
+            Set-Cookie:
+              description: session_id=some_session_id; Path=/; Max-Age=36000; HttpOnly;
+              type: string
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.JSONResponse'
+            - properties:
+                body:
+                  $ref: '#/definitions/services.User'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: handle user's registration flow
+      tags:
+      - auth
+swagger: "2.0"

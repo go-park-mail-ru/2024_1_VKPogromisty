@@ -7,7 +7,7 @@ import (
 )
 
 func MountPostsRouter(rootRouter *mux.Router, authHandler *handlers.AuthHandler) {
-	r := rootRouter.PathPrefix("/api/v1/posts").Subrouter()
+	r := rootRouter.PathPrefix("/posts").Subrouter()
 	h := handlers.NewPostsHandler()
 
 	r.Use(authHandler.CheckIsAuthorized)
