@@ -2,7 +2,9 @@ package services_test
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"socio/errors"
+	"socio/handlers"
 	"socio/services"
 	"socio/utils"
 	"testing"
@@ -26,7 +28,7 @@ func TestRegistrateUser(t *testing.T) {
 				Password:       "password",
 				RepeatPassword: "password",
 				DateOfBirth:    "1990-01-01",
-				Avatar:         nil, // Assuming Avatar is of type []byte
+				Avatar:         nil,
 			},
 			wantErr: nil,
 		},
@@ -102,7 +104,6 @@ func TestLogin(t *testing.T) {
 		},
 	}
 
-	// Add a valid user to the AuthService
 	authService.Users.Store("test@example.com", &services.User{
 		Email:    "test@example.com",
 		Password: utils.HashPassword("password", []byte("salt")),
@@ -190,6 +191,53 @@ func TestIsAuthorized(t *testing.T) {
 			err := authService.IsAuthorized(tt.session)
 			if err != tt.wantErr {
 				t.Errorf("IsAuthorized() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestCheckIsAuthorizedMiddleware(t *testing.T) {
+	authHandler := handlers.NewAuthHandler(utils.MockTimeProvider{})
+
+	tests := []struct {
+		name     string
+		cookie   *http.Cookie
+		wantCode int
+	}{
+		{
+			name:     "Valid session",
+			cookie:   &http.Cookie{Name: "session_id", Value: "validSessionValue"},
+			wantCode: http.StatusOK,
+		},
+		{
+			name:     "Invalid session",
+			cookie:   &http.Cookie{Name: "session_id", Value: "invalidSessionValue"},
+			wantCode: http.StatusUnauthorized,
+		},
+		{
+			name:     "No session",
+			cookie:   nil,
+			wantCode: http.StatusUnauthorized,
+		},
+	}
+
+	authHandler.Service.Sessions.Store("validSessionValue", 0)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req, _ := http.NewRequest("GET", "/", nil)
+			if tt.cookie != nil {
+				req.AddCookie(tt.cookie)
+			}
+
+			rr := httptest.NewRecorder()
+
+			handler := authHandler.CheckIsAuthorizedMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+
+			handler.ServeHTTP(rr, req)
+
+			if status := rr.Code; status != tt.wantCode {
+				t.Errorf("handler returned wrong status code: got %v want %v", status, tt.wantCode)
 			}
 		})
 	}
