@@ -16,8 +16,8 @@ type Post struct {
 }
 
 type PostWithAuthor struct {
-	Post   *Post `json:"post"`
-	Author *User `json:"author"`
+	Post   Post `json:"post"`
+	Author User `json:"author"`
 }
 
 type PostsService struct {
@@ -37,7 +37,7 @@ func NewPostsService() (postsService *PostsService) {
 
 	creationDate, _ := time.Parse(utils.DateFormat, "2000-01-01")
 
-	postsService.posts.Store(0, &Post{
+	postsService.posts.Store(0, Post{
 		ID:           0,
 		AuthorID:     0,
 		Text:         "Заснял такие вот красивые деревья)",
@@ -45,7 +45,7 @@ func NewPostsService() (postsService *PostsService) {
 		CreationDate: utils.CustomTime{Time: creationDate},
 	})
 
-	postsService.posts.Store(1, &Post{
+	postsService.posts.Store(1, Post{
 		ID:           1,
 		AuthorID:     1,
 		Text:         "Озеро недалеко от моего домика в Швейцарии. Красота!",
@@ -53,7 +53,7 @@ func NewPostsService() (postsService *PostsService) {
 		CreationDate: utils.CustomTime{Time: creationDate},
 	})
 
-	postsService.posts.Store(2, &Post{
+	postsService.posts.Store(2, Post{
 		ID:           2,
 		AuthorID:     1,
 		Text:         "Moя подруга - очень хороший фотограф",
@@ -61,7 +61,7 @@ func NewPostsService() (postsService *PostsService) {
 		CreationDate: utils.CustomTime{Time: creationDate},
 	})
 
-	postsService.posts.Store(3, &Post{
+	postsService.posts.Store(3, Post{
 		ID:           3,
 		AuthorID:     0,
 		Text:         "Мост в бесконечность",
@@ -69,7 +69,7 @@ func NewPostsService() (postsService *PostsService) {
 		CreationDate: utils.CustomTime{Time: creationDate},
 	})
 
-	postsService.posts.Store(4, &Post{
+	postsService.posts.Store(4, Post{
 		ID:           4,
 		AuthorID:     0,
 		Text:         "Белые розы, белые розы... Не совсем белые, но все равно прекрасно)",
@@ -80,9 +80,9 @@ func NewPostsService() (postsService *PostsService) {
 	return
 }
 
-func (p *PostsService) augmentPostsWithAuthors() (postsWithAuthors []PostWithAuthor, err error) {
+func (p *PostsService) AugmentPostsWithAuthors() (postsWithAuthors []PostWithAuthor, err error) {
 	date, _ := time.Parse(utils.DateFormat, "1990-01-01")
-	author := &User{
+	author := User{
 		ID:        0,
 		FirstName: "Petr",
 		LastName:  "Mitin",
@@ -98,7 +98,7 @@ func (p *PostsService) augmentPostsWithAuthors() (postsWithAuthors []PostWithAut
 
 	p.posts.Range(func(key any, value any) bool {
 		postsWithAuthors = append(postsWithAuthors, PostWithAuthor{
-			Post:   value.(*Post),
+			Post:   value.(Post),
 			Author: author,
 		})
 		return true
@@ -112,13 +112,13 @@ func (p *PostsService) augmentPostsWithAuthors() (postsWithAuthors []PostWithAut
 }
 
 func (p *PostsService) ListPosts() (postsWithAuthors []PostWithAuthor, err error) {
-	var posts []*Post
+	var posts []Post
 	p.posts.Range(func(key any, value any) bool {
-		posts = append(posts, value.(*Post))
+		posts = append(posts, value.(Post))
 		return true
 	})
 
-	postsWithAuthors, err = p.augmentPostsWithAuthors()
+	postsWithAuthors, err = p.AugmentPostsWithAuthors()
 	if err != nil {
 		return
 	}

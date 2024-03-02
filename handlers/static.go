@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"path/filepath"
 	"socio/errors"
 	"socio/utils"
 
@@ -21,11 +20,7 @@ func (s *StaticHandler) HandleServeStatic(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	filePath, err := filepath.Abs(path.Join("./static", fileName))
-	if err != nil {
-		utils.ServeJSONError(w, errors.ErrInternal)
-		return
-	}
+	filePath := path.Join(utils.StaticFilePath, fileName)
 
 	file, err := os.Open(filePath)
 	if err != nil {

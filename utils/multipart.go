@@ -12,6 +12,8 @@ import (
 
 const DefaultAvatarFileName = "default_avatar.png"
 
+var StaticFilePath = "./static"
+
 func SaveImage(h *multipart.FileHeader) (fileName string, err error) {
 	if h == nil {
 		return DefaultAvatarFileName, nil

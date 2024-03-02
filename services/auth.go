@@ -1,6 +1,7 @@
 package services
 
 import (
+	"fmt"
 	"mime/multipart"
 	"net/http"
 	"socio/errors"
@@ -22,8 +23,8 @@ type RegistrationInput struct {
 }
 
 type LoginInput struct {
-	Email    string
-	Password string
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 type User struct {
@@ -39,20 +40,22 @@ type User struct {
 }
 
 type AuthService struct {
-	users      sync.Map
-	sessions   sync.Map
-	nextUserId uint
+	Users      sync.Map
+	Sessions   sync.Map
+	NextUserId uint
+	TP         utils.TimeProvider
 }
 
 type LoginResponse struct {
 	SessionID string `json:"sessionId"`
 }
 
-func NewAuthService() (authService *AuthService) {
+func NewAuthService(TP utils.TimeProvider) (authService *AuthService) {
 	authService = &AuthService{
-		users:      sync.Map{},
-		sessions:   sync.Map{},
-		nextUserId: 2,
+		Users:      sync.Map{},
+		Sessions:   sync.Map{},
+		NextUserId: 2,
+		TP:         TP,
 	}
 
 	salt1 := uuid.NewString()
@@ -64,14 +67,14 @@ func NewAuthService() (authService *AuthService) {
 		Salt:      salt1,
 		Email:     "petr09mitin@mail.ru",
 		RegistrationDate: utils.CustomTime{
-			Time: time.Now(),
+			Time: TP.Now(),
 		},
 		Avatar: "default_avatar.png",
 		DateOfBirth: utils.CustomTime{
-			Time: time.Now(),
+			Time: TP.Now(),
 		},
 	}
-	authService.users.Store(user1.Email, user1)
+	authService.Users.Store(user1.Email, user1)
 
 	salt2 := uuid.NewString()
 	user2 := &User{
@@ -82,21 +85,21 @@ func NewAuthService() (authService *AuthService) {
 		Salt:      salt2,
 		Email:     "lexagorbunov14@gmail.com",
 		RegistrationDate: utils.CustomTime{
-			Time: time.Now(),
+			Time: TP.Now(),
 		},
 		Avatar: "leha.jpg",
 		DateOfBirth: utils.CustomTime{
-			Time: time.Now(),
+			Time: TP.Now(),
 		},
 	}
-	authService.users.Store(user2.Email, user2)
+	authService.Users.Store(user2.Email, user2)
 
 	return
 }
 
 func (a *AuthService) newSession(userID uint) (session *http.Cookie) {
 	sessionID := uuid.NewString()
-	a.sessions.Store(sessionID, userID)
+	a.Sessions.Store(sessionID, userID)
 
 	session = &http.Cookie{
 		Name:     "session_id",
@@ -111,6 +114,8 @@ func (a *AuthService) newSession(userID uint) (session *http.Cookie) {
 
 func (a *AuthService) RegistrateUser(userInput RegistrationInput) (user *User, session *http.Cookie, err error) {
 	if err = ValidateUserInput(userInput, a); err != nil {
+		fmt.Println(err)
+		fmt.Println(userInput)
 		return
 	}
 
@@ -127,23 +132,23 @@ func (a *AuthService) RegistrateUser(userInput RegistrationInput) (user *User, s
 
 	salt := uuid.NewString()
 	user = &User{
-		ID:        a.nextUserId,
+		ID:        a.NextUserId,
 		FirstName: userInput.FirstName,
 		LastName:  userInput.LastName,
 		Password:  utils.HashPassword(userInput.Password, []byte(salt)),
 		Salt:      salt,
 		Email:     userInput.Email,
 		RegistrationDate: utils.CustomTime{
-			Time: time.Now(),
+			Time: a.TP.Now(),
 		},
 		Avatar: fileName,
 		DateOfBirth: utils.CustomTime{
 			Time: dateOfBirth,
 		},
 	}
-	a.nextUserId++
+	a.NextUserId++
 
-	a.users.Store(user.Email, user)
+	a.Users.Store(user.Email, user)
 
 	session = a.newSession(user.ID)
 
@@ -151,7 +156,7 @@ func (a *AuthService) RegistrateUser(userInput RegistrationInput) (user *User, s
 }
 
 func (a *AuthService) Login(loginInput LoginInput) (session *http.Cookie, err error) {
-	userData, ok := a.users.Load(loginInput.Email)
+	userData, ok := a.Users.Load(loginInput.Email)
 	if !ok {
 		err = errors.ErrInvalidLoginData
 		return
@@ -170,18 +175,18 @@ func (a *AuthService) Login(loginInput LoginInput) (session *http.Cookie, err er
 }
 
 func (a *AuthService) Logout(session *http.Cookie) (err error) {
-	_, ok := a.sessions.LoadAndDelete(session.Value)
+	_, ok := a.Sessions.LoadAndDelete(session.Value)
 	if !ok {
-		err = errors.ErrInvalidData
+		err = errors.ErrUnauthorized
 		return
 	}
 
-	session.Expires = time.Now().AddDate(0, 0, -1)
+	session.Expires = a.TP.Now().AddDate(0, 0, -1)
 	return
 }
 
 func (a *AuthService) IsAuthorized(session *http.Cookie) (err error) {
-	_, ok := a.sessions.Load(session.Value)
+	_, ok := a.Sessions.Load(session.Value)
 	if !ok {
 		err = errors.ErrUnauthorized
 		return

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"socio/errors"
 	"socio/services"
@@ -10,12 +11,13 @@ import (
 )
 
 type AuthHandler struct {
-	service *services.AuthService
+	Service      *services.AuthService
+	TimeProvider utils.TimeProvider
 }
 
-func NewAuthHandler() (handler *AuthHandler) {
+func NewAuthHandler(tp utils.TimeProvider) (handler *AuthHandler) {
 	handler = &AuthHandler{
-		service: services.NewAuthService(),
+		Service: services.NewAuthService(tp),
 	}
 	return
 }
@@ -58,12 +60,13 @@ func (api *AuthHandler) HandleRegistration(w http.ResponseWriter, r *http.Reques
 	regInput.RepeatPassword = r.PostFormValue("repeatPassword")
 	regInput.DateOfBirth = strings.Trim(r.PostFormValue("dateOfBirth"), " \n\r\t")
 	_, regInput.Avatar, err = r.FormFile("avatar")
+	fmt.Printf("%#v\n", regInput)
 	if err != nil && err != http.ErrMissingFile {
 		utils.ServeJSONError(w, err)
 		return
 	}
 
-	user, session, err := api.service.RegistrateUser(regInput)
+	user, session, err := api.Service.RegistrateUser(regInput)
 	if err != nil {
 		utils.ServeJSONError(w, err)
 		return
@@ -105,7 +108,7 @@ func (api *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, err := api.service.Login(*loginInput)
+	session, err := api.Service.Login(*loginInput)
 	if err != nil {
 		utils.ServeJSONError(w, err)
 		return
@@ -142,7 +145,7 @@ func (api *AuthHandler) HandleLogout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = api.service.Logout(session); err != nil {
+	if err = api.Service.Logout(session); err != nil {
 		utils.ServeJSONError(w, err)
 		return
 	}
@@ -158,7 +161,7 @@ func (api *AuthHandler) CheckIsAuthorizedMiddleware(h http.Handler) http.Handler
 			return
 		}
 
-		if err := api.service.IsAuthorized(session); err != nil {
+		if err := api.Service.IsAuthorized(session); err != nil {
 			utils.ServeJSONError(w, err)
 			return
 		}

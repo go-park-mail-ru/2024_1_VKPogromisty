@@ -25,6 +25,10 @@ var HTTPErrors = map[error]int{
 }
 
 func ParseHTTPError(err error) (msg string, status int) {
+	if err == nil {
+		err = ErrInternal
+	}
+
 	status, ok := HTTPErrors[err]
 	if !ok {
 		status = 500

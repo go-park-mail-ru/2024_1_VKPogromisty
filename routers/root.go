@@ -2,6 +2,7 @@ package routers
 
 import (
 	"socio/handlers"
+	"socio/utils"
 
 	"github.com/gorilla/mux"
 )
@@ -10,7 +11,7 @@ func NewRootRouter() (rootRouter *mux.Router) {
 	rootRouter = mux.NewRouter().PathPrefix("/api/v1").Subrouter()
 
 	// need auth handler in post router to check if user is authenticated, will be removed when db is added
-	authHandler := handlers.NewAuthHandler()
+	authHandler := handlers.NewAuthHandler(utils.RealTimeProvider{})
 	MountAuthRouter(rootRouter, authHandler)
 
 	MountPostsRouter(rootRouter, authHandler)
