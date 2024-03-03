@@ -151,6 +151,22 @@ func (api *AuthHandler) HandleLogout(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, session)
 }
 
+// CheckIsAuthorized godoc
+//
+//	@Summary		check if user is authorized
+//	@Tags			auth
+//	@license.name	Apache 2.0
+//	@ID				auth/is-authorized
+//	@Accept			json
+//
+//	@Param			Cookie	header	string	true	"session_id=some_session"
+//
+//	@Produce		json
+//	@Success		200 {object}	utils.JSONResponse{body=services.IsAuthorizedResponse}
+//
+//	@Header			200	{string}	Set-Cookie	"session_id=some_session_id; Path=/; HttpOnly; Expires=Thu, 01 Jan 1970 00:00:00 GMT;"
+//
+//	@Router			/auth/is-authorized [get]
 func (api *AuthHandler) CheckIsAuthorized(w http.ResponseWriter, r *http.Request) {
 	session, err := r.Cookie("session_id")
 	if err == http.ErrNoCookie {

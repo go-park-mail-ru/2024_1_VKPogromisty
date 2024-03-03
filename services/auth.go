@@ -49,6 +49,10 @@ type LoginResponse struct {
 	SessionID string `json:"sessionId"`
 }
 
+type IsAuthorizedResponse struct {
+	IsAuthorized bool `json:"isAuthorized"`
+}
+
 func NewAuthService(TP utils.TimeProvider) (authService *AuthService) {
 	authService = &AuthService{
 		Users:      sync.Map{},
