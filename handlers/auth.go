@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"socio/errors"
 	"socio/services"
@@ -60,7 +59,6 @@ func (api *AuthHandler) HandleRegistration(w http.ResponseWriter, r *http.Reques
 	regInput.RepeatPassword = r.PostFormValue("repeatPassword")
 	regInput.DateOfBirth = strings.Trim(r.PostFormValue("dateOfBirth"), " \n\r\t")
 	_, regInput.Avatar, err = r.FormFile("avatar")
-	fmt.Printf("%#v\n", regInput)
 	if err != nil && err != http.ErrMissingFile {
 		utils.ServeJSONError(w, err)
 		return

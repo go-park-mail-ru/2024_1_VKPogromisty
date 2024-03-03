@@ -112,12 +112,6 @@ func (p *PostsService) AugmentPostsWithAuthors() (postsWithAuthors []PostWithAut
 }
 
 func (p *PostsService) ListPosts() (postsWithAuthors []PostWithAuthor, err error) {
-	var posts []Post
-	p.posts.Range(func(key any, value any) bool {
-		posts = append(posts, value.(Post))
-		return true
-	})
-
 	postsWithAuthors, err = p.AugmentPostsWithAuthors()
 	if err != nil {
 		return
