@@ -327,3 +327,48 @@ func TestHandleRegistration(t *testing.T) {
 		})
 	}
 }
+
+func TestCheckIsAuthorized(t *testing.T) {
+	authHandler := handlers.NewAuthHandler(utils.MockTimeProvider{})
+
+	tests := []struct {
+		name     string
+		cookie   *http.Cookie
+		wantBody string
+	}{
+		{
+			name:     "Valid session",
+			cookie:   &http.Cookie{Name: "session_id", Value: "validSessionValue"},
+			wantBody: `{"body":{"isAuthorized":true}}`,
+		},
+		{
+			name:     "Invalid session",
+			cookie:   &http.Cookie{Name: "session_id", Value: "invalidSessionValue"},
+			wantBody: `{"body":{"isAuthorized":false}}`,
+		},
+		{
+			name:     "No session",
+			cookie:   nil,
+			wantBody: `{"body":{"isAuthorized":false}}`,
+		},
+	}
+
+	authHandler.Service.Sessions.Store("validSessionValue", true)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req, _ := http.NewRequest("GET", "/", nil)
+			if tt.cookie != nil {
+				req.AddCookie(tt.cookie)
+			}
+
+			rr := httptest.NewRecorder()
+
+			authHandler.CheckIsAuthorized(rr, req)
+
+			if body := rr.Body.String(); body != tt.wantBody {
+				t.Errorf("handler returned wrong body: got %v want %v", body, tt.wantBody)
+			}
+		})
+	}
+}
