@@ -32,6 +32,7 @@ func ParseHTTPError(err error) (msg string, status int) {
 	status, ok := HTTPErrors[err]
 	if !ok {
 		status = 500
+		err = ErrInternal
 	}
 
 	msg = err.Error()

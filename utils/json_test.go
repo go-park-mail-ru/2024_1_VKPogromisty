@@ -1,8 +1,9 @@
 package utils_test
 
 import (
-	"errors"
+	goErr "errors"
 	"net/http/httptest"
+	"socio/errors"
 	"socio/utils"
 	"testing"
 )
@@ -36,8 +37,8 @@ func TestServeJSONError(t *testing.T) {
 		err  error
 		want string
 	}{
-		{"valid error", errors.New("test error"), `{"error":"test error"}`},
-		{"empty error", errors.New(""), `{"error":""}`},
+		{"valid error", errors.ErrUnauthorized, `{"error":"unauthorized"}`},
+		{"empty error", goErr.New(""), `{"error":"internal server error"}`},
 		{"nil error", nil, `{"error":"internal server error"}`},
 	}
 
