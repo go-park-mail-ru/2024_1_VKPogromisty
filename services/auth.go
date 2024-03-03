@@ -1,7 +1,6 @@
 package services
 
 import (
-	"fmt"
 	"mime/multipart"
 	"net/http"
 	"socio/errors"
@@ -114,8 +113,6 @@ func (a *AuthService) newSession(userID uint) (session *http.Cookie) {
 
 func (a *AuthService) RegistrateUser(userInput RegistrationInput) (user *User, session *http.Cookie, err error) {
 	if err = ValidateUserInput(userInput, a); err != nil {
-		fmt.Println(err)
-		fmt.Println(userInput)
 		return
 	}
 
