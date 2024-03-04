@@ -39,7 +39,7 @@ func ValidatePassword(password string, repeatPassword string) (err error) {
 }
 
 func CheckDuplicatedUser(userInput RegistrationInput, service *AuthService) (err error) {
-	if _, ok := service.users.Load(userInput.Email); ok {
+	if _, ok := service.Users.Load(userInput.Email); ok {
 		err = errors.ErrEmailsDuplicate
 		return
 	}

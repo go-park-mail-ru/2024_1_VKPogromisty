@@ -20,6 +20,7 @@ var (
 	ErrJSONMarshalling      = errors.New("unable to return json reponse")
 	ErrInvalidFilePathGen   = errors.New("unable to open file with generated filepath")
 	ErrInvalidBody          = errors.New("invalid request body provided")
+	ErrNotFound             = errors.New("not found")
 	ErrInternal             = errors.New("internal server error")
 	ErrInvalidFileName      = errors.New("invalid file name")
 )

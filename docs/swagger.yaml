@@ -5,6 +5,11 @@ definitions:
       error:
         type: string
     type: object
+  services.IsAuthorizedResponse:
+    properties:
+      isAuthorized:
+        type: boolean
+    type: object
   services.ListPostsResponse:
     properties:
       posts:
@@ -77,6 +82,37 @@ info:
   title: Socio API
   version: "1.0"
 paths:
+  /auth/is-authorized:
+    get:
+      consumes:
+      - application/json
+      operationId: auth/is-authorized
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          headers:
+            Set-Cookie:
+              description: session_id=some_session_id; Path=/; HttpOnly; Expires=Thu,
+                01 Jan 1970 00:00:00 GMT;
+              type: string
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.JSONResponse'
+            - properties:
+                body:
+                  $ref: '#/definitions/services.IsAuthorizedResponse'
+              type: object
+      summary: check if user is authorized
+      tags:
+      - auth
   /auth/login/:
     post:
       consumes:

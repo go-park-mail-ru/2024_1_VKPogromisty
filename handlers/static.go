@@ -20,10 +20,11 @@ func (s *StaticHandler) HandleServeStatic(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	filePath := path.Join("./static", fileName)
+	filePath := path.Join(utils.StaticFilePath, fileName)
+
 	file, err := os.Open(filePath)
 	if err != nil {
-		utils.ServeJSONError(w, err)
+		utils.ServeJSONError(w, errors.ErrNotFound)
 		return
 	}
 	defer file.Close()
