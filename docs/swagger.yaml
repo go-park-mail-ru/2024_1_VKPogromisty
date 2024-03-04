@@ -21,6 +21,8 @@ definitions:
     properties:
       sessionId:
         type: string
+      user:
+        $ref: '#/definitions/services.User'
     type: object
   services.Post:
     properties:

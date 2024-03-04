@@ -47,6 +47,7 @@ type AuthService struct {
 
 type LoginResponse struct {
 	SessionID string `json:"sessionId"`
+	User      User   `json:"user"`
 }
 
 type IsAuthorizedResponse struct {
@@ -156,14 +157,14 @@ func (a *AuthService) RegistrateUser(userInput RegistrationInput) (user *User, s
 	return
 }
 
-func (a *AuthService) Login(loginInput LoginInput) (session *http.Cookie, err error) {
+func (a *AuthService) Login(loginInput LoginInput) (user *User, session *http.Cookie, err error) {
 	userData, ok := a.Users.Load(loginInput.Email)
 	if !ok {
 		err = errors.ErrInvalidLoginData
 		return
 	}
 
-	user, ok := userData.(*User)
+	user, ok = userData.(*User)
 	if !ok || !utils.MatchPasswords(user.Password, loginInput.Password, []byte(user.Salt)) {
 		err = errors.ErrInvalidLoginData
 		return
@@ -172,7 +173,7 @@ func (a *AuthService) Login(loginInput LoginInput) (session *http.Cookie, err er
 	user.Salt = uuid.NewString()
 	user.Password = utils.HashPassword(loginInput.Password, []byte(user.Salt))
 
-	return a.newSession(user.ID), nil
+	return user, a.newSession(user.ID), nil
 }
 
 func (a *AuthService) Logout(session *http.Cookie) (err error) {

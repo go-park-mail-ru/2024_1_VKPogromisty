@@ -408,6 +408,9 @@ const docTemplate = `{
             "properties": {
                 "sessionId": {
                     "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/services.User"
                 }
             }
         },

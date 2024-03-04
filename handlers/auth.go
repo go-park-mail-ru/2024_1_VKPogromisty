@@ -106,14 +106,14 @@ func (api *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, err := api.Service.Login(*loginInput)
+	user, session, err := api.Service.Login(*loginInput)
 	if err != nil {
 		utils.ServeJSONError(w, err)
 		return
 	}
 
 	http.SetCookie(w, session)
-	utils.ServeJSONBody(w, map[string]string{"sessionId": session.Value})
+	utils.ServeJSONBody(w, map[string]any{"sessionId": session.Value, "user": user})
 }
 
 // HandleLogout godoc
