@@ -37,7 +37,7 @@ var LoginTestCases = map[string]LoginTestCase{
 	"success": {
 		Method:          "POST",
 		URL:             "http://localhost:8080/api/v1/auth/login",
-		Body:            `{"email":"petr09mitin@mail.ru", "password":"admin"}`,
+		Body:            `{"email":"petr09mitin@mail.ru", "password":"admin1"}`,
 		UserID:          0,
 		ShouldSetCookie: true,
 		Status:          200,
@@ -53,7 +53,7 @@ var LoginTestCases = map[string]LoginTestCase{
 	"no email": {
 		Method:          "POST",
 		URL:             "http://localhost:8080/api/v1/auth/login",
-		Body:            `{"password":"admin"}`,
+		Body:            `{"password":"admin1"}`,
 		UserID:          0,
 		ShouldSetCookie: false,
 		Status:          401,
@@ -69,7 +69,7 @@ var LoginTestCases = map[string]LoginTestCase{
 	"invalid email": {
 		Method:          "POST",
 		URL:             "http://localhost:8080/api/v1/auth/login",
-		Body:            `{"email":"invalid_email", "password":"admin"}`,
+		Body:            `{"email":"invalid_email", "password":"admin1"}`,
 		UserID:          0,
 		ShouldSetCookie: false,
 		Status:          401,
@@ -91,7 +91,7 @@ func TestHandleLogin(t *testing.T) {
 		ID:        0,
 		FirstName: "Petr",
 		LastName:  "Mitin",
-		Password:  utils.HashPassword("admin", []byte(salt)),
+		Password:  utils.HashPassword("admin1", []byte(salt)),
 		Salt:      salt,
 		Email:     "petr09mitin@mail.ru",
 		RegistrationDate: utils.CustomTime{
@@ -190,7 +190,7 @@ func TestHandleLogout(t *testing.T) {
 		ID:        0,
 		FirstName: "Petr",
 		LastName:  "Mitin",
-		Password:  utils.HashPassword("admin", []byte(salt)),
+		Password:  utils.HashPassword("admin1", []byte(salt)),
 		Salt:      salt,
 		Email:     "petr09mitin@mail.ru",
 		RegistrationDate: utils.CustomTime{

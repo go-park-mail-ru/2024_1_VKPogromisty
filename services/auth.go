@@ -66,7 +66,7 @@ func NewAuthService(TP utils.TimeProvider) (authService *AuthService) {
 		ID:        0,
 		FirstName: "Petr",
 		LastName:  "Mitin",
-		Password:  utils.HashPassword("admin", []byte(salt1)),
+		Password:  utils.HashPassword("admin1", []byte(salt1)),
 		Salt:      salt1,
 		Email:     "petr09mitin@mail.ru",
 		RegistrationDate: utils.CustomTime{
