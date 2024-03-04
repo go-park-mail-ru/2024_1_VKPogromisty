@@ -1,4 +1,5 @@
 .PHONY: test
 
 test:
-	go list ./... | grep -v /docs | xargs -n1 go test -cover
+	go test ./... -coverprofile cover.out.tmp | grep -v "docs"
+	cat cover.out.tmp > cover.out
