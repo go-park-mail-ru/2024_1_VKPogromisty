@@ -110,7 +110,7 @@ func (a *AuthService) newSession(userID uint) (session *http.Cookie) {
 		Value:    sessionID,
 		MaxAge:   10 * 60 * 60,
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   false,
 		Path:     "/",
 	}
 	return
