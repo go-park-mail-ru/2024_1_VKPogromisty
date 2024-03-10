@@ -24,6 +24,14 @@ func SetUpCORS(h http.Handler) http.Handler {
 	})
 }
 
+func DisableCache(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+
+		h.ServeHTTP(w, r)
+	})
+}
+
 func NewRootRouter() (rootRouter *mux.Router) {
 	rootRouter = mux.NewRouter().PathPrefix("/api/v1/").Subrouter()
 
@@ -34,6 +42,7 @@ func NewRootRouter() (rootRouter *mux.Router) {
 	MountStaticRouter(rootRouter)
 
 	rootRouter.Use(SetUpCORS)
+	rootRouter.Use(DisableCache)
 
 	return
 }
