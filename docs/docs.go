@@ -65,6 +65,9 @@ const docTemplate = `{
                                 "description": "session_id=some_session_id; Path=/; HttpOnly; Expires=Thu, 01 Jan 1970 00:00:00 GMT;"
                             }
                         }
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -272,8 +275,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "allOf": [
                                 {
@@ -288,12 +291,6 @@ const docTemplate = `{
                                     }
                                 }
                             ]
-                        },
-                        "headers": {
-                            "Set-Cookie": {
-                                "type": "string",
-                                "description": "session_id=some_session_id; Path=/; Max-Age=36000; HttpOnly;"
-                            }
                         }
                     },
                     "400": {

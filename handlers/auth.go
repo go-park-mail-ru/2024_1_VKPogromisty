@@ -39,7 +39,7 @@ func NewAuthHandler(tp utils.TimeProvider) (handler *AuthHandler) {
 //	@Param			avatar			formData	file	false	"Avatar of the user"
 //
 //	@Produce		json
-//	@Success		200	{object}	utils.JSONResponse{body=services.User}
+//	@Success		201	{object}	utils.JSONResponse{body=services.User}
 //	@Failure		400	{object}	errors.HTTPError
 //	@Failure		500	{object}	errors.HTTPError
 //	@Header			200	{string}	Set-Cookie	"session_id=some_session_id; Path=/; Max-Age=36000; HttpOnly;"
@@ -71,6 +71,7 @@ func (api *AuthHandler) HandleRegistration(w http.ResponseWriter, r *http.Reques
 	}
 
 	http.SetCookie(w, session)
+	w.WriteHeader(http.StatusCreated)
 	utils.ServeJSONBody(w, map[string]*services.User{"user": user})
 }
 
@@ -163,6 +164,7 @@ func (api *AuthHandler) HandleLogout(w http.ResponseWriter, r *http.Request) {
 //
 //	@Produce		json
 //	@Success		200 {object}	utils.JSONResponse{body=services.IsAuthorizedResponse}
+//	@Failure		500
 //
 //	@Header			200	{string}	Set-Cookie	"session_id=some_session_id; Path=/; HttpOnly; Expires=Thu, 01 Jan 1970 00:00:00 GMT;"
 //

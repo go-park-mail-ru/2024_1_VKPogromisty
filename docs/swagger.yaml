@@ -112,6 +112,8 @@ paths:
                 body:
                   $ref: '#/definitions/services.IsAuthorizedResponse'
               type: object
+        "500":
+          description: Internal Server Error
       summary: check if user is authorized
       tags:
       - auth
@@ -250,12 +252,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
-          headers:
-            Set-Cookie:
-              description: session_id=some_session_id; Path=/; Max-Age=36000; HttpOnly;
-              type: string
+        "201":
+          description: Created
           schema:
             allOf:
             - $ref: '#/definitions/utils.JSONResponse'

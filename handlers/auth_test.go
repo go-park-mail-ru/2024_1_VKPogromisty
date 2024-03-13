@@ -256,7 +256,7 @@ var RegistrateUserTestCases = map[string]RegistrateUserTestCase{
 		},
 		Avatar:   "default_avatar.png",
 		Expected: `{"body":{"user":{"userId":1,"firstName":"Petr","lastName":"Mitin","email":"petr01mitin@gmail.com","registrationDate":"2021-01-01T00:00:00Z","avatar":"default_avatar.png","dateOfBirth":"1990-01-01T00:00:00Z"}}}`,
-		Status:   200,
+		Status:   201,
 	},
 	"invalid body": {
 		Method: "POST",
@@ -306,7 +306,7 @@ func TestHandleRegistration(t *testing.T) {
 				t.Errorf("wrong Response: \ngot %+v, \nexpected %+v", bodyStr, tc.Expected)
 			}
 
-			if tc.Status == 200 {
+			if tc.Status == 201 {
 				_, ok := AuthHandler.Service.Users.Load("petr01mitin@gmail.com")
 				if !ok {
 					t.Error("user wasn't created")
