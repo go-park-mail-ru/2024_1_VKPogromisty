@@ -15,6 +15,9 @@
 <b>Сервис задеплоен по адресу:</b>
 http://94.139.246.134/login
 
+<b>Swagger-документация API:</b>
+http://94.139.246.134:8001/swagger/index.html
+
 Разработчики:
 <ul>
   <li>Никита Плёнкин - https://github.com/kond9</li>
