@@ -2,7 +2,6 @@ package rest
 
 import (
 	"net/http"
-	repository "socio/internal/repository/map"
 	"socio/pkg/json"
 	"socio/usecase/posts"
 )
@@ -11,7 +10,7 @@ type PostsHandler struct {
 	Service *posts.Service
 }
 
-func NewPostsHandler(postsStorage *repository.Posts, usersStorage *repository.Users) (handler *PostsHandler) {
+func NewPostsHandler(postsStorage posts.PostsStorage, usersStorage posts.UsersStorage) (handler *PostsHandler) {
 	handler = &PostsHandler{
 		Service: posts.NewPostsService(postsStorage, usersStorage),
 	}

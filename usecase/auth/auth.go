@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"socio/domain"
 	"socio/errors"
-	repository "socio/internal/repository/map"
 	"socio/pkg/hash"
 	customtime "socio/pkg/time"
 	"socio/utils"
@@ -27,9 +26,21 @@ type LoginInput struct {
 	Password string `json:"password"`
 }
 
+type UserStorage interface {
+	StoreUser(user *domain.User)
+	GetUserByEmail(email string) (user *domain.User, err error)
+	RefreshSaltAndRehashPassword(user *domain.User)
+}
+
+type SessionStorage interface {
+	CreateSession(userID uint) (sessionID string)
+	DeleteSession(sessionID string) (err error)
+	GetUserIDBySession(sessionID string) (userID uint, err error)
+}
+
 type Service struct {
-	UserStorage    *repository.Users
-	SessionStorage *repository.Sessions
+	UserStorage    UserStorage
+	SessionStorage SessionStorage
 }
 
 type LoginResponse struct {
@@ -41,7 +52,7 @@ type IsAuthorizedResponse struct {
 	IsAuthorized bool `json:"isAuthorized"`
 }
 
-func NewService(tp customtime.TimeProvider, userStorage *repository.Users, sessionStorage *repository.Sessions) (a *Service) {
+func NewService(tp customtime.TimeProvider, userStorage UserStorage, sessionStorage SessionStorage) (a *Service) {
 	return &Service{
 		UserStorage:    userStorage,
 		SessionStorage: sessionStorage,

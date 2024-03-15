@@ -1,14 +1,14 @@
 package routers
 
 import (
-	repository "socio/internal/repository/map"
 	"socio/internal/rest"
 	customtime "socio/pkg/time"
+	"socio/usecase/auth"
 
 	"github.com/gorilla/mux"
 )
 
-func MountAuthRouter(rootRouter *mux.Router, userStorage *repository.Users, sessionStorage *repository.Sessions) {
+func MountAuthRouter(rootRouter *mux.Router, userStorage auth.UserStorage, sessionStorage auth.SessionStorage) {
 	r := rootRouter.PathPrefix("/auth").Subrouter()
 	h := rest.NewAuthHandler(customtime.RealTimeProvider{}, userStorage, sessionStorage)
 

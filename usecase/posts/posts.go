@@ -2,7 +2,6 @@ package posts
 
 import (
 	"socio/domain"
-	repository "socio/internal/repository/map"
 	"sort"
 )
 
@@ -11,16 +10,24 @@ type PostWithAuthor struct {
 	Author domain.User `json:"author"`
 }
 
+type PostsStorage interface {
+	GetAll() (posts []*domain.Post)
+}
+
+type UsersStorage interface {
+	GetUserByID(userID uint) (user *domain.User, err error)
+}
+
 type Service struct {
-	PostsStorage *repository.Posts
-	UsersStorage *repository.Users
+	PostsStorage PostsStorage
+	UsersStorage UsersStorage
 }
 
 type ListPostsResponse struct {
 	Posts []PostWithAuthor `json:"posts"`
 }
 
-func NewPostsService(postsStorage *repository.Posts, usersStorage *repository.Users) (postsService *Service) {
+func NewPostsService(postsStorage PostsStorage, usersStorage UsersStorage) (postsService *Service) {
 	postsService = &Service{
 		PostsStorage: postsStorage,
 		UsersStorage: usersStorage,

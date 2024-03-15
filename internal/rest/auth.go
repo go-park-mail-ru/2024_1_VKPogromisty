@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"socio/domain"
 	"socio/errors"
-	repository "socio/internal/repository/map"
 	"socio/pkg/json"
 	customtime "socio/pkg/time"
 	"socio/usecase/auth"
@@ -17,7 +16,7 @@ type AuthHandler struct {
 	TimeProvider customtime.TimeProvider
 }
 
-func NewAuthHandler(tp customtime.TimeProvider, userStorage *repository.Users, sessionStorage *repository.Sessions) (handler *AuthHandler) {
+func NewAuthHandler(tp customtime.TimeProvider, userStorage auth.UserStorage, sessionStorage auth.SessionStorage) (handler *AuthHandler) {
 	handler = &AuthHandler{
 		Service: auth.NewService(tp, userStorage, sessionStorage),
 	}

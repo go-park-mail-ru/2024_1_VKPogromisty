@@ -1,14 +1,15 @@
 package routers
 
 import (
-	repository "socio/internal/repository/map"
 	"socio/internal/rest"
 	"socio/internal/rest/middleware"
+	"socio/usecase/auth"
+	"socio/usecase/posts"
 
 	"github.com/gorilla/mux"
 )
 
-func MountPostsRouter(rootRouter *mux.Router, postStorage *repository.Posts, userStorage *repository.Users, sessionStorage *repository.Sessions) {
+func MountPostsRouter(rootRouter *mux.Router, postStorage posts.PostsStorage, userStorage posts.UsersStorage, sessionStorage auth.SessionStorage) {
 	r := rootRouter.PathPrefix("/posts").Subrouter()
 	h := rest.NewPostsHandler(postStorage, userStorage)
 
