@@ -1,18 +1,19 @@
-package handlers
+package rest
 
 import (
 	"net/http"
-	"socio/services"
+	repository "socio/internal/repository/map"
+	"socio/posts"
 	"socio/utils"
 )
 
 type PostsHandler struct {
-	service *services.PostsService
+	Service *posts.Service
 }
 
-func NewPostsHandler() (handler *PostsHandler) {
+func NewPostsHandler(postsStorage *repository.Posts, usersStorage *repository.Users) (handler *PostsHandler) {
 	handler = &PostsHandler{
-		service: services.NewPostsService(),
+		Service: posts.NewPostsService(postsStorage, usersStorage),
 	}
 	return
 }
@@ -34,11 +35,11 @@ func NewPostsHandler() (handler *PostsHandler) {
 //	@Failure		500	{object}	errors.HTTPError
 //	@Router			/posts/ [get]
 func (api *PostsHandler) HandleListPosts(w http.ResponseWriter, r *http.Request) {
-	posts, err := api.service.ListPosts()
+	postsWithAuthors, err := api.Service.ListPosts()
 	if err != nil {
 		utils.ServeJSONError(w, err)
 		return
 	}
 
-	utils.ServeJSONBody(w, map[string][]services.PostWithAuthor{"posts": posts})
+	utils.ServeJSONBody(w, map[string][]posts.PostWithAuthor{"posts": postsWithAuthors})
 }

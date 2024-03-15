@@ -1,8 +1,8 @@
-package handlers_test
+package rest_test
 
 import (
 	"net/http/httptest"
-	"socio/handlers"
+	"socio/internal/rest"
 	"socio/utils"
 	"testing"
 
@@ -16,7 +16,7 @@ type ServeStaticTestCase struct {
 	Status   int
 }
 
-var StaticHandler = &handlers.StaticHandler{}
+var StaticHandler = &rest.StaticHandler{}
 
 var ServeStaticTestCases = map[string]ServeStaticTestCase{
 	"success": {
@@ -40,7 +40,7 @@ var ServeStaticTestCases = map[string]ServeStaticTestCase{
 }
 
 func TestHandleServeStatic(t *testing.T) {
-	utils.StaticFilePath = "../static"
+	utils.StaticFilePath = "../../static"
 
 	for name, tc := range ServeStaticTestCases {
 		t.Run(name, func(t *testing.T) {

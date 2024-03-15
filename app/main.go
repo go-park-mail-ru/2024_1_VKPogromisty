@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"socio/routers"
+	"socio/app/routers"
 	"socio/utils"
 
 	httpSwagger "github.com/swaggo/http-swagger"

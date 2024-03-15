@@ -1,27 +1,30 @@
-package services_test
+package auth_test
 
 import (
 	"net/http"
-	"net/http/httptest"
+	"socio/auth"
+	"socio/domain"
 	"socio/errors"
-	"socio/handlers"
-	"socio/services"
+	repository "socio/internal/repository/map"
 	"socio/utils"
+	"sync"
 	"testing"
 	"time"
 )
 
 func TestRegistrateUser(t *testing.T) {
-	authService := services.NewAuthService(utils.MockTimeProvider{})
+	userStorage := repository.NewUsers(utils.MockTimeProvider{}, &sync.Map{})
+	sessionStorage := repository.NewSessions(&sync.Map{})
+	authService := auth.NewService(utils.MockTimeProvider{}, userStorage, sessionStorage)
 
 	tests := []struct {
 		name    string
-		input   services.RegistrationInput
+		input   auth.RegistrationInput
 		wantErr error
 	}{
 		{
 			name: "Valid registration data",
-			input: services.RegistrationInput{
+			input: auth.RegistrationInput{
 				FirstName:      "John",
 				LastName:       "Doe",
 				Email:          "john@example.com",
@@ -34,7 +37,7 @@ func TestRegistrateUser(t *testing.T) {
 		},
 		{
 			name: "Invalid email",
-			input: services.RegistrationInput{
+			input: auth.RegistrationInput{
 				FirstName:      "John",
 				LastName:       "Doe",
 				Email:          "invalid",
@@ -47,7 +50,7 @@ func TestRegistrateUser(t *testing.T) {
 		},
 		{
 			name: "Invalid date of birth",
-			input: services.RegistrationInput{
+			input: auth.RegistrationInput{
 				FirstName:      "John",
 				LastName:       "Doe",
 				Email:          "john1@example.com",
@@ -71,16 +74,18 @@ func TestRegistrateUser(t *testing.T) {
 }
 
 func TestLogin(t *testing.T) {
-	authService := services.NewAuthService(utils.MockTimeProvider{})
+	userStorage := repository.NewUsers(utils.MockTimeProvider{}, &sync.Map{})
+	sessionStorage := repository.NewSessions(&sync.Map{})
+	authService := auth.NewService(utils.MockTimeProvider{}, userStorage, sessionStorage)
 
 	tests := []struct {
 		name    string
-		input   services.LoginInput
+		input   auth.LoginInput
 		wantErr error
 	}{
 		{
 			name: "Valid login data",
-			input: services.LoginInput{
+			input: auth.LoginInput{
 				Email:    "test@example.com",
 				Password: "password",
 			},
@@ -88,7 +93,7 @@ func TestLogin(t *testing.T) {
 		},
 		{
 			name: "Invalid email",
-			input: services.LoginInput{
+			input: auth.LoginInput{
 				Email:    "invalid@example.com",
 				Password: "password",
 			},
@@ -96,7 +101,7 @@ func TestLogin(t *testing.T) {
 		},
 		{
 			name: "Invalid password",
-			input: services.LoginInput{
+			input: auth.LoginInput{
 				Email:    "test@example.com",
 				Password: "wrongpassword",
 			},
@@ -104,10 +109,9 @@ func TestLogin(t *testing.T) {
 		},
 	}
 
-	authService.Users.Store("test@example.com", &services.User{
+	authService.UserStorage.StoreUser(&domain.User{
 		Email:    "test@example.com",
-		Password: utils.HashPassword("password", []byte("salt")),
-		Salt:     "salt",
+		Password: "password",
 	})
 
 	for _, tt := range tests {
@@ -121,7 +125,11 @@ func TestLogin(t *testing.T) {
 }
 
 func TestLogout(t *testing.T) {
-	authService := services.NewAuthService(utils.MockTimeProvider{})
+	userStorage := repository.NewUsers(utils.MockTimeProvider{}, &sync.Map{})
+	sessionStorage := repository.NewSessions(&sync.Map{})
+	authService := auth.NewService(utils.MockTimeProvider{}, userStorage, sessionStorage)
+
+	sessionID := authService.SessionStorage.CreateSession(0)
 
 	tests := []struct {
 		name    string
@@ -130,7 +138,7 @@ func TestLogout(t *testing.T) {
 	}{
 		{
 			name:    "Valid session",
-			session: &http.Cookie{Name: "session", Value: "validSessionValue"},
+			session: &http.Cookie{Name: "session", Value: sessionID},
 			wantErr: nil,
 		},
 		{
@@ -140,8 +148,6 @@ func TestLogout(t *testing.T) {
 		},
 	}
 
-	authService.Sessions.Store("validSessionValue", true)
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := authService.Logout(tt.session)
@@ -150,7 +156,7 @@ func TestLogout(t *testing.T) {
 			}
 
 			if tt.wantErr == nil {
-				if _, ok := authService.Sessions.Load(tt.session.Value); ok {
+				if _, err := authService.SessionStorage.GetUserIDBySession(tt.session.Value); err == nil {
 					t.Errorf("Logout() did not delete session")
 				}
 			}
@@ -165,7 +171,11 @@ func TestLogout(t *testing.T) {
 }
 
 func TestIsAuthorized(t *testing.T) {
-	authService := services.NewAuthService(utils.MockTimeProvider{})
+	userStorage := repository.NewUsers(utils.MockTimeProvider{}, &sync.Map{})
+	sessionStorage := repository.NewSessions(&sync.Map{})
+	authService := auth.NewService(utils.MockTimeProvider{}, userStorage, sessionStorage)
+
+	sessionID := authService.SessionStorage.CreateSession(0)
 
 	tests := []struct {
 		name    string
@@ -174,7 +184,7 @@ func TestIsAuthorized(t *testing.T) {
 	}{
 		{
 			name:    "Valid session",
-			session: &http.Cookie{Name: "session", Value: "validSessionValue"},
+			session: &http.Cookie{Name: "session", Value: sessionID},
 			wantErr: nil,
 		},
 		{
@@ -184,60 +194,11 @@ func TestIsAuthorized(t *testing.T) {
 		},
 	}
 
-	authService.Sessions.Store("validSessionValue", true)
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := authService.IsAuthorized(tt.session)
+			_, err := authService.IsAuthorized(tt.session)
 			if err != tt.wantErr {
 				t.Errorf("IsAuthorized() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func TestCheckIsAuthorizedMiddleware(t *testing.T) {
-	authHandler := handlers.NewAuthHandler(utils.MockTimeProvider{})
-
-	tests := []struct {
-		name     string
-		cookie   *http.Cookie
-		wantCode int
-	}{
-		{
-			name:     "Valid session",
-			cookie:   &http.Cookie{Name: "session_id", Value: "validSessionValue"},
-			wantCode: http.StatusOK,
-		},
-		{
-			name:     "Invalid session",
-			cookie:   &http.Cookie{Name: "session_id", Value: "invalidSessionValue"},
-			wantCode: http.StatusUnauthorized,
-		},
-		{
-			name:     "No session",
-			cookie:   nil,
-			wantCode: http.StatusUnauthorized,
-		},
-	}
-
-	authHandler.Service.Sessions.Store("validSessionValue", 0)
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			req, _ := http.NewRequest("GET", "/", nil)
-			if tt.cookie != nil {
-				req.AddCookie(tt.cookie)
-			}
-
-			rr := httptest.NewRecorder()
-
-			handler := authHandler.CheckIsAuthorizedMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
-
-			handler.ServeHTTP(rr, req)
-
-			if status := rr.Code; status != tt.wantCode {
-				t.Errorf("handler returned wrong status code: got %v want %v", status, tt.wantCode)
 			}
 		})
 	}

@@ -1,4 +1,4 @@
-package services
+package auth
 
 import (
 	"net/mail"
@@ -38,14 +38,6 @@ func ValidatePassword(password string, repeatPassword string) (err error) {
 	return
 }
 
-func CheckDuplicatedUser(userInput RegistrationInput, service *AuthService) (err error) {
-	if _, ok := service.Users.Load(userInput.Email); ok {
-		err = errors.ErrEmailsDuplicate
-		return
-	}
-	return
-}
-
 func ValidateDateOfBirth(date string) (err error) {
 	dateOfBirth, err := time.Parse(utils.DateFormat, date)
 	if err != nil {
@@ -62,7 +54,16 @@ func ValidateDateOfBirth(date string) (err error) {
 	return
 }
 
-func ValidateUserInput(userInput RegistrationInput, service *AuthService) (err error) {
+func (a *Service) CheckDuplicatedEmail(email string) (err error) {
+	if _, err = a.UserStorage.GetUserByEmail(email); err != errors.ErrNotFound {
+		err = errors.ErrEmailsDuplicate
+		return
+	}
+
+	return nil
+}
+
+func (a *Service) ValidateUserInput(userInput RegistrationInput) (err error) {
 	if err = CheckEmptyFields(userInput); err != nil {
 		return
 	}
@@ -75,7 +76,7 @@ func ValidateUserInput(userInput RegistrationInput, service *AuthService) (err e
 		return
 	}
 
-	if err = CheckDuplicatedUser(userInput, service); err != nil {
+	if err = a.CheckDuplicatedEmail(userInput.Email); err != nil {
 		return
 	}
 

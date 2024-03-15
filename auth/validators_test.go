@@ -1,25 +1,28 @@
-package services_test
+package auth_test
 
 import (
+	"socio/auth"
 	"socio/errors"
-	"socio/services"
+	repository "socio/internal/repository/map"
 	"socio/utils"
+	"sync"
+
 	"testing"
 )
 
 func TestCheckEmptyFields(t *testing.T) {
 	tests := []struct {
 		name  string
-		input services.RegistrationInput
+		input auth.RegistrationInput
 		want  error
 	}{
-		{"All fields filled", services.RegistrationInput{FirstName: "John", LastName: "Doe", Email: "john.doe@example.com", Password: "password", RepeatPassword: "password"}, nil},
-		{"Missing fields", services.RegistrationInput{FirstName: "John", LastName: "", Email: "john.doe@example.com", Password: "password", RepeatPassword: "password"}, errors.ErrMissingFields},
+		{"All fields filled", auth.RegistrationInput{FirstName: "John", LastName: "Doe", Email: "john.doe@example.com", Password: "password", RepeatPassword: "password"}, nil},
+		{"Missing fields", auth.RegistrationInput{FirstName: "John", LastName: "", Email: "john.doe@example.com", Password: "password", RepeatPassword: "password"}, errors.ErrMissingFields},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := services.CheckEmptyFields(tt.input); got != tt.want {
+			if got := auth.CheckEmptyFields(tt.input); got != tt.want {
 				t.Errorf("CheckEmptyFields() = %v, want %v", got, tt.want)
 			}
 		})
@@ -38,7 +41,7 @@ func TestValidateEmail(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := services.ValidateEmail(tt.email); got != tt.want {
+			if got := auth.ValidateEmail(tt.email); got != tt.want {
 				t.Errorf("ValidateEmail() = %v, want %v", got, tt.want)
 			}
 		})
@@ -59,7 +62,7 @@ func TestValidatePassword(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := services.ValidatePassword(tt.password, tt.repeatPassword); got != tt.want {
+			if got := auth.ValidatePassword(tt.password, tt.repeatPassword); got != tt.want {
 				t.Errorf("ValidatePassword() = %v, want %v", got, tt.want)
 			}
 		})
@@ -67,20 +70,22 @@ func TestValidatePassword(t *testing.T) {
 }
 
 func TestCheckDuplicatedUser(t *testing.T) {
-	service := services.NewAuthService(utils.MockTimeProvider{})
-	service.Users.Store("petr09mitin@mail.ru", &services.User{})
+	userStorage := repository.NewUsers(utils.MockTimeProvider{}, &sync.Map{})
+	sessionStorage := repository.NewSessions(&sync.Map{})
+	service := auth.NewService(utils.MockTimeProvider{}, userStorage, sessionStorage)
+
 	tests := []struct {
 		name  string
-		input services.RegistrationInput
+		input auth.RegistrationInput
 		want  error
 	}{
-		{"Duplicated user", services.RegistrationInput{Email: "petr09mitin@mail.ru", Password: "password", RepeatPassword: "password"}, errors.ErrEmailsDuplicate},
-		{"Unique user", services.RegistrationInput{Email: "petr01mitin@mail.ru", Password: "password", RepeatPassword: "password"}, nil},
+		{"Duplicated user", auth.RegistrationInput{Email: "petr09mitin@mail.ru", Password: "password", RepeatPassword: "password"}, errors.ErrEmailsDuplicate},
+		{"Unique user", auth.RegistrationInput{Email: "petr01mitin@mail.ru", Password: "password", RepeatPassword: "password"}, nil},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := services.CheckDuplicatedUser(tt.input, service); got != tt.want {
+			if got := service.CheckDuplicatedEmail(tt.input.Email); got != tt.want {
 				t.Errorf("CheckDuplicatedUser() = %v, want %v", got, tt.want)
 			}
 		})
@@ -100,7 +105,7 @@ func TestValidateDateOfBirth(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := services.ValidateDateOfBirth(tt.date); got != tt.want {
+			if got := auth.ValidateDateOfBirth(tt.date); got != tt.want {
 				t.Errorf("ValidateDateOfBirth() = %v, want %v", got, tt.want)
 			}
 		})

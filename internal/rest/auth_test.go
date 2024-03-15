@@ -1,4 +1,4 @@
-package handlers_test
+package rest_test
 
 import (
 	"bytes"
@@ -6,8 +6,9 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
-	"socio/handlers"
-	"socio/services"
+	"socio/domain"
+	repository "socio/internal/repository/map"
+	"socio/internal/rest"
 	"socio/utils"
 	"strings"
 	"sync"
@@ -15,14 +16,9 @@ import (
 	"time"
 )
 
-var AuthHandler = &handlers.AuthHandler{
-	Service: &services.AuthService{
-		Users:      sync.Map{},
-		Sessions:   sync.Map{},
-		NextUserId: 1,
-		TP:         utils.MockTimeProvider{},
-	},
-}
+var userStorage = repository.NewUsers(utils.MockTimeProvider{}, &sync.Map{})
+var sessionStorage = repository.NewSessions(&sync.Map{})
+var AuthHandler = rest.NewAuthHandler(utils.MockTimeProvider{}, userStorage, sessionStorage)
 
 type LoginTestCase struct {
 	Method          string
@@ -85,19 +81,14 @@ var LoginTestCases = map[string]LoginTestCase{
 }
 
 func TestHandleLogin(t *testing.T) {
-	salt := "salt"
 	date, _ := time.Parse(utils.DateFormat, "1990-01-01")
-	AuthHandler.Service.Users.Store("petr09mitin@mail.ru", &services.User{
+	AuthHandler.Service.UserStorage.StoreUser(&domain.User{
 		ID:        0,
 		FirstName: "Petr",
 		LastName:  "Mitin",
-		Password:  utils.HashPassword("admin1", []byte(salt)),
-		Salt:      salt,
+		Password:  "admin1",
 		Email:     "petr09mitin@mail.ru",
-		RegistrationDate: utils.CustomTime{
-			Time: date,
-		},
-		Avatar: "default_avatar.png",
+		Avatar:    "default_avatar.png",
 		DateOfBirth: utils.CustomTime{
 			Time: date,
 		},
@@ -135,9 +126,9 @@ func TestHandleLogin(t *testing.T) {
 					return
 				}
 
-				userID, ok := AuthHandler.Service.Sessions.Load(session.Value)
+				_, err := AuthHandler.Service.SessionStorage.GetUserIDBySession(session.Value)
 
-				if !ok || userID.(uint) != tc.UserID {
+				if err != nil {
 					t.Error("wrong Cookies: cookie isn't set correctly in storage")
 				}
 			}
@@ -152,57 +143,39 @@ type LogoutTestCase struct {
 	Status int
 }
 
-var LogoutTestCases = map[string]LogoutTestCase{
-	"success": {
-		Method: "POST",
-		URL:    "http://localhost:8080/api/v1/auth/logout",
-		Cookie: &http.Cookie{
-			Name:     "session_id",
-			Value:    "session_id",
-			MaxAge:   10 * 60 * 60,
-			HttpOnly: true,
-			Secure:   true,
-			Path:     "/",
-		},
-		Status: 200,
-	},
-	"no cookie": {
-		Method: "POST",
-		URL:    "http://localhost:8080/api/v1/auth/logout",
-		Cookie: &http.Cookie{},
-		Status: 401,
-	},
-	"invalid cookie": {
-		Method: "POST",
-		URL:    "http://localhost:8080/api/v1/auth/logout",
-		Cookie: &http.Cookie{
-			Name:  "session_id",
-			Value: "invalid_session_id",
-		},
-		Status: 401,
-	},
-}
-
 func TestHandleLogout(t *testing.T) {
-	salt := "salt"
-	date, _ := time.Parse(utils.DateFormat, "1990-01-01")
-	AuthHandler.Service.Users.Store("petr09mitin@mail.ru", &services.User{
-		ID:        0,
-		FirstName: "Petr",
-		LastName:  "Mitin",
-		Password:  utils.HashPassword("admin1", []byte(salt)),
-		Salt:      salt,
-		Email:     "petr09mitin@mail.ru",
-		RegistrationDate: utils.CustomTime{
-			Time: date,
-		},
-		Avatar: "default_avatar.png",
-		DateOfBirth: utils.CustomTime{
-			Time: date,
-		},
-	})
+	sessionID := AuthHandler.Service.SessionStorage.CreateSession(0)
 
-	AuthHandler.Service.Sessions.Store("session_id", uint(0))
+	var LogoutTestCases = map[string]LogoutTestCase{
+		"success": {
+			Method: "POST",
+			URL:    "http://localhost:8080/api/v1/auth/logout",
+			Cookie: &http.Cookie{
+				Name:     "session_id",
+				Value:    sessionID,
+				MaxAge:   10 * 60 * 60,
+				HttpOnly: true,
+				Secure:   true,
+				Path:     "/",
+			},
+			Status: 200,
+		},
+		"no cookie": {
+			Method: "POST",
+			URL:    "http://localhost:8080/api/v1/auth/logout",
+			Cookie: &http.Cookie{},
+			Status: 401,
+		},
+		"invalid cookie": {
+			Method: "POST",
+			URL:    "http://localhost:8080/api/v1/auth/logout",
+			Cookie: &http.Cookie{
+				Name:  "session_id",
+				Value: "invalid_session_id",
+			},
+			Status: 401,
+		},
+	}
 
 	for name, tc := range LogoutTestCases {
 		t.Run(name, func(t *testing.T) {
@@ -222,9 +195,9 @@ func TestHandleLogout(t *testing.T) {
 			defer resp.Body.Close()
 
 			if tc.Status == 200 {
-				_, ok := AuthHandler.Service.Sessions.Load(tc.Cookie.Value)
+				_, err := AuthHandler.Service.SessionStorage.GetUserIDBySession(sessionID)
 
-				if ok {
+				if err == nil {
 					t.Error("session wasn't deleted")
 				}
 			}
@@ -255,7 +228,7 @@ var RegistrateUserTestCases = map[string]RegistrateUserTestCase{
 			"dateOfBirth":    "1990-01-01",
 		},
 		Avatar:   "default_avatar.png",
-		Expected: `{"body":{"user":{"userId":1,"firstName":"Petr","lastName":"Mitin","email":"petr01mitin@gmail.com","registrationDate":"2021-01-01T00:00:00Z","avatar":"default_avatar.png","dateOfBirth":"1990-01-01T00:00:00Z"}}}`,
+		Expected: `{"body":{"user":{"userId":3,"firstName":"Petr","lastName":"Mitin","email":"petr01mitin@gmail.com","registrationDate":"2021-01-01T00:00:00Z","avatar":"default_avatar.png","dateOfBirth":"1990-01-01T00:00:00Z"}}}`,
 		Status:   201,
 	},
 	"invalid body": {
@@ -307,8 +280,8 @@ func TestHandleRegistration(t *testing.T) {
 			}
 
 			if tc.Status == 201 {
-				_, ok := AuthHandler.Service.Users.Load("petr01mitin@gmail.com")
-				if !ok {
+				_, err := AuthHandler.Service.UserStorage.GetUserByEmail(tc.BodyValue["email"])
+				if err != nil {
 					t.Error("user wasn't created")
 					return
 				}
@@ -319,8 +292,8 @@ func TestHandleRegistration(t *testing.T) {
 				}
 
 				session := resp.Cookies()[0]
-				userID, ok := AuthHandler.Service.Sessions.Load(session.Value)
-				if session.Name != "session_id" || !ok || userID.(uint) != 1 {
+				_, err = AuthHandler.Service.IsAuthorized(session)
+				if session.Name != "session_id" || err != nil {
 					t.Error("session wasn't created")
 				}
 			}
@@ -329,7 +302,11 @@ func TestHandleRegistration(t *testing.T) {
 }
 
 func TestCheckIsAuthorized(t *testing.T) {
-	authHandler := handlers.NewAuthHandler(utils.MockTimeProvider{})
+	var userStorage = repository.NewUsers(utils.MockTimeProvider{}, &sync.Map{})
+	var sessionStorage = repository.NewSessions(&sync.Map{})
+	var authHandler = rest.NewAuthHandler(utils.MockTimeProvider{}, userStorage, sessionStorage)
+
+	sessionID := authHandler.Service.SessionStorage.CreateSession(0)
 
 	tests := []struct {
 		name     string
@@ -338,7 +315,7 @@ func TestCheckIsAuthorized(t *testing.T) {
 	}{
 		{
 			name:     "Valid session",
-			cookie:   &http.Cookie{Name: "session_id", Value: "validSessionValue"},
+			cookie:   &http.Cookie{Name: "session_id", Value: sessionID},
 			wantBody: `{"body":{"isAuthorized":true}}`,
 		},
 		{
@@ -352,8 +329,6 @@ func TestCheckIsAuthorized(t *testing.T) {
 			wantBody: `{"body":{"isAuthorized":false}}`,
 		},
 	}
-
-	authHandler.Service.Sessions.Store("validSessionValue", true)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

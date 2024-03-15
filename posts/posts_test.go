@@ -1,32 +1,26 @@
-package services_test
+package posts_test
 
 import (
 	"reflect"
-	"socio/services"
+	"socio/domain"
+	repository "socio/internal/repository/map"
+	"socio/posts"
 	"socio/utils"
+	"sync"
 	"testing"
 	"time"
 )
 
 func TestListPosts(t *testing.T) {
 	creationDate, _ := time.Parse(utils.DateFormat, "2000-01-01")
-	date, _ := time.Parse(utils.DateFormat, "1990-01-01")
-	author := services.User{
-		ID:        0,
-		FirstName: "Petr",
-		LastName:  "Mitin",
-		Email:     "petr09mitin@mail.ru",
-		RegistrationDate: utils.CustomTime{
-			Time: date,
-		},
-		Avatar: "default_avatar.png",
-		DateOfBirth: utils.CustomTime{
-			Time: date,
-		},
-	}
 
-	postsService := services.NewPostsService()
-	post1 := services.Post{
+	postsStorage := repository.NewPosts(utils.MockTimeProvider{}, &sync.Map{})
+	userStorage := repository.NewUsers(utils.MockTimeProvider{}, &sync.Map{})
+	postsService := posts.NewPostsService(postsStorage, userStorage)
+
+	author, _ := userStorage.GetUserByID(0)
+
+	post1 := domain.Post{
 		ID:           0,
 		AuthorID:     0,
 		Text:         "Заснял такие вот красивые деревья)",
@@ -34,23 +28,23 @@ func TestListPosts(t *testing.T) {
 		CreationDate: utils.CustomTime{Time: creationDate},
 	}
 
-	post2 := services.Post{
+	post2 := domain.Post{
 		ID:           1,
-		AuthorID:     1,
+		AuthorID:     0,
 		Text:         "Озеро недалеко от моего домика в Швейцарии. Красота!",
 		Attachments:  []string{"lake.jpeg"},
 		CreationDate: utils.CustomTime{Time: creationDate},
 	}
 
-	post3 := services.Post{
+	post3 := domain.Post{
 		ID:           2,
-		AuthorID:     1,
+		AuthorID:     0,
 		Text:         "Moя подруга - очень хороший фотограф",
 		Attachments:  []string{"camera.jpeg"},
 		CreationDate: utils.CustomTime{Time: creationDate},
 	}
 
-	post4 := services.Post{
+	post4 := domain.Post{
 		ID:           3,
 		AuthorID:     0,
 		Text:         "Мост в бесконечность",
@@ -58,7 +52,7 @@ func TestListPosts(t *testing.T) {
 		CreationDate: utils.CustomTime{Time: creationDate},
 	}
 
-	post5 := services.Post{
+	post5 := domain.Post{
 		ID:           4,
 		AuthorID:     0,
 		Text:         "Белые розы, белые розы... Не совсем белые, но все равно прекрасно)",
@@ -68,14 +62,14 @@ func TestListPosts(t *testing.T) {
 
 	tests := []struct {
 		name string
-		want []services.PostWithAuthor
+		want []posts.PostWithAuthor
 	}{
-		{"List posts", []services.PostWithAuthor{
-			{Post: post1, Author: author},
-			{Post: post2, Author: author},
-			{Post: post3, Author: author},
-			{Post: post4, Author: author},
-			{Post: post5, Author: author},
+		{"List posts", []posts.PostWithAuthor{
+			{Post: post1, Author: *author},
+			{Post: post2, Author: *author},
+			{Post: post3, Author: *author},
+			{Post: post4, Author: *author},
+			{Post: post5, Author: *author},
 		}},
 	}
 
