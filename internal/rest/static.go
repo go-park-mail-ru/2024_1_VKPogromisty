@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"socio/errors"
+	"socio/pkg/json"
 	"socio/utils"
 
 	"github.com/gorilla/mux"
@@ -16,7 +17,7 @@ type StaticHandler struct {
 func (s *StaticHandler) HandleServeStatic(w http.ResponseWriter, r *http.Request) {
 	fileName := mux.Vars(r)["fileName"]
 	if len(fileName) == 0 {
-		utils.ServeJSONError(w, errors.ErrInvalidFileName)
+		json.ServeJSONError(w, errors.ErrInvalidFileName)
 		return
 	}
 
@@ -24,7 +25,7 @@ func (s *StaticHandler) HandleServeStatic(w http.ResponseWriter, r *http.Request
 
 	file, err := os.Open(filePath)
 	if err != nil {
-		utils.ServeJSONError(w, errors.ErrNotFound)
+		json.ServeJSONError(w, errors.ErrNotFound)
 		return
 	}
 	defer file.Close()

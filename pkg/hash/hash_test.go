@@ -1,7 +1,7 @@
-package utils_test
+package hash_test
 
 import (
-	"socio/utils"
+	"socio/pkg/hash"
 	"testing"
 )
 
@@ -24,9 +24,9 @@ var HashTestCases = map[string]HashTestCase{
 func TestHashPassword(t *testing.T) {
 	for name, tc := range HashTestCases {
 		t.Run(name, func(t *testing.T) {
-			hashedPassword := utils.HashPassword(tc.Password, tc.Salt)
+			hashedPassword := hash.HashPassword(tc.Password, tc.Salt)
 
-			if hashedPassword != tc.Expected || !utils.MatchPasswords(hashedPassword, tc.Password, tc.Salt) {
+			if hashedPassword != tc.Expected || !hash.MatchPasswords(hashedPassword, tc.Password, tc.Salt) {
 				t.Errorf("wrong hashedPassword: got %s, expected %s", hashedPassword, tc.Expected)
 				return
 			}

@@ -1,22 +1,23 @@
 package rest
 
 import (
-	"encoding/json"
+	defJSON "encoding/json"
 	"net/http"
 	"socio/domain"
 	"socio/errors"
 	repository "socio/internal/repository/map"
+	"socio/pkg/json"
+	customtime "socio/pkg/time"
 	"socio/usecase/auth"
-	"socio/utils"
 	"strings"
 )
 
 type AuthHandler struct {
 	Service      *auth.Service
-	TimeProvider utils.TimeProvider
+	TimeProvider customtime.TimeProvider
 }
 
-func NewAuthHandler(tp utils.TimeProvider, userStorage *repository.Users, sessionStorage *repository.Sessions) (handler *AuthHandler) {
+func NewAuthHandler(tp customtime.TimeProvider, userStorage *repository.Users, sessionStorage *repository.Sessions) (handler *AuthHandler) {
 	handler = &AuthHandler{
 		Service: auth.NewService(tp, userStorage, sessionStorage),
 	}
@@ -41,7 +42,7 @@ func NewAuthHandler(tp utils.TimeProvider, userStorage *repository.Users, sessio
 //	@Param			avatar			formData	file	false	"Avatar of the user"
 //
 //	@Produce		json
-//	@Success		201	{object}	utils.JSONResponse{body=auth.User}
+//	@Success		201	{object}	json.JSONResponse{body=auth.User}
 //	@Failure		400	{object}	errors.HTTPError
 //	@Failure		500	{object}	errors.HTTPError
 //	@Header			200	{string}	Set-Cookie	"session_id=some_session_id; Path=/; Max-Age=36000; HttpOnly;"
@@ -49,7 +50,7 @@ func NewAuthHandler(tp utils.TimeProvider, userStorage *repository.Users, sessio
 func (api *AuthHandler) HandleRegistration(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseMultipartForm(4 * 1024 * 1024)
 	if err != nil {
-		utils.ServeJSONError(w, errors.ErrInvalidBody)
+		json.ServeJSONError(w, errors.ErrInvalidBody)
 		return
 	}
 
@@ -62,19 +63,19 @@ func (api *AuthHandler) HandleRegistration(w http.ResponseWriter, r *http.Reques
 	regInput.DateOfBirth = strings.Trim(r.PostFormValue("dateOfBirth"), " \n\r\t")
 	_, regInput.Avatar, err = r.FormFile("avatar")
 	if err != nil && err != http.ErrMissingFile {
-		utils.ServeJSONError(w, err)
+		json.ServeJSONError(w, err)
 		return
 	}
 
 	user, session, err := api.Service.RegistrateUser(regInput)
 	if err != nil {
-		utils.ServeJSONError(w, err)
+		json.ServeJSONError(w, err)
 		return
 	}
 
 	http.SetCookie(w, session)
 	w.WriteHeader(http.StatusCreated)
-	utils.ServeJSONBody(w, map[string]*domain.User{"user": user})
+	json.ServeJSONBody(w, map[string]*domain.User{"user": user})
 }
 
 // HandleLogin godoc
@@ -89,7 +90,7 @@ func (api *AuthHandler) HandleRegistration(w http.ResponseWriter, r *http.Reques
 //	@Param			email		body	string	true	"Email of the user"
 //	@Param			password	body	string	true	"Password of the user"
 //	@Produce		json
-//	@Success		200	{object}	utils.JSONResponse{body=auth.LoginResponse}
+//	@Success		200	{object}	json.JSONResponse{body=auth.LoginResponse}
 //	@Failure		400	{object}	errors.HTTPError
 //	@Failure		401	{object}	errors.HTTPError
 //	@Failure		500	{object}	errors.HTTPError
@@ -100,23 +101,23 @@ func (api *AuthHandler) HandleRegistration(w http.ResponseWriter, r *http.Reques
 func (api *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	decoder := json.NewDecoder(r.Body)
+	decoder := defJSON.NewDecoder(r.Body)
 
 	loginInput := new(auth.LoginInput)
 	err := decoder.Decode(loginInput)
 	if err != nil {
-		utils.ServeJSONError(w, errors.ErrJSONUnmarshalling)
+		json.ServeJSONError(w, errors.ErrJSONUnmarshalling)
 		return
 	}
 
 	user, session, err := api.Service.Login(*loginInput)
 	if err != nil {
-		utils.ServeJSONError(w, err)
+		json.ServeJSONError(w, err)
 		return
 	}
 
 	http.SetCookie(w, session)
-	utils.ServeJSONBody(w, map[string]any{"sessionId": session.Value, "user": user})
+	json.ServeJSONBody(w, map[string]any{"sessionId": session.Value, "user": user})
 }
 
 // HandleLogout godoc
@@ -142,12 +143,12 @@ func (api *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 func (api *AuthHandler) HandleLogout(w http.ResponseWriter, r *http.Request) {
 	session, err := r.Cookie("session_id")
 	if err == http.ErrNoCookie {
-		utils.ServeJSONError(w, err)
+		json.ServeJSONError(w, err)
 		return
 	}
 
 	if err = api.Service.Logout(session); err != nil {
-		utils.ServeJSONError(w, err)
+		json.ServeJSONError(w, err)
 		return
 	}
 
@@ -165,7 +166,7 @@ func (api *AuthHandler) HandleLogout(w http.ResponseWriter, r *http.Request) {
 //	@Param			Cookie	header	string	true	"session_id=some_session"
 //
 //	@Produce		json
-//	@Success		200 {object}	utils.JSONResponse{body=auth.IsAuthorizedResponse}
+//	@Success		200 {object}	json.JSONResponse{body=auth.IsAuthorizedResponse}
 //	@Failure		500
 //
 //	@Header			200	{string}	Set-Cookie	"session_id=some_session_id; Path=/; HttpOnly; Expires=Thu, 01 Jan 1970 00:00:00 GMT;"
@@ -174,14 +175,14 @@ func (api *AuthHandler) HandleLogout(w http.ResponseWriter, r *http.Request) {
 func (api *AuthHandler) CheckIsAuthorized(w http.ResponseWriter, r *http.Request) {
 	session, err := r.Cookie("session_id")
 	if err == http.ErrNoCookie {
-		utils.ServeJSONBody(w, map[string]bool{"isAuthorized": false})
+		json.ServeJSONBody(w, map[string]bool{"isAuthorized": false})
 		return
 	}
 
 	if _, err := api.Service.IsAuthorized(session); err != nil {
-		utils.ServeJSONBody(w, map[string]bool{"isAuthorized": false})
+		json.ServeJSONBody(w, map[string]bool{"isAuthorized": false})
 		return
 	}
 
-	utils.ServeJSONBody(w, map[string]bool{"isAuthorized": true})
+	json.ServeJSONBody(w, map[string]bool{"isAuthorized": true})
 }

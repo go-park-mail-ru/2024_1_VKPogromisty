@@ -3,7 +3,7 @@ package auth
 import (
 	"net/mail"
 	"socio/errors"
-	"socio/utils"
+	customtime "socio/pkg/time"
 	"time"
 )
 
@@ -39,13 +39,13 @@ func ValidatePassword(password string, repeatPassword string) (err error) {
 }
 
 func ValidateDateOfBirth(date string) (err error) {
-	dateOfBirth, err := time.Parse(utils.DateFormat, date)
+	dateOfBirth, err := time.Parse(customtime.DateFormat, date)
 	if err != nil {
 		err = errors.ErrInvalidDate
 		return
 	}
 
-	leftTimeBound, _ := time.Parse(utils.DateFormat, "1900-01-01")
+	leftTimeBound, _ := time.Parse(customtime.DateFormat, "1900-01-01")
 	if dateOfBirth.Before(leftTimeBound) || dateOfBirth.After(time.Now()) {
 		err = errors.ErrInvalidDate
 		return

@@ -3,8 +3,8 @@ package rest
 import (
 	"net/http"
 	repository "socio/internal/repository/map"
+	"socio/pkg/json"
 	"socio/usecase/posts"
-	"socio/utils"
 )
 
 type PostsHandler struct {
@@ -37,9 +37,9 @@ func NewPostsHandler(postsStorage *repository.Posts, usersStorage *repository.Us
 func (api *PostsHandler) HandleListPosts(w http.ResponseWriter, r *http.Request) {
 	postsWithAuthors, err := api.Service.ListPosts()
 	if err != nil {
-		utils.ServeJSONError(w, err)
+		json.ServeJSONError(w, err)
 		return
 	}
 
-	utils.ServeJSONBody(w, map[string][]posts.PostWithAuthor{"posts": postsWithAuthors})
+	json.ServeJSONBody(w, map[string][]posts.PostWithAuthor{"posts": postsWithAuthors})
 }

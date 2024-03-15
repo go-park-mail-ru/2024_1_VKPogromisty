@@ -9,16 +9,16 @@ import (
 	"socio/domain"
 	repository "socio/internal/repository/map"
 	"socio/internal/rest"
-	"socio/utils"
+	customtime "socio/pkg/time"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 )
 
-var userStorage = repository.NewUsers(utils.MockTimeProvider{}, &sync.Map{})
+var userStorage = repository.NewUsers(customtime.MockTimeProvider{}, &sync.Map{})
 var sessionStorage = repository.NewSessions(&sync.Map{})
-var AuthHandler = rest.NewAuthHandler(utils.MockTimeProvider{}, userStorage, sessionStorage)
+var AuthHandler = rest.NewAuthHandler(customtime.MockTimeProvider{}, userStorage, sessionStorage)
 
 type LoginTestCase struct {
 	Method          string
@@ -81,7 +81,7 @@ var LoginTestCases = map[string]LoginTestCase{
 }
 
 func TestHandleLogin(t *testing.T) {
-	date, _ := time.Parse(utils.DateFormat, "1990-01-01")
+	date, _ := time.Parse(customtime.DateFormat, "1990-01-01")
 	AuthHandler.Service.UserStorage.StoreUser(&domain.User{
 		ID:        0,
 		FirstName: "Petr",
@@ -89,7 +89,7 @@ func TestHandleLogin(t *testing.T) {
 		Password:  "admin1",
 		Email:     "petr09mitin@mail.ru",
 		Avatar:    "default_avatar.png",
-		DateOfBirth: utils.CustomTime{
+		DateOfBirth: customtime.CustomTime{
 			Time: date,
 		},
 	})
@@ -302,9 +302,9 @@ func TestHandleRegistration(t *testing.T) {
 }
 
 func TestCheckIsAuthorized(t *testing.T) {
-	var userStorage = repository.NewUsers(utils.MockTimeProvider{}, &sync.Map{})
+	var userStorage = repository.NewUsers(customtime.MockTimeProvider{}, &sync.Map{})
 	var sessionStorage = repository.NewSessions(&sync.Map{})
-	var authHandler = rest.NewAuthHandler(utils.MockTimeProvider{}, userStorage, sessionStorage)
+	var authHandler = rest.NewAuthHandler(customtime.MockTimeProvider{}, userStorage, sessionStorage)
 
 	sessionID := authHandler.Service.SessionStorage.CreateSession(0)
 

@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	repository "socio/internal/repository/map"
 	"socio/internal/rest"
-	"socio/utils"
+	customtime "socio/pkg/time"
 	"sync"
 	"testing"
 )
@@ -18,8 +18,8 @@ type ListPostsTestCase struct {
 	Status   int
 }
 
-var postsStorage = repository.NewPosts(utils.MockTimeProvider{}, &sync.Map{})
-var usersStorage = repository.NewUsers(utils.MockTimeProvider{}, &sync.Map{})
+var postsStorage = repository.NewPosts(customtime.MockTimeProvider{}, &sync.Map{})
+var usersStorage = repository.NewUsers(customtime.MockTimeProvider{}, &sync.Map{})
 var PostsHandler = rest.NewPostsHandler(postsStorage, usersStorage)
 
 var ListPostsTestCases = map[string]ListPostsTestCase{

@@ -5,17 +5,17 @@ import (
 	"socio/domain"
 	"socio/errors"
 	repository "socio/internal/repository/map"
+	customtime "socio/pkg/time"
 	"socio/usecase/auth"
-	"socio/utils"
 	"sync"
 	"testing"
 	"time"
 )
 
 func TestRegistrateUser(t *testing.T) {
-	userStorage := repository.NewUsers(utils.MockTimeProvider{}, &sync.Map{})
+	userStorage := repository.NewUsers(customtime.MockTimeProvider{}, &sync.Map{})
 	sessionStorage := repository.NewSessions(&sync.Map{})
-	authService := auth.NewService(utils.MockTimeProvider{}, userStorage, sessionStorage)
+	authService := auth.NewService(customtime.MockTimeProvider{}, userStorage, sessionStorage)
 
 	tests := []struct {
 		name    string
@@ -74,9 +74,9 @@ func TestRegistrateUser(t *testing.T) {
 }
 
 func TestLogin(t *testing.T) {
-	userStorage := repository.NewUsers(utils.MockTimeProvider{}, &sync.Map{})
+	userStorage := repository.NewUsers(customtime.MockTimeProvider{}, &sync.Map{})
 	sessionStorage := repository.NewSessions(&sync.Map{})
-	authService := auth.NewService(utils.MockTimeProvider{}, userStorage, sessionStorage)
+	authService := auth.NewService(customtime.MockTimeProvider{}, userStorage, sessionStorage)
 
 	tests := []struct {
 		name    string
@@ -125,9 +125,9 @@ func TestLogin(t *testing.T) {
 }
 
 func TestLogout(t *testing.T) {
-	userStorage := repository.NewUsers(utils.MockTimeProvider{}, &sync.Map{})
+	userStorage := repository.NewUsers(customtime.MockTimeProvider{}, &sync.Map{})
 	sessionStorage := repository.NewSessions(&sync.Map{})
-	authService := auth.NewService(utils.MockTimeProvider{}, userStorage, sessionStorage)
+	authService := auth.NewService(customtime.MockTimeProvider{}, userStorage, sessionStorage)
 
 	sessionID := authService.SessionStorage.CreateSession(0)
 
@@ -171,9 +171,9 @@ func TestLogout(t *testing.T) {
 }
 
 func TestIsAuthorized(t *testing.T) {
-	userStorage := repository.NewUsers(utils.MockTimeProvider{}, &sync.Map{})
+	userStorage := repository.NewUsers(customtime.MockTimeProvider{}, &sync.Map{})
 	sessionStorage := repository.NewSessions(&sync.Map{})
-	authService := auth.NewService(utils.MockTimeProvider{}, userStorage, sessionStorage)
+	authService := auth.NewService(customtime.MockTimeProvider{}, userStorage, sessionStorage)
 
 	sessionID := authService.SessionStorage.CreateSession(0)
 

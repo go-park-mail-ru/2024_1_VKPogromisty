@@ -6,6 +6,8 @@ import (
 	"socio/domain"
 	"socio/errors"
 	repository "socio/internal/repository/map"
+	"socio/pkg/hash"
+	customtime "socio/pkg/time"
 	"socio/utils"
 	"time"
 )
@@ -39,7 +41,7 @@ type IsAuthorizedResponse struct {
 	IsAuthorized bool `json:"isAuthorized"`
 }
 
-func NewService(tp utils.TimeProvider, userStorage *repository.Users, sessionStorage *repository.Sessions) (a *Service) {
+func NewService(tp customtime.TimeProvider, userStorage *repository.Users, sessionStorage *repository.Sessions) (a *Service) {
 	return &Service{
 		UserStorage:    userStorage,
 		SessionStorage: sessionStorage,
@@ -65,7 +67,7 @@ func (a *Service) RegistrateUser(userInput RegistrationInput) (user *domain.User
 		return
 	}
 
-	dateOfBirth, err := time.Parse(utils.DateFormat, userInput.DateOfBirth)
+	dateOfBirth, err := time.Parse(customtime.DateFormat, userInput.DateOfBirth)
 	if err != nil {
 		err = errors.ErrInvalidDate
 		return
@@ -82,7 +84,7 @@ func (a *Service) RegistrateUser(userInput RegistrationInput) (user *domain.User
 		Password:  userInput.Password,
 		Email:     userInput.Email,
 		Avatar:    fileName,
-		DateOfBirth: utils.CustomTime{
+		DateOfBirth: customtime.CustomTime{
 			Time: dateOfBirth,
 		},
 	}
@@ -101,7 +103,7 @@ func (a *Service) Login(loginInput LoginInput) (user *domain.User, session *http
 		return
 	}
 
-	if !utils.MatchPasswords(user.Password, loginInput.Password, []byte(user.Salt)) {
+	if !hash.MatchPasswords(user.Password, loginInput.Password, []byte(user.Salt)) {
 		err = errors.ErrInvalidLoginData
 		return
 	}

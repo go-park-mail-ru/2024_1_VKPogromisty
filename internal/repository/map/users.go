@@ -3,7 +3,8 @@ package repository
 import (
 	"socio/domain"
 	"socio/errors"
-	"socio/utils"
+	"socio/pkg/hash"
+	customtime "socio/pkg/time"
 	"sync"
 	"time"
 
@@ -13,29 +14,29 @@ import (
 type Users struct {
 	Users      *sync.Map
 	NextUserId uint
-	TP         utils.TimeProvider
+	TP         customtime.TimeProvider
 }
 
-func NewUsers(tp utils.TimeProvider, users *sync.Map) (s *Users) {
+func NewUsers(tp customtime.TimeProvider, users *sync.Map) (s *Users) {
 	s = &Users{}
 	s.Users = users
 	s.NextUserId = 2
 	s.TP = tp
 
 	salt1 := "salt"
-	dateOfBirth, _ := time.Parse(utils.DateFormat, "1990-01-01")
+	dateOfBirth, _ := time.Parse(customtime.DateFormat, "1990-01-01")
 	user1 := &domain.User{
 		ID:        0,
 		FirstName: "Petr",
 		LastName:  "Mitin",
-		Password:  utils.HashPassword("admin1", []byte(salt1)),
+		Password:  hash.HashPassword("admin1", []byte(salt1)),
 		Salt:      salt1,
 		Email:     "petr09mitin@mail.ru",
-		RegistrationDate: utils.CustomTime{
+		RegistrationDate: customtime.CustomTime{
 			Time: tp.Now(),
 		},
 		Avatar: "default_avatar.png",
-		DateOfBirth: utils.CustomTime{
+		DateOfBirth: customtime.CustomTime{
 			Time: dateOfBirth,
 		},
 	}
@@ -46,14 +47,14 @@ func NewUsers(tp utils.TimeProvider, users *sync.Map) (s *Users) {
 		ID:        1,
 		FirstName: "Alexey",
 		LastName:  "Gorbunov",
-		Password:  utils.HashPassword("admin2", []byte(salt2)),
+		Password:  hash.HashPassword("admin2", []byte(salt2)),
 		Salt:      salt2,
 		Email:     "lexagorbunov14@gmail.com",
-		RegistrationDate: utils.CustomTime{
+		RegistrationDate: customtime.CustomTime{
 			Time: tp.Now(),
 		},
 		Avatar: "leha.jpg",
-		DateOfBirth: utils.CustomTime{
+		DateOfBirth: customtime.CustomTime{
 			Time: dateOfBirth,
 		},
 	}
@@ -99,9 +100,9 @@ func (s *Users) GetUserByEmail(email string) (user *domain.User, err error) {
 func (s *Users) StoreUser(user *domain.User) {
 	salt := uuid.NewString()
 	user.ID = s.NextUserId
-	user.Password = utils.HashPassword(user.Password, []byte(salt))
+	user.Password = hash.HashPassword(user.Password, []byte(salt))
 	user.Salt = salt
-	user.RegistrationDate = utils.CustomTime{
+	user.RegistrationDate = customtime.CustomTime{
 		Time: s.TP.Now(),
 	}
 
@@ -112,7 +113,7 @@ func (s *Users) StoreUser(user *domain.User) {
 
 func (s *Users) RefreshSaltAndRehashPassword(user *domain.User) {
 	salt := uuid.NewString()
-	user.Password = utils.HashPassword(user.Password, []byte(salt))
+	user.Password = hash.HashPassword(user.Password, []byte(salt))
 	user.Salt = salt
 
 	s.Users.Store(user.ID, user)

@@ -3,7 +3,7 @@ package middleware
 import (
 	"net/http"
 	repository "socio/internal/repository/map"
-	"socio/utils"
+	"socio/pkg/json"
 )
 
 func CreateCheckIsAuthorizedMiddleware(sessionStorage *repository.Sessions) func(h http.Handler) http.Handler {
@@ -11,12 +11,12 @@ func CreateCheckIsAuthorizedMiddleware(sessionStorage *repository.Sessions) func
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			session, err := r.Cookie("session_id")
 			if err == http.ErrNoCookie {
-				utils.ServeJSONError(w, err)
+				json.ServeJSONError(w, err)
 				return
 			}
 
 			if _, err := sessionStorage.GetUserIDBySession(session.Value); err != nil {
-				utils.ServeJSONError(w, err)
+				json.ServeJSONError(w, err)
 				return
 			}
 

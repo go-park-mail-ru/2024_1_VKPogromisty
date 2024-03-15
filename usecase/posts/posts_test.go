@@ -4,18 +4,18 @@ import (
 	"reflect"
 	"socio/domain"
 	repository "socio/internal/repository/map"
-	"socio/posts"
-	"socio/utils"
+	customtime "socio/pkg/time"
+	"socio/usecase/posts"
 	"sync"
 	"testing"
 	"time"
 )
 
 func TestListPosts(t *testing.T) {
-	creationDate, _ := time.Parse(utils.DateFormat, "2000-01-01")
+	creationDate, _ := time.Parse(customtime.DateFormat, "2000-01-01")
 
-	postsStorage := repository.NewPosts(utils.MockTimeProvider{}, &sync.Map{})
-	userStorage := repository.NewUsers(utils.MockTimeProvider{}, &sync.Map{})
+	postsStorage := repository.NewPosts(customtime.MockTimeProvider{}, &sync.Map{})
+	userStorage := repository.NewUsers(customtime.MockTimeProvider{}, &sync.Map{})
 	postsService := posts.NewPostsService(postsStorage, userStorage)
 
 	author, _ := userStorage.GetUserByID(0)
@@ -25,7 +25,7 @@ func TestListPosts(t *testing.T) {
 		AuthorID:     0,
 		Text:         "Заснял такие вот красивые деревья)",
 		Attachments:  []string{"tree1.jpeg", "tree2.jpeg", "tree3.jpeg"},
-		CreationDate: utils.CustomTime{Time: creationDate},
+		CreationDate: customtime.CustomTime{Time: creationDate},
 	}
 
 	post2 := domain.Post{
@@ -33,7 +33,7 @@ func TestListPosts(t *testing.T) {
 		AuthorID:     0,
 		Text:         "Озеро недалеко от моего домика в Швейцарии. Красота!",
 		Attachments:  []string{"lake.jpeg"},
-		CreationDate: utils.CustomTime{Time: creationDate},
+		CreationDate: customtime.CustomTime{Time: creationDate},
 	}
 
 	post3 := domain.Post{
@@ -41,7 +41,7 @@ func TestListPosts(t *testing.T) {
 		AuthorID:     0,
 		Text:         "Moя подруга - очень хороший фотограф",
 		Attachments:  []string{"camera.jpeg"},
-		CreationDate: utils.CustomTime{Time: creationDate},
+		CreationDate: customtime.CustomTime{Time: creationDate},
 	}
 
 	post4 := domain.Post{
@@ -49,7 +49,7 @@ func TestListPosts(t *testing.T) {
 		AuthorID:     0,
 		Text:         "Мост в бесконечность",
 		Attachments:  []string{"bridge.jpeg"},
-		CreationDate: utils.CustomTime{Time: creationDate},
+		CreationDate: customtime.CustomTime{Time: creationDate},
 	}
 
 	post5 := domain.Post{
@@ -57,7 +57,7 @@ func TestListPosts(t *testing.T) {
 		AuthorID:     0,
 		Text:         "Белые розы, белые розы... Не совсем белые, но все равно прекрасно)",
 		Attachments:  []string{"rose.jpeg"},
-		CreationDate: utils.CustomTime{Time: creationDate},
+		CreationDate: customtime.CustomTime{Time: creationDate},
 	}
 
 	tests := []struct {

@@ -3,8 +3,8 @@ package auth_test
 import (
 	"socio/errors"
 	repository "socio/internal/repository/map"
+	customtime "socio/pkg/time"
 	"socio/usecase/auth"
-	"socio/utils"
 	"sync"
 
 	"testing"
@@ -70,9 +70,9 @@ func TestValidatePassword(t *testing.T) {
 }
 
 func TestCheckDuplicatedUser(t *testing.T) {
-	userStorage := repository.NewUsers(utils.MockTimeProvider{}, &sync.Map{})
+	userStorage := repository.NewUsers(customtime.MockTimeProvider{}, &sync.Map{})
 	sessionStorage := repository.NewSessions(&sync.Map{})
-	service := auth.NewService(utils.MockTimeProvider{}, userStorage, sessionStorage)
+	service := auth.NewService(customtime.MockTimeProvider{}, userStorage, sessionStorage)
 
 	tests := []struct {
 		name  string

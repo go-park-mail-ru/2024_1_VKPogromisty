@@ -1,8 +1,8 @@
-package utils_test
+package customtime_test
 
 import (
 	"socio/errors"
-	"socio/utils"
+	customtime "socio/pkg/time"
 	"testing"
 	"time"
 )
@@ -29,7 +29,7 @@ var TimeTestCases = map[string]TimeTestCase{
 func TestCustomTimeUnmarshalJSON(t *testing.T) {
 	for name, tc := range TimeTestCases {
 		t.Run(name, func(t *testing.T) {
-			var customTime utils.CustomTime
+			var customTime customtime.CustomTime
 			err := customTime.UnmarshalJSON(tc.Data)
 
 			if err != tc.Err || customTime.Time != tc.ExpectedTime {

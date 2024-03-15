@@ -2,7 +2,7 @@ package repository
 
 import (
 	"socio/domain"
-	"socio/utils"
+	customtime "socio/pkg/time"
 	"sync"
 	"time"
 )
@@ -12,11 +12,11 @@ type Posts struct {
 	NextID uint
 }
 
-func NewPosts(tp utils.TimeProvider, posts *sync.Map) (postsStorage *Posts) {
+func NewPosts(tp customtime.TimeProvider, posts *sync.Map) (postsStorage *Posts) {
 	postsStorage = &Posts{}
 	postsStorage.Posts = posts
 
-	creationDate, _ := time.Parse(utils.DateFormat, "2000-01-01")
+	creationDate, _ := time.Parse(customtime.DateFormat, "2000-01-01")
 
 	postsStorage.NextID = 5
 
@@ -25,7 +25,7 @@ func NewPosts(tp utils.TimeProvider, posts *sync.Map) (postsStorage *Posts) {
 		AuthorID:     0,
 		Text:         "Заснял такие вот красивые деревья)",
 		Attachments:  []string{"tree1.jpeg", "tree2.jpeg", "tree3.jpeg"},
-		CreationDate: utils.CustomTime{Time: creationDate},
+		CreationDate: customtime.CustomTime{Time: creationDate},
 	})
 
 	postsStorage.Posts.Store(1, &domain.Post{
@@ -33,7 +33,7 @@ func NewPosts(tp utils.TimeProvider, posts *sync.Map) (postsStorage *Posts) {
 		AuthorID:     0,
 		Text:         "Озеро недалеко от моего домика в Швейцарии. Красота!",
 		Attachments:  []string{"lake.jpeg"},
-		CreationDate: utils.CustomTime{Time: creationDate},
+		CreationDate: customtime.CustomTime{Time: creationDate},
 	})
 
 	postsStorage.Posts.Store(2, &domain.Post{
@@ -41,7 +41,7 @@ func NewPosts(tp utils.TimeProvider, posts *sync.Map) (postsStorage *Posts) {
 		AuthorID:     0,
 		Text:         "Moя подруга - очень хороший фотограф",
 		Attachments:  []string{"camera.jpeg"},
-		CreationDate: utils.CustomTime{Time: creationDate},
+		CreationDate: customtime.CustomTime{Time: creationDate},
 	})
 
 	postsStorage.Posts.Store(3, &domain.Post{
@@ -49,7 +49,7 @@ func NewPosts(tp utils.TimeProvider, posts *sync.Map) (postsStorage *Posts) {
 		AuthorID:     0,
 		Text:         "Мост в бесконечность",
 		Attachments:  []string{"bridge.jpeg"},
-		CreationDate: utils.CustomTime{Time: creationDate},
+		CreationDate: customtime.CustomTime{Time: creationDate},
 	})
 
 	postsStorage.Posts.Store(4, &domain.Post{
@@ -57,7 +57,7 @@ func NewPosts(tp utils.TimeProvider, posts *sync.Map) (postsStorage *Posts) {
 		AuthorID:     0,
 		Text:         "Белые розы, белые розы... Не совсем белые, но все равно прекрасно)",
 		Attachments:  []string{"rose.jpeg"},
-		CreationDate: utils.CustomTime{Time: creationDate},
+		CreationDate: customtime.CustomTime{Time: creationDate},
 	})
 
 	return
