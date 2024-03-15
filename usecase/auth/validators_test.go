@@ -1,9 +1,9 @@
 package auth_test
 
 import (
-	"socio/auth"
 	"socio/errors"
 	repository "socio/internal/repository/map"
+	"socio/usecase/auth"
 	"socio/utils"
 	"sync"
 

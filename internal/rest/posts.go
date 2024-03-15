@@ -3,7 +3,7 @@ package rest
 import (
 	"net/http"
 	repository "socio/internal/repository/map"
-	"socio/posts"
+	"socio/usecase/posts"
 	"socio/utils"
 )
 

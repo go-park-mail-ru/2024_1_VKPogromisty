@@ -3,10 +3,10 @@ package rest
 import (
 	"encoding/json"
 	"net/http"
-	"socio/auth"
 	"socio/domain"
 	"socio/errors"
 	repository "socio/internal/repository/map"
+	"socio/usecase/auth"
 	"socio/utils"
 	"strings"
 )
