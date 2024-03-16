@@ -11,14 +11,14 @@ type Sessions struct {
 	Sessions *sync.Map
 }
 
-func NewSessions(sessions *sync.Map) (sessionsStorage *Sessions) {
+func NewSessions(sessions *sync.Map) (sessionsStorage *Sessions, err error) {
 	sessionsStorage = &Sessions{}
 	sessionsStorage.Sessions = sessions
 
 	return
 }
 
-func (s *Sessions) CreateSession(userID uint) (sessionID string) {
+func (s *Sessions) CreateSession(userID uint) (sessionID string, err error) {
 	sessionID = uuid.NewString()
 	s.Sessions.Store(sessionID, userID)
 

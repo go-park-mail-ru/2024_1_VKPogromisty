@@ -29,11 +29,11 @@ type LoginInput struct {
 type UserStorage interface {
 	StoreUser(user *domain.User)
 	GetUserByEmail(email string) (user *domain.User, err error)
-	RefreshSaltAndRehashPassword(user *domain.User)
+	RefreshSaltAndRehashPassword(user *domain.User, password string)
 }
 
 type SessionStorage interface {
-	CreateSession(userID uint) (sessionID string)
+	CreateSession(userID uint) (sessionID string, err error)
 	DeleteSession(sessionID string) (err error)
 	GetUserIDBySession(sessionID string) (userID uint, err error)
 }
@@ -59,8 +59,12 @@ func NewService(tp customtime.TimeProvider, userStorage UserStorage, sessionStor
 	}
 }
 
-func (a *Service) newSession(userID uint) (session *http.Cookie) {
-	sessionID := a.SessionStorage.CreateSession(userID)
+func (a *Service) newSession(userID uint) (session *http.Cookie, err error) {
+	sessionID, err := a.SessionStorage.CreateSession(userID)
+
+	if err != nil {
+		return
+	}
 
 	session = &http.Cookie{
 		Name:     "session_id",
@@ -102,7 +106,10 @@ func (a *Service) RegistrateUser(userInput RegistrationInput) (user *domain.User
 
 	a.UserStorage.StoreUser(user)
 
-	session = a.newSession(user.ID)
+	session, err = a.newSession(user.ID)
+	if err != nil {
+		return
+	}
 
 	return
 }
@@ -119,9 +126,14 @@ func (a *Service) Login(loginInput LoginInput) (user *domain.User, session *http
 		return
 	}
 
-	a.UserStorage.RefreshSaltAndRehashPassword(user)
+	a.UserStorage.RefreshSaltAndRehashPassword(user, loginInput.Password)
 
-	return user, a.newSession(user.ID), nil
+	session, err = a.newSession(user.ID)
+	if err != nil {
+		return
+	}
+
+	return
 }
 
 func (a *Service) Logout(session *http.Cookie) (err error) {
@@ -130,7 +142,10 @@ func (a *Service) Logout(session *http.Cookie) (err error) {
 		return
 	}
 
-	session.Expires = time.Time{}
+	session.MaxAge = 0
+	session.Value = ""
+	session.Path = "/"
+
 	return
 }
 
