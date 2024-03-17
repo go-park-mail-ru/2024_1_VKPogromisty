@@ -1,7 +1,6 @@
 package routers
 
 import (
-	"fmt"
 	"os"
 	mapRepo "socio/internal/repository/map"
 	redisRepo "socio/internal/repository/redis"
@@ -11,13 +10,16 @@ import (
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 )
 
 func NewRootRouter() (rootRouter *mux.Router, err error) {
+	if err = godotenv.Load("../.env"); err != nil {
+		return
+	}
 	rootRouter = mux.NewRouter().PathPrefix("/api/v1/").Subrouter()
 
 	userStorage := mapRepo.NewUsers(customtime.RealTimeProvider{}, &sync.Map{})
-	fmt.Println("here ", os.Getenv("REDIS_PROTOCOL"))
 	sessionConn, err := redis.Dial(os.Getenv("REDIS_PROTOCOL"), os.Getenv("REDIS_URL"), redis.DialPassword(os.Getenv("REDIS_PASSWORD")))
 	if err != nil {
 		return
