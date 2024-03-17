@@ -11,7 +11,7 @@ type PostWithAuthor struct {
 }
 
 type PostsStorage interface {
-	GetAll() (posts []*domain.Post)
+	GetAll() (posts []*domain.Post, err error)
 }
 
 type UsersStorage interface {
@@ -37,7 +37,12 @@ func NewPostsService(postsStorage PostsStorage, usersStorage UsersStorage) (post
 }
 
 func (p *Service) AugmentPostsWithAuthors() (postsWithAuthors []PostWithAuthor, err error) {
-	for _, post := range p.PostsStorage.GetAll() {
+	posts, err := p.PostsStorage.GetAll()
+	if err != nil {
+		return
+	}
+
+	for _, post := range posts {
 		author, userErr := p.UsersStorage.GetUserByID(post.AuthorID)
 		if userErr != nil {
 			err = userErr

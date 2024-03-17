@@ -63,7 +63,7 @@ func NewPosts(tp customtime.TimeProvider, posts *sync.Map) (postsStorage *Posts)
 	return
 }
 
-func (s *Posts) GetAll() (posts []*domain.Post) {
+func (s *Posts) GetAll() (posts []*domain.Post, err error) {
 	s.Posts.Range(func(key, value interface{}) bool {
 		posts = append(posts, value.(*domain.Post))
 		return true

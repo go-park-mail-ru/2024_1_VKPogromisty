@@ -5,13 +5,11 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	mapRepo "socio/internal/repository/map"
 	pgRepo "socio/internal/repository/postgres"
 	redisRepo "socio/internal/repository/redis"
 	"socio/internal/rest/middleware"
 	customtime "socio/pkg/time"
 	"socio/utils"
-	"sync"
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/gorilla/mux"
@@ -21,6 +19,7 @@ import (
 func MountRootRouter() {
 	if err := godotenv.Load("../.env"); err != nil {
 		fmt.Println("No .env file found")
+		return
 	}
 	rootRouter := mux.NewRouter().PathPrefix("/api/v1/").Subrouter()
 
@@ -30,7 +29,9 @@ func MountRootRouter() {
 		return
 	}
 	defer db.Close()
+
 	userStorage := pgRepo.NewUsers(db, customtime.RealTimeProvider{})
+	postStorage := pgRepo.NewPosts(db, customtime.RealTimeProvider{})
 
 	sessionConn, err := redis.Dial(os.Getenv("REDIS_PROTOCOL"), os.Getenv("REDIS_URL"), redis.DialPassword(os.Getenv("REDIS_PASSWORD")))
 	if err != nil {
@@ -38,8 +39,6 @@ func MountRootRouter() {
 	}
 	defer sessionConn.Close()
 	sessionStorage := redisRepo.NewSession(sessionConn)
-
-	postStorage := mapRepo.NewPosts(customtime.RealTimeProvider{}, &sync.Map{})
 
 	MountAuthRouter(rootRouter, userStorage, sessionStorage)
 	MountPostsRouter(rootRouter, postStorage, userStorage, sessionStorage)

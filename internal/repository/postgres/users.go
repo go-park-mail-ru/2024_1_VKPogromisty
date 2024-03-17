@@ -28,7 +28,7 @@ func NewUsers(db *sql.DB, tp customtime.TimeProvider) *Users {
 func (s *Users) GetUserByID(userID uint) (user *domain.User, err error) {
 	user = &domain.User{}
 
-	err = s.db.QueryRow("SELECT id, first_name, last_name, email, password, salt, avatar, date_of_birth, registration_date FROM users WHERE id = $1", userID).Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.Salt, &user.Avatar, &user.DateOfBirth, &user.RegistrationDate)
+	err = s.db.QueryRow("SELECT id, first_name, last_name, email, password, salt, avatar, date_of_birth, registration_date FROM users WHERE id = $1", userID).Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.Salt, &user.Avatar, &user.DateOfBirth.Time, &user.RegistrationDate.Time)
 	if err != nil {
 		err = errors.ErrNotFound
 		return
