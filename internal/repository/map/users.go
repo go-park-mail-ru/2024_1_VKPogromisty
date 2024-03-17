@@ -63,22 +63,6 @@ func NewUsers(tp customtime.TimeProvider, users *sync.Map) (s *Users) {
 	return
 }
 
-func (s *Users) GetUserById(userID uint) (user *domain.User, err error) {
-	userData, ok := s.Users.Load(userID)
-	if !ok {
-		err = errors.ErrNotFound
-		return
-	}
-
-	user, ok = userData.(*domain.User)
-	if !ok {
-		err = errors.ErrInternal
-		return
-	}
-
-	return
-}
-
 func (s *Users) GetUserByEmail(email string) (user *domain.User, err error) {
 	s.Users.Range(func(key, value interface{}) bool {
 		currUser := value.(*domain.User)
@@ -97,7 +81,7 @@ func (s *Users) GetUserByEmail(email string) (user *domain.User, err error) {
 	return
 }
 
-func (s *Users) StoreUser(user *domain.User) {
+func (s *Users) StoreUser(user *domain.User) (err error) {
 	salt := uuid.NewString()
 	user.ID = s.NextUserId
 	user.Password = hash.HashPassword(user.Password, []byte(salt))
@@ -109,14 +93,17 @@ func (s *Users) StoreUser(user *domain.User) {
 	s.Users.Store(user.ID, user)
 
 	s.NextUserId++
+	return
 }
 
-func (s *Users) RefreshSaltAndRehashPassword(user *domain.User, password string) {
+func (s *Users) RefreshSaltAndRehashPassword(user *domain.User, password string) (err error) {
 	salt := uuid.NewString()
 	user.Password = hash.HashPassword(password, []byte(salt))
 	user.Salt = salt
 
 	s.Users.Store(user.ID, user)
+
+	return
 }
 
 func (s *Users) GetUserByID(userID uint) (user *domain.User, err error) {

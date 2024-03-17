@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"socio/app/routers"
-	"socio/utils"
 
 	httpSwagger "github.com/swaggo/http-swagger"
 
@@ -22,17 +21,14 @@ import (
 // @host			localhost:8080
 // @BasePath		/api/v1
 func main() {
-	rootRouter, err := routers.NewRootRouter()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
 	http.Handle("/swagger/*", httpSwagger.Handler(
 		httpSwagger.URL("http://localhost:8001/swagger/doc.json"),
 	))
 	go http.ListenAndServe(":8001", nil)
 
-	fmt.Printf("started on port %s\n", utils.PORT)
-	http.ListenAndServe(utils.PORT, rootRouter)
+	err := routers.MountRootRouter()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 }
