@@ -14,8 +14,8 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func NewRootRouter() (rootRouter *mux.Router) {
-	if err := godotenv.Load("../.env"); err != nil {
+func NewRootRouter() (rootRouter *mux.Router, err error) {
+	if err = godotenv.Load("../.env"); err != nil {
 		fmt.Println("No .env file found")
 	}
 	rootRouter = mux.NewRouter().PathPrefix("/api/v1/").Subrouter()
@@ -24,7 +24,7 @@ func NewRootRouter() (rootRouter *mux.Router) {
 	fmt.Println("here ", os.Getenv("REDIS_PROTOCOL"))
 	sessionConn, err := redis.Dial(os.Getenv("REDIS_PROTOCOL"), os.Getenv("REDIS_URL"), redis.DialPassword(os.Getenv("REDIS_PASSWORD")))
 	if err != nil {
-		panic(err)
+		return
 	}
 	sessionStorage := redisRepo.NewSession(sessionConn)
 
