@@ -40,8 +40,9 @@ func (s *Users) GetUserByID(userID uint) (user *domain.User, err error) {
 func (s *Users) GetUserByEmail(email string) (user *domain.User, err error) {
 	user = &domain.User{}
 
-	err = s.db.QueryRow("SELECT id, first_name, last_name, email, password, salt, avatar, date_of_birth, registration_date FROM users WHERE email = $1", email).Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.Salt, &user.Avatar, &user.DateOfBirth, &user.RegistrationDate)
+	err = s.db.QueryRow("SELECT id, first_name, last_name, email, password, salt, avatar, date_of_birth, registration_date FROM users WHERE email = $1", email).Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.Salt, &user.Avatar, &user.DateOfBirth.Time, &user.RegistrationDate.Time)
 	if err != nil {
+		fmt.Println(err)
 		err = errors.ErrNotFound
 		return
 	}
