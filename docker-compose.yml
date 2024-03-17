@@ -1,0 +1,66 @@
+version: '3.9'
+services:
+  postgresdb:
+    image: postgres:latest
+    container_name: postgres_container
+    environment:
+      - POSTGRES_USER=${PG_USER}
+      - POSTGRES_PASSWORD=${PG_PASSWORD}
+      - POSTGRES_DB=${PG_DBNAME}
+      - DATABASE_HOST=${PG_HOST}
+    ports:
+      - 5432:5432
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks:
+      - socio
+
+  redis:
+    image: redis:latest
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    restart: always
+    ports:
+      - 6379:6379
+    volumes:
+      - ./redis_data:/root/redis
+      - ./redis_data/redis.conf:/usr/local/etc/redis/redis.conf
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_PORT=6379
+      - REDIS_DATABASES=16
+    networks:
+      - socio
+
+  app:
+    container_name: golang_container
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - PG_USER=${PG_USER}
+      - PG_PASSWORD=${PG_PASSWORD}
+      - PG_DBNAME=${PG_DBNAME}
+      - PG_HOST=postgresdb
+      - PG_PORT=${PG_PORT}
+    tty: true
+    build: .
+    ports:
+      - 8080:8080
+    command: bash -c "cd /app/internal/repository/postgres/migrations && tern migrate && cd /app/app && /build"
+    restart: on-failure
+    volumes:
+      - .:/app
+    depends_on:
+      - postgresdb
+      - redis
+    networks:
+      - socio
+
+volumes:
+  pg_data:
+  redis_data:
+
+# Networks to be created to facilitate communication between containers
+networks:
+  socio:
+    driver: bridge

@@ -8,5 +8,8 @@ test:
 coverage:
 	go tool cover -func cover.out
 
-start_redis:
-	sudo service redis-server start
+docker-build:
+	docker-compose build
+
+docker-run:
+	docker-compose up

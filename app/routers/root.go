@@ -32,7 +32,7 @@ func MountRootRouter() (err error) {
 	userStorage := pgRepo.NewUsers(db, customtime.RealTimeProvider{})
 	postStorage := pgRepo.NewPosts(db, customtime.RealTimeProvider{})
 
-	sessionConn, err := redis.Dial(os.Getenv("REDIS_PROTOCOL"), os.Getenv("REDIS_URL"), redis.DialPassword(os.Getenv("REDIS_PASSWORD")))
+	sessionConn, err := redis.Dial(os.Getenv("REDIS_PROTOCOL"), os.Getenv("REDIS_HOST")+":"+os.Getenv("REDIS_PORT"), redis.DialPassword(os.Getenv("REDIS_PASSWORD")))
 	if err != nil {
 		return
 	}
