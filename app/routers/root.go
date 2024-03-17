@@ -17,6 +17,7 @@ import (
 func NewRootRouter() (rootRouter *mux.Router, err error) {
 	if err = godotenv.Load("../.env"); err != nil {
 		fmt.Println("No .env file found")
+		return
 	}
 	rootRouter = mux.NewRouter().PathPrefix("/api/v1/").Subrouter()
 
