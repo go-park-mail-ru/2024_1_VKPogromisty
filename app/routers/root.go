@@ -1,12 +1,16 @@
 package routers
 
 import (
+	"database/sql"
 	"fmt"
+	"net/http"
 	"os"
 	mapRepo "socio/internal/repository/map"
+	pgRepo "socio/internal/repository/postgres"
 	redisRepo "socio/internal/repository/redis"
 	"socio/internal/rest/middleware"
 	customtime "socio/pkg/time"
+	"socio/utils"
 	"sync"
 
 	"github.com/gomodule/redigo/redis"
@@ -14,18 +18,25 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func NewRootRouter() (rootRouter *mux.Router) {
+func MountRootRouter() {
 	if err := godotenv.Load("../.env"); err != nil {
 		fmt.Println("No .env file found")
 	}
-	rootRouter = mux.NewRouter().PathPrefix("/api/v1/").Subrouter()
+	rootRouter := mux.NewRouter().PathPrefix("/api/v1/").Subrouter()
 
-	userStorage := mapRepo.NewUsers(customtime.RealTimeProvider{}, &sync.Map{})
-	fmt.Println("here ", os.Getenv("REDIS_PROTOCOL"))
+	pgConnStr := fmt.Sprintf("user=%s dbname=%s password=%s host=%s port=%s sslmode=disable", os.Getenv("PG_USER"), os.Getenv("PG_DBNAME"), os.Getenv("PG_PASSWORD"), os.Getenv("PG_HOST"), os.Getenv("PG_PORT"))
+	db, err := sql.Open("postgres", pgConnStr)
+	if err != nil {
+		return
+	}
+	defer db.Close()
+	userStorage := pgRepo.NewUsers(db, customtime.RealTimeProvider{})
+
 	sessionConn, err := redis.Dial(os.Getenv("REDIS_PROTOCOL"), os.Getenv("REDIS_URL"), redis.DialPassword(os.Getenv("REDIS_PASSWORD")))
 	if err != nil {
-		panic(err)
+		return
 	}
+	defer sessionConn.Close()
 	sessionStorage := redisRepo.NewSession(sessionConn)
 
 	postStorage := mapRepo.NewPosts(customtime.RealTimeProvider{}, &sync.Map{})
@@ -37,5 +48,6 @@ func NewRootRouter() (rootRouter *mux.Router) {
 	rootRouter.Use(middleware.SetUpCORS)
 	rootRouter.Use(middleware.DisableCache)
 
-	return
+	fmt.Printf("started on port %s\n", utils.PORT)
+	http.ListenAndServe(utils.PORT, rootRouter)
 }

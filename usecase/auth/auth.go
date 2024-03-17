@@ -27,9 +27,9 @@ type LoginInput struct {
 }
 
 type UserStorage interface {
-	StoreUser(user *domain.User)
+	StoreUser(user *domain.User) (err error)
 	GetUserByEmail(email string) (user *domain.User, err error)
-	RefreshSaltAndRehashPassword(user *domain.User, password string)
+	RefreshSaltAndRehashPassword(user *domain.User, password string) (err error)
 }
 
 type SessionStorage interface {
