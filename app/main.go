@@ -6,6 +6,7 @@ import (
 	"socio/app/routers"
 	"socio/utils"
 
+	"github.com/joho/godotenv"
 	httpSwagger "github.com/swaggo/http-swagger"
 
 	_ "socio/docs"
@@ -22,6 +23,11 @@ import (
 // @host			localhost:8080
 // @BasePath		/api/v1
 func main() {
+	if err := godotenv.Load("../.env"); err != nil {
+		fmt.Println("Error loading .env file")
+		return
+	}
+
 	rootRouter, err := routers.NewRootRouter()
 	if err != nil {
 		fmt.Println(err)
