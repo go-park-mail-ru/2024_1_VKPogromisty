@@ -14,7 +14,7 @@ import (
 
 func TestRegistrateUser(t *testing.T) {
 	userStorage := repository.NewUsers(customtime.MockTimeProvider{}, &sync.Map{})
-	sessionStorage := repository.NewSessions(&sync.Map{})
+	sessionStorage, _ := repository.NewSessions(&sync.Map{})
 	authService := auth.NewService(customtime.MockTimeProvider{}, userStorage, sessionStorage)
 
 	tests := []struct {
@@ -75,7 +75,7 @@ func TestRegistrateUser(t *testing.T) {
 
 func TestLogin(t *testing.T) {
 	userStorage := repository.NewUsers(customtime.MockTimeProvider{}, &sync.Map{})
-	sessionStorage := repository.NewSessions(&sync.Map{})
+	sessionStorage, _ := repository.NewSessions(&sync.Map{})
 	authService := auth.NewService(customtime.MockTimeProvider{}, userStorage, sessionStorage)
 
 	tests := []struct {
@@ -126,10 +126,10 @@ func TestLogin(t *testing.T) {
 
 func TestLogout(t *testing.T) {
 	userStorage := repository.NewUsers(customtime.MockTimeProvider{}, &sync.Map{})
-	sessionStorage := repository.NewSessions(&sync.Map{})
+	sessionStorage, _ := repository.NewSessions(&sync.Map{})
 	authService := auth.NewService(customtime.MockTimeProvider{}, userStorage, sessionStorage)
 
-	sessionID := authService.SessionStorage.CreateSession(0)
+	sessionID, _ := authService.SessionStorage.CreateSession(0)
 
 	tests := []struct {
 		name    string
@@ -172,10 +172,10 @@ func TestLogout(t *testing.T) {
 
 func TestIsAuthorized(t *testing.T) {
 	userStorage := repository.NewUsers(customtime.MockTimeProvider{}, &sync.Map{})
-	sessionStorage := repository.NewSessions(&sync.Map{})
+	sessionStorage, _ := repository.NewSessions(&sync.Map{})
 	authService := auth.NewService(customtime.MockTimeProvider{}, userStorage, sessionStorage)
 
-	sessionID := authService.SessionStorage.CreateSession(0)
+	sessionID, _ := authService.SessionStorage.CreateSession(0)
 
 	tests := []struct {
 		name    string

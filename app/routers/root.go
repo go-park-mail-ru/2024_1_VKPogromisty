@@ -1,20 +1,32 @@
 package routers
 
 import (
-	repository "socio/internal/repository/map"
+	"os"
+	mapRepo "socio/internal/repository/map"
+	redisRepo "socio/internal/repository/redis"
 	"socio/internal/rest/middleware"
 	customtime "socio/pkg/time"
 	"sync"
 
+	"github.com/gomodule/redigo/redis"
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 )
 
-func NewRootRouter() (rootRouter *mux.Router) {
+func NewRootRouter() (rootRouter *mux.Router, err error) {
+	if err = godotenv.Load("../.env"); err != nil {
+		return
+	}
 	rootRouter = mux.NewRouter().PathPrefix("/api/v1/").Subrouter()
 
-	userStorage := repository.NewUsers(customtime.RealTimeProvider{}, &sync.Map{})
-	sessionStorage := repository.NewSessions(&sync.Map{})
-	postStorage := repository.NewPosts(customtime.RealTimeProvider{}, &sync.Map{})
+	userStorage := mapRepo.NewUsers(customtime.RealTimeProvider{}, &sync.Map{})
+	sessionConn, err := redis.Dial(os.Getenv("REDIS_PROTOCOL"), os.Getenv("REDIS_URL"), redis.DialPassword(os.Getenv("REDIS_PASSWORD")))
+	if err != nil {
+		return
+	}
+	sessionStorage := redisRepo.NewSession(sessionConn)
+
+	postStorage := mapRepo.NewPosts(customtime.RealTimeProvider{}, &sync.Map{})
 
 	MountAuthRouter(rootRouter, userStorage, sessionStorage)
 	MountPostsRouter(rootRouter, postStorage, userStorage, sessionStorage)

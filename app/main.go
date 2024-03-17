@@ -22,7 +22,11 @@ import (
 // @host			localhost:8080
 // @BasePath		/api/v1
 func main() {
-	rootRouter := routers.NewRootRouter()
+	rootRouter, err := routers.NewRootRouter()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	http.Handle("/swagger/*", httpSwagger.Handler(
 		httpSwagger.URL("http://localhost:8001/swagger/doc.json"),

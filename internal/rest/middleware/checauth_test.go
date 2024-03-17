@@ -10,9 +10,9 @@ import (
 )
 
 func TestCheckIsAuthorizedMiddleware(t *testing.T) {
-	var sessionStorage = repository.NewSessions(&sync.Map{})
+	var sessionStorage, _ = repository.NewSessions(&sync.Map{})
 
-	sessionID := sessionStorage.CreateSession(0)
+	sessionID, _ := sessionStorage.CreateSession(0)
 
 	CheckIsAuthorizedMiddleware := middleware.CreateCheckIsAuthorizedMiddleware(sessionStorage)
 

@@ -71,7 +71,7 @@ func TestValidatePassword(t *testing.T) {
 
 func TestCheckDuplicatedUser(t *testing.T) {
 	userStorage := repository.NewUsers(customtime.MockTimeProvider{}, &sync.Map{})
-	sessionStorage := repository.NewSessions(&sync.Map{})
+	sessionStorage, _ := repository.NewSessions(&sync.Map{})
 	service := auth.NewService(customtime.MockTimeProvider{}, userStorage, sessionStorage)
 
 	tests := []struct {

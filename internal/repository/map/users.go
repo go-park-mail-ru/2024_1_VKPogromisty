@@ -111,9 +111,9 @@ func (s *Users) StoreUser(user *domain.User) {
 	s.NextUserId++
 }
 
-func (s *Users) RefreshSaltAndRehashPassword(user *domain.User) {
+func (s *Users) RefreshSaltAndRehashPassword(user *domain.User, password string) {
 	salt := uuid.NewString()
-	user.Password = hash.HashPassword(user.Password, []byte(salt))
+	user.Password = hash.HashPassword(password, []byte(salt))
 	user.Salt = salt
 
 	s.Users.Store(user.ID, user)

@@ -3,3 +3,6 @@ cover.out.tmp
 virt.cer
 socio.exe
 app.exe
+.env
+app
+tern.conf
