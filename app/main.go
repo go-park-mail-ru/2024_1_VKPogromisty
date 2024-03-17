@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"socio/app/routers"
 
@@ -25,5 +26,9 @@ func main() {
 	))
 	go http.ListenAndServe(":8001", nil)
 
-	routers.MountRootRouter()
+	err := routers.MountRootRouter()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 }

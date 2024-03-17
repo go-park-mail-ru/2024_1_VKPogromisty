@@ -16,9 +16,8 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func MountRootRouter() {
-	if err := godotenv.Load("../.env"); err != nil {
-		fmt.Println("No .env file found")
+func MountRootRouter() (err error) {
+	if err = godotenv.Load("../.env"); err != nil {
 		return
 	}
 	rootRouter := mux.NewRouter().PathPrefix("/api/v1/").Subrouter()
@@ -49,4 +48,6 @@ func MountRootRouter() {
 
 	fmt.Printf("started on port %s\n", utils.PORT)
 	http.ListenAndServe(utils.PORT, rootRouter)
+
+	return
 }
