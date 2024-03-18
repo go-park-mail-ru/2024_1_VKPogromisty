@@ -1,5 +1,5 @@
 # Start from golang base image
-FROM golang:alpine
+FROM golang:1.22.1-alpine3.19 AS build-stage
 
 # Install git.
 # Git is required for fetching the dependencies.
@@ -13,18 +13,25 @@ WORKDIR /app
 COPY . .
 COPY .env .
 
-# Download all the dependencies
-RUN go get -d -v ./...
+# # Download all the dependencies
+# RUN go get -d -v ./...
 
-# Install the package
-RUN go install -v ./...
-RUN go install github.com/jackc/tern/v2@latest
+# # Install the package
+# RUN go install -v ./...
+
+RUN make test
 
 WORKDIR /app/app
 # Build the Go app
-RUN go build -o /build
+RUN CGO_ENABLED=0 go build -o /build
 
-EXPOSE 8001 8080
+FROM gcr.io/distroless/base-debian11 AS build-release-stage
+
+COPY --from=build-stage /build /build
+COPY --from=build-stage /app/.env .env
+COPY --from=build-stage /app/docs docs
+
+EXPOSE 8080 8001
 
 # Run the executable
 CMD ["/build"]

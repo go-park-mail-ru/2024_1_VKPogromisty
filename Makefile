@@ -13,3 +13,7 @@ docker-build:
 
 docker-run:
 	docker-compose up
+
+docker-migrate:
+	cd ./internal/repository/postgres/migrations && tern migrate
+	
