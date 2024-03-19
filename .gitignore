@@ -6,3 +6,5 @@ app.exe
 .env
 app
 tern.conf
+/pg_data
+/redis_data
