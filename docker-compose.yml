@@ -42,6 +42,7 @@ services:
     tty: true
     build: .
     ports:
+      - 8001:8001
       - 8080:8080
     restart: on-failure
     volumes:
