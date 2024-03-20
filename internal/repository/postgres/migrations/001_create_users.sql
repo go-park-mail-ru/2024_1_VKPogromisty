@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS public.users
     date_of_birth date NOT NULL,
     CONSTRAINT users_pkey PRIMARY KEY (id),
     CONSTRAINT users_email_key UNIQUE (email)
-)
+);
 ---- create above / drop below ----
 DROP TABLE IF EXISTS public.users;
 -- Write your migrate down statements here. If this migration is irreversible
