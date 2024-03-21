@@ -4,7 +4,9 @@ virt.cer
 socio.exe
 app.exe
 .env
-app
+/app/app
+/app/app.exe
+/app/dump.rdb
 tern.conf
 /pg_data
 /redis_data

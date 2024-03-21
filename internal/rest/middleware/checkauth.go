@@ -1,10 +1,15 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
 	"socio/pkg/json"
 	"socio/usecase/auth"
 )
+
+type ContextKey string
+
+const UserIDKey ContextKey = "userID"
 
 func CreateCheckIsAuthorizedMiddleware(sessionStorage auth.SessionStorage) func(h http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
@@ -15,12 +20,16 @@ func CreateCheckIsAuthorizedMiddleware(sessionStorage auth.SessionStorage) func(
 				return
 			}
 
-			if _, err := sessionStorage.GetUserIDBySession(session.Value); err != nil {
+			userID, err := sessionStorage.GetUserIDBySession(session.Value)
+
+			if err != nil {
 				json.ServeJSONError(w, err)
 				return
 			}
 
-			h.ServeHTTP(w, r)
+			ctx := context.WithValue(r.Context(), UserIDKey, userID)
+
+			h.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }

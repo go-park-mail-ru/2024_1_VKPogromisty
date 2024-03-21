@@ -12,7 +12,7 @@ import (
 
 const DefaultAvatarFileName = "default_avatar.png"
 
-var StaticFilePath = "./static"
+var StaticFilePath = "../static"
 
 func SaveImage(h *multipart.FileHeader) (fileName string, err error) {
 	if h == nil {
@@ -31,7 +31,7 @@ func SaveImage(h *multipart.FileHeader) (fileName string, err error) {
 	}
 
 	fileName = uuid.NewString() + path.Ext(h.Filename)
-	filePath := path.Join(wd, "static", fileName)
+	filePath := path.Join(wd, StaticFilePath, fileName)
 
 	file, err := os.Create(filePath)
 	if err != nil {

@@ -2,7 +2,6 @@ package repository
 
 import (
 	"database/sql"
-	"fmt"
 	"socio/domain"
 	"socio/errors"
 	"socio/pkg/hash"
@@ -30,7 +29,12 @@ func (s *Users) GetUserByID(userID uint) (user *domain.User, err error) {
 
 	err = s.db.QueryRow("SELECT id, first_name, last_name, email, password, salt, avatar, date_of_birth, registration_date FROM users WHERE id = $1", userID).Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.Salt, &user.Avatar, &user.DateOfBirth.Time, &user.RegistrationDate.Time)
 	if err != nil {
-		err = errors.ErrNotFound
+		if err == sql.ErrNoRows {
+			err = errors.ErrNotFound
+			return
+		}
+
+		err = errors.ErrInternal
 		return
 	}
 
@@ -42,8 +46,12 @@ func (s *Users) GetUserByEmail(email string) (user *domain.User, err error) {
 
 	err = s.db.QueryRow("SELECT id, first_name, last_name, email, password, salt, avatar, date_of_birth, registration_date FROM users WHERE email = $1", email).Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.Salt, &user.Avatar, &user.DateOfBirth.Time, &user.RegistrationDate.Time)
 	if err != nil {
-		fmt.Println(err)
-		err = errors.ErrNotFound
+		if err == sql.ErrNoRows {
+			err = errors.ErrNotFound
+			return
+		}
+
+		err = errors.ErrInternal
 		return
 	}
 
@@ -58,9 +66,10 @@ func (s *Users) StoreUser(user *domain.User) (err error) {
 		Time: s.TP.Now(),
 	}
 
-	_, err = s.db.Exec("INSERT INTO users (first_name, last_name, email, password, salt, avatar, date_of_birth, registration_date) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", user.FirstName, user.LastName, user.Email, user.Password, user.Salt, user.Avatar, user.DateOfBirth.Time, user.RegistrationDate.Time)
+	row := s.db.QueryRow("INSERT INTO users (first_name, last_name, email, password, salt, avatar, date_of_birth, registration_date) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, first_name, last_name, email, password, salt, avatar, date_of_birth, registration_date", user.FirstName, user.LastName, user.Email, user.Password, user.Salt, user.Avatar, user.DateOfBirth.Time, user.RegistrationDate.Time)
+
+	err = row.Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.Salt, &user.Avatar, &user.DateOfBirth.Time, &user.RegistrationDate.Time)
 	if err != nil {
-		fmt.Println(err)
 		err = errors.ErrInternal
 		return
 	}

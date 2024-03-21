@@ -19,3 +19,6 @@ docker-stop:
 
 docker-migrate:
 	cd ./internal/repository/postgres/migrations && tern migrate
+
+make go-run:
+	cd ./app && go build && ./app
