@@ -7,8 +7,8 @@ import (
 
 type SubscriptionsStorage interface {
 	Store(sub *domain.Subscription) (subscription *domain.Subscription, err error)
-	Delete(subscriptionID uint) (err error)
-	GetByData(subscriberID uint, subscribedToID uint) (subscription *domain.Subscription, err error)
+	Delete(subscriberID uint, subscibedToID uint) (err error)
+	GetBySubscriberAndSubscribedToID(subscriberID uint, subscribedToID uint) (subscription *domain.Subscription, err error)
 	GetSubscriptions(userID uint) (subscriptions []*domain.User, err error)
 	GetSubscribers(userID uint) (subscribers []*domain.User, err error)
 	GetFriends(userID uint) (friends []*domain.User, err error)
@@ -49,12 +49,6 @@ func (s *Service) Subscribe(sub *domain.Subscription) (subscription *domain.Subs
 		return
 	}
 
-	_, err = s.SubscriptionsStorage.GetByData(sub.SubscriberID, sub.SubscribedToID)
-	if err == nil {
-		err = errors.ErrInvalidBody
-		return
-	}
-
 	subscription, err = s.SubscriptionsStorage.Store(sub)
 	if err != nil {
 		return
@@ -76,13 +70,7 @@ func (s *Service) Unsubscribe(sub *domain.Subscription) (err error) {
 		return
 	}
 
-	sub, err = s.SubscriptionsStorage.GetByData(sub.SubscriberID, sub.SubscribedToID)
-	if err != nil {
-		err = errors.ErrInvalidBody
-		return
-	}
-
-	err = s.SubscriptionsStorage.Delete(sub.ID)
+	err = s.SubscriptionsStorage.Delete(sub.SubscriberID, sub.SubscribedToID)
 	if err != nil {
 		return
 	}

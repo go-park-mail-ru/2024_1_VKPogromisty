@@ -15,7 +15,7 @@ type SubscriptionsHandler struct {
 }
 
 type SubscriptionInput struct {
-	SubscribedToID uint `json:"subscribed_to"`
+	SubscribedToID uint `json:"subscribedTo"`
 }
 
 func NewSubscriptionsHandler(subStorage subscriptions.SubscriptionsStorage, userStorage subscriptions.UserStorage) (handler *SubscriptionsHandler) {
@@ -32,13 +32,10 @@ func (api *SubscriptionsHandler) HandleSubscription(w http.ResponseWriter, r *ht
 	err := defJSON.NewDecoder(r.Body).Decode(input)
 	if err != nil {
 		json.ServeJSONError(w, errors.ErrJSONUnmarshalling)
-	}
-
-	userID, ok := r.Context().Value(middleware.UserIDKey).(uint)
-	if !ok {
-		json.ServeJSONError(w, errors.ErrUnauthorized)
 		return
 	}
+
+	userID := r.Context().Value(middleware.UserIDKey).(uint)
 
 	subscription, err := api.Service.Subscribe(&domain.Subscription{SubscriberID: userID, SubscribedToID: input.SubscribedToID})
 	if err != nil {
@@ -56,13 +53,10 @@ func (api *SubscriptionsHandler) HandleUnsubscription(w http.ResponseWriter, r *
 	err := defJSON.NewDecoder(r.Body).Decode(input)
 	if err != nil {
 		json.ServeJSONError(w, errors.ErrJSONUnmarshalling)
-	}
-
-	userID, ok := r.Context().Value(middleware.UserIDKey).(uint)
-	if !ok {
-		json.ServeJSONError(w, errors.ErrUnauthorized)
 		return
 	}
+
+	userID := r.Context().Value(middleware.UserIDKey).(uint)
 
 	err = api.Service.Unsubscribe(&domain.Subscription{SubscriberID: userID, SubscribedToID: input.SubscribedToID})
 	if err != nil {
@@ -76,11 +70,7 @@ func (api *SubscriptionsHandler) HandleUnsubscription(w http.ResponseWriter, r *
 func (api *SubscriptionsHandler) HandleGetSubscriptions(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	userID, ok := r.Context().Value(middleware.UserIDKey).(uint)
-	if !ok {
-		json.ServeJSONError(w, errors.ErrUnauthorized)
-		return
-	}
+	userID := r.Context().Value(middleware.UserIDKey).(uint)
 
 	subscriptions, err := api.Service.GetSubscriptions(userID)
 	if err != nil {
@@ -94,11 +84,7 @@ func (api *SubscriptionsHandler) HandleGetSubscriptions(w http.ResponseWriter, r
 func (api *SubscriptionsHandler) HandleGetSubscribers(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	userID, ok := r.Context().Value(middleware.UserIDKey).(uint)
-	if !ok {
-		json.ServeJSONError(w, errors.ErrUnauthorized)
-		return
-	}
+	userID := r.Context().Value(middleware.UserIDKey).(uint)
 
 	subscribers, err := api.Service.GetSubscribers(userID)
 	if err != nil {
@@ -112,11 +98,7 @@ func (api *SubscriptionsHandler) HandleGetSubscribers(w http.ResponseWriter, r *
 func (api *SubscriptionsHandler) HandleGetFriends(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	userID, ok := r.Context().Value(middleware.UserIDKey).(uint)
-	if !ok {
-		json.ServeJSONError(w, errors.ErrUnauthorized)
-		return
-	}
+	userID := r.Context().Value(middleware.UserIDKey).(uint)
 
 	friends, err := api.Service.GetFriends(userID)
 	if err != nil {

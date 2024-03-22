@@ -5,18 +5,13 @@ import (
 	"socio/domain"
 	"socio/errors"
 	customtime "socio/pkg/time"
+
+	_ "github.com/lib/pq"
 )
 
 type Subscriptions struct {
 	db *sql.DB
 	TP customtime.TimeProvider
-}
-
-type SubscriptionWithIsFriend struct {
-	ID             uint                  `json:"subscriptionId"`
-	SubscriberID   domain.User           `json:"subscriber"`
-	SubscribedToID domain.User           `json:"subscribed_to"`
-	CreationDate   customtime.CustomTime `json:"creationDate,omitempty" swaggertype:"string" example:"2021-01-01T00:00:00Z" format:"date-time"`
 }
 
 func NewSubscriptions(db *sql.DB, tp customtime.TimeProvider) *Subscriptions {
@@ -30,9 +25,16 @@ func (s *Subscriptions) serializeIntoUsers(rows *sql.Rows) (users []*domain.User
 	for rows.Next() {
 		user := new(domain.User)
 
-		err = rows.Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Avatar, &user.DateOfBirth.Time, &user.RegistrationDate.Time)
+		err = rows.Scan(
+			&user.ID,
+			&user.FirstName,
+			&user.LastName,
+			&user.Email,
+			&user.Avatar,
+			&user.DateOfBirth.Time,
+			&user.RegistrationDate.Time,
+		)
 		if err != nil {
-			err = errors.ErrInternal
 			return
 		}
 
@@ -55,17 +57,28 @@ func (s *Subscriptions) GetSubscriptions(userID uint) (subscriptions []*domain.U
 		) AS sub_ids
 		JOIN users ON users.id=sub_ids.subscription_id;
 	`, userID)
+
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
 
-		err = errors.ErrInternal
 		return
 	}
 
+	defer rows.Close()
+
 	subscriptions, err = s.serializeIntoUsers(rows)
 	if err != nil {
+		return
+	}
+
+	rerr := rows.Close()
+	if rerr != nil {
+		return
+	}
+
+	if err = rows.Err(); err != nil {
 		return
 	}
 
@@ -90,12 +103,22 @@ func (s *Subscriptions) GetFriends(userID uint) (friends []*domain.User, err err
 			return nil, nil
 		}
 
-		err = errors.ErrInternal
 		return
 	}
 
+	defer rows.Close()
+
 	friends, err = s.serializeIntoUsers(rows)
 	if err != nil {
+		return
+	}
+
+	rerr := rows.Close()
+	if rerr != nil {
+		return
+	}
+
+	if err = rows.Err(); err != nil {
 		return
 	}
 
@@ -121,12 +144,22 @@ func (s *Subscriptions) GetSubscribers(userID uint) (subscribers []*domain.User,
 			return nil, nil
 		}
 
-		err = errors.ErrInternal
 		return
 	}
 
+	defer rows.Close()
+
 	subscribers, err = s.serializeIntoUsers(rows)
 	if err != nil {
+		return
+	}
+
+	rerr := rows.Close()
+	if rerr != nil {
+		return
+	}
+
+	if err = rows.Err(); err != nil {
 		return
 	}
 
@@ -134,41 +167,73 @@ func (s *Subscriptions) GetSubscribers(userID uint) (subscribers []*domain.User,
 }
 
 func (s *Subscriptions) Store(sub *domain.Subscription) (subscription *domain.Subscription, err error) {
-	row := s.db.QueryRow("INSERT INTO subscriptions (subscriber, subscribed_to, creation_date) VALUES ($1, $2, $3) RETURNING id, subscriber, subscribed_to, creation_date", sub.SubscriberID, sub.SubscribedToID, s.TP.Now())
-
 	subscription = new(domain.Subscription)
 
-	err = row.Scan(&subscription.ID, &subscription.SubscriberID, &subscription.SubscribedToID, &subscription.CreationDate.Time)
+	err = s.db.QueryRow(`
+		INSERT INTO subscriptions 
+		(subscriber, subscribed_to) 
+		VALUES ($1, $2) 
+		RETURNING id, subscriber, subscribed_to, creation_date
+		ON CONFLICT (subscriber, subscribed_to) DO NOTHING;`,
+		sub.SubscriberID, sub.SubscribedToID).Scan(
+		&subscription.ID,
+		&subscription.SubscriberID,
+		&subscription.SubscribedToID,
+		&subscription.CreationDate.Time,
+	)
+
 	if err != nil {
-		err = errors.ErrInternal
+		if err == sql.ErrNoRows {
+			return
+		}
+
 		return
 	}
 
 	return
 }
 
-func (s *Subscriptions) Delete(subscriptionID uint) (err error) {
-	_, err = s.db.Exec("DELETE FROM subscriptions WHERE id = $1", subscriptionID)
-
+func (s *Subscriptions) Delete(subsciberID uint, subscribedToID uint) (err error) {
+	result, err := s.db.Exec(`
+		DELETE FROM subscriptions WHERE subscriber = $1 AND subscribed_to = $2;
+	`, subsciberID, subscribedToID)
 	if err != nil {
-		err = errors.ErrInternal
 		return
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return
+	}
+	if rows == 0 {
+		return errors.ErrInvalidBody
+	}
+	if rows != 1 {
+		return errors.ErrRowsAffected
 	}
 
 	return
 }
 
-func (s *Subscriptions) GetByData(subscriberID uint, subscribedToID uint) (subscription *domain.Subscription, err error) {
+func (s *Subscriptions) GetBySubscriberAndSubscribedToID(subscriberID uint, subscribedToID uint) (subscription *domain.Subscription, err error) {
 	subscription = new(domain.Subscription)
 
-	err = s.db.QueryRow("SELECT id, subscriber, subscribed_to, creation_date FROM subscriptions WHERE subscriber = $1 AND subscribed_to = $2", subscriberID, subscribedToID).Scan(&subscription.ID, &subscription.SubscriberID, &subscription.SubscribedToID, &subscription.CreationDate.Time)
+	err = s.db.QueryRow(`
+		SELECT id, subscriber, subscribed_to, creation_date 
+		FROM subscriptions 
+		WHERE subscriber = $1 AND subscribed_to = $2;`,
+		subscriberID, subscribedToID).Scan(
+		&subscription.ID,
+		&subscription.SubscriberID,
+		&subscription.SubscribedToID,
+		&subscription.CreationDate.Time,
+	)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			err = errors.ErrNotFound
 			return
 		}
 
-		err = errors.ErrInternal
 		return
 	}
 
