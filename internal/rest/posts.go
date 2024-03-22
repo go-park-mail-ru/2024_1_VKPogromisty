@@ -28,7 +28,7 @@ func NewPostsHandler(postsStorage posts.PostsStorage, usersStorage posts.UsersSt
 //
 //	@Param			Cookie	header	string	true	"session_id=some_session"
 //	@Produce		json
-//	@Success		200	{object}	utils.JSONResponse{body=services.ListPostsResponse}
+//	@Success		200	{object}	json.JSONResponse{body=posts.ListPostsResponse}
 //	@Failure		400	{object}	errors.HTTPError
 //	@Failure		401	{object}	errors.HTTPError
 //	@Failure		500	{object}	errors.HTTPError

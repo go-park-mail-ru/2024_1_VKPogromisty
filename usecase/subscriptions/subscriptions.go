@@ -23,6 +23,18 @@ type Service struct {
 	UserStorage          UserStorage
 }
 
+type GetSubscriptionsResponse struct {
+	Subscriptions []*domain.User `json:"subscriptions"`
+}
+
+type GetSubscribersResponse struct {
+	Subscribers []*domain.User `json:"subscribers"`
+}
+
+type GetFriendsResponse struct {
+	Friends []*domain.User `json:"friends"`
+}
+
 func NewService(subStorage SubscriptionsStorage, userStorage UserStorage) (service *Service) {
 	service = &Service{
 		SubscriptionsStorage: subStorage,

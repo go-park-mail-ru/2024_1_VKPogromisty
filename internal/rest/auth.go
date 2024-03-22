@@ -41,7 +41,7 @@ func NewAuthHandler(tp customtime.TimeProvider, userStorage auth.UserStorage, se
 //	@Param			avatar			formData	file	false	"Avatar of the user"
 //
 //	@Produce		json
-//	@Success		201	{object}	json.JSONResponse{body=auth.User}
+//	@Success		201	{object}	json.JSONResponse{body=domain.User}
 //	@Failure		400	{object}	errors.HTTPError
 //	@Failure		500	{object}	errors.HTTPError
 //	@Header			200	{string}	Set-Cookie	"session_id=some_session_id; Path=/; Max-Age=36000; HttpOnly;"

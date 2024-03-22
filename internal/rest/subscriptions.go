@@ -25,6 +25,24 @@ func NewSubscriptionsHandler(subStorage subscriptions.SubscriptionsStorage, user
 	return
 }
 
+// HandleSubscription godoc
+//
+//	@Summary		handle user's subscription flow
+//	@Description	subscribe to user
+//	@Tags			subscriptions
+//	@license.name	Apache 2.0
+//	@ID				subscriptions/subscribe
+//	@Accept			json
+//
+//	@Param			subscribedTo	body	int		true	"Subscribed to ID"
+//	@Param			Cookie			header	string	true	"session_id=some_session"
+//
+//	@Produce		json
+//	@Success		201	{object}	json.JSONResponse{body=domain.Subscription}
+//	@Failure		400	{object}	errors.HTTPError
+//	@Failure		401	{object}	errors.HTTPError
+//	@Failure		500	{object}	errors.HTTPError
+//	@Router			/subscriptions/ [post]
 func (api *SubscriptionsHandler) HandleSubscription(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
@@ -46,6 +64,27 @@ func (api *SubscriptionsHandler) HandleSubscription(w http.ResponseWriter, r *ht
 	json.ServeJSONBody(w, map[string]*domain.Subscription{"subscription": subscription})
 }
 
+// HandleUnsubscription godoc
+//
+//	@Summary		handle user's unsubscription flow
+//	@Description	unsubscribe from user
+//	@Tags			subscriptions
+//	@license.name	Apache 2.0
+//	@ID				subscriptions/unsubscribe
+//	@Accept			json
+//
+//	@Param			subscribedTo	body	int		true	"User to unsubscribe from"
+//	@Param			Cookie			header	string	true	"session_id=some_session"
+//
+//	@Produce		json
+//	@Success		204
+//	@Failure		400	{object}	errors.HTTPError
+//	@Failure		401	{object}	errors.HTTPError
+//
+//	@Failure		404	{object}	errors.HTTPError
+//
+//	@Failure		500	{object}	errors.HTTPError
+//	@Router			/subscriptions/ [delete]
 func (api *SubscriptionsHandler) HandleUnsubscription(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
@@ -67,6 +106,24 @@ func (api *SubscriptionsHandler) HandleUnsubscription(w http.ResponseWriter, r *
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// HandleGetSubscriptions godoc
+//
+//	@Summary		get user's subscriptions
+//	@Description	get user's subscriptions
+//	@Tags			subscriptions
+//	@license.name	Apache 2.0
+//	@ID				subscriptions/subscriptions
+//	@Accept			json
+//
+//	@Param			Cookie	header	string	true	"session_id=some_session"
+//
+//	@Produce		json
+//	@Success		200	{object}	json.JSONResponse{body=subscriptions.GetSubscriptionsResponse}
+//	@Failure		401	{object}	errors.HTTPError
+//
+//
+//	@Failure		500	{object}	errors.HTTPError
+//	@Router			/subscriptions/subscriptions/ [get]
 func (api *SubscriptionsHandler) HandleGetSubscriptions(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
@@ -81,6 +138,24 @@ func (api *SubscriptionsHandler) HandleGetSubscriptions(w http.ResponseWriter, r
 	json.ServeJSONBody(w, map[string][]*domain.User{"subscriptions": subscriptions})
 }
 
+// HandleGetSubscribers godoc
+//
+//	@Summary		get user's subscribers
+//	@Description	get user's subscribers
+//	@Tags			subscriptions
+//	@license.name	Apache 2.0
+//	@ID				subscriptions/subscribers
+//	@Accept			json
+//
+//	@Param			Cookie	header	string	true	"session_id=some_session"
+//
+//	@Produce		json
+//	@Success		200	{object}	json.JSONResponse{body=subscriptions.GetSubscribersResponse}
+//
+//	@Failure		404	{object}	errors.HTTPError
+//
+//	@Failure		500	{object}	errors.HTTPError
+//	@Router			/subscriptions/subscribers/ [get]
 func (api *SubscriptionsHandler) HandleGetSubscribers(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
@@ -95,6 +170,23 @@ func (api *SubscriptionsHandler) HandleGetSubscribers(w http.ResponseWriter, r *
 	json.ServeJSONBody(w, map[string][]*domain.User{"subscribers": subscribers})
 }
 
+// HandleGetFriends godoc
+//
+//	@Summary		get user's friends
+//	@Description	get user's friends
+//	@Tags			subscriptions
+//	@license.name	Apache 2.0
+//	@ID				subscriptions/friends
+//	@Accept			json
+//
+//	@Param			Cookie	header	string	true	"session_id=some_session"
+//
+//	@Produce		json
+//	@Success		200	{object}	json.JSONResponse{body=subscriptions.GetFriendsResponse}
+//	@Failure		404	{object}	errors.HTTPError
+//
+//	@Failure		500	{object}	errors.HTTPError
+//	@Router			/subscriptions/friends/ [get]
 func (api *SubscriptionsHandler) HandleGetFriends(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
