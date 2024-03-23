@@ -10,3 +10,5 @@ dump.rdb
 tern.conf
 /pg_data
 /redis_data
+.vscode
+socio-docker.session.sql

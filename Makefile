@@ -12,13 +12,13 @@ docker-build:
 	docker-compose build
 
 docker-run:
-	docker-compose up
+	docker-compose up -d
 
 docker-stop:
 	docker-compose down
 
 docker-migrate:
-	cd ./internal/repository/postgres/migrations && tern migrate
+	cd ./db/migrations && tern migrate
 
 make go-run:
 	cd ./app && go build && ./app

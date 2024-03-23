@@ -228,7 +228,7 @@ var RegistrateUserTestCases = map[string]RegistrateUserTestCase{
 			"dateOfBirth":    "1990-01-01",
 		},
 		Avatar:   "default_avatar.png",
-		Expected: `{"body":{"user":{"userId":3,"firstName":"Petr","lastName":"Mitin","email":"petr01mitin@gmail.com","registrationDate":"2021-01-01T00:00:00Z","avatar":"default_avatar.png","dateOfBirth":"1990-01-01T00:00:00Z"}}}`,
+		Expected: `{"body":{"user":{"userId":3,"firstName":"Petr","lastName":"Mitin","email":"petr01mitin@gmail.com","avatar":"default_avatar.png","dateOfBirth":"1990-01-01T00:00:00Z","createdAt":"2021-01-01T00:00:00Z","updatedAt":"2021-01-01T00:00:00Z"}}}`,
 		Status:   201,
 	},
 	"invalid body": {

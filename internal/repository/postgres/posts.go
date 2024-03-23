@@ -8,6 +8,22 @@ import (
 	_ "github.com/lib/pq"
 )
 
+const (
+	getAllPostsQuery = `
+	SELECT id,
+		author_id,
+		content,
+		created_at,
+		updated_at
+	FROM public.post;
+	`
+	getAttachmentFilenameQuery = `
+	SELECT file_name
+	FROM public.post_attachments
+	WHERE post_id = $1;
+	`
+)
+
 type Posts struct {
 	db *sql.DB
 	TP customtime.TimeProvider
@@ -21,7 +37,7 @@ func NewPosts(db *sql.DB, tp customtime.TimeProvider) *Posts {
 }
 
 func (s *Posts) getAttachments(postID uint) (attachments []string, err error) {
-	rows, err := s.db.Query("SELECT filename FROM post_attachments WHERE post_id = $1;", postID)
+	rows, err := s.db.Query(getAttachmentFilenameQuery, postID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -53,7 +69,7 @@ func (s *Posts) getAttachments(postID uint) (attachments []string, err error) {
 }
 
 func (s *Posts) GetAll() (posts []*domain.Post, err error) {
-	rows, err := s.db.Query("SELECT id, author_id, text, creation_date FROM posts;")
+	rows, err := s.db.Query(getAllPostsQuery)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -65,7 +81,7 @@ func (s *Posts) GetAll() (posts []*domain.Post, err error) {
 
 	for rows.Next() {
 		post := domain.Post{}
-		err = rows.Scan(&post.ID, &post.AuthorID, &post.Text, &post.CreationDate.Time)
+		err = rows.Scan(&post.ID, &post.AuthorID, &post.Content, &post.CreatedAt.Time, &post.UpdatedAt.Time)
 		if err != nil {
 			return
 		}

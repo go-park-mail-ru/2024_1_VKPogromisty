@@ -32,7 +32,10 @@ func NewUsers(tp customtime.TimeProvider, users *sync.Map) (s *Users) {
 		Password:  hash.HashPassword("admin1", []byte(salt1)),
 		Salt:      salt1,
 		Email:     "petr09mitin@mail.ru",
-		RegistrationDate: customtime.CustomTime{
+		CreatedAt: customtime.CustomTime{
+			Time: tp.Now(),
+		},
+		UpdatedAt: customtime.CustomTime{
 			Time: tp.Now(),
 		},
 		Avatar: "default_avatar.png",
@@ -50,7 +53,10 @@ func NewUsers(tp customtime.TimeProvider, users *sync.Map) (s *Users) {
 		Password:  hash.HashPassword("admin2", []byte(salt2)),
 		Salt:      salt2,
 		Email:     "lexagorbunov14@gmail.com",
-		RegistrationDate: customtime.CustomTime{
+		CreatedAt: customtime.CustomTime{
+			Time: tp.Now(),
+		},
+		UpdatedAt: customtime.CustomTime{
 			Time: tp.Now(),
 		},
 		Avatar: "leha.jpg",
@@ -86,7 +92,10 @@ func (s *Users) StoreUser(user *domain.User) (err error) {
 	user.ID = s.NextUserId
 	user.Password = hash.HashPassword(user.Password, []byte(salt))
 	user.Salt = salt
-	user.RegistrationDate = customtime.CustomTime{
+	user.CreatedAt = customtime.CustomTime{
+		Time: s.TP.Now(),
+	}
+	user.UpdatedAt = customtime.CustomTime{
 		Time: s.TP.Now(),
 	}
 
