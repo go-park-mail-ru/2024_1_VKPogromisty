@@ -1,27 +1,113 @@
 package repository
 
 import (
-	"database/sql"
+	"context"
 	"socio/domain"
 	"socio/errors"
 	customtime "socio/pkg/time"
 
+	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	_ "github.com/lib/pq"
 )
 
+const (
+	getSubscriptionsQuery = `
+	SELECT DISTINCT id,
+		first_name,
+		last_name,
+		email,
+		avatar,
+		date_of_birth,
+		created_at,
+		updated_at
+	FROM (
+			SELECT sub1.subscribed_to_id AS subscription_id
+			FROM public.subscription sub1
+				LEFT JOIN public.subscription sub2 ON sub1.subscribed_to_id = sub2.subscriber_id
+				AND sub1.subscriber_id = sub2.subscribed_to_id
+			WHERE sub1.subscriber_id = $1
+				AND sub2.id IS null
+		) AS sub_id
+		JOIN public.user AS u ON u.id = sub_id.subscription_id;
+	`
+	getFriendsQuery = `
+	SELECT DISTINCT id,
+		first_name,
+		last_name,
+		email,
+		avatar,
+		date_of_birth,
+		created_at,
+		updated_at
+	FROM (
+			SELECT sub1.subscribed_to_id AS friend_id
+			FROM public.subscription sub1
+				INNER JOIN public.subscription sub2 ON sub1.subscribed_to_id = sub2.subscriber_id
+				AND sub1.subscriber_id = sub2.subscribed_to_id
+			WHERE sub1.subscriber_id = $1
+		) AS friend_id
+		JOIN public.user AS u ON u.id = friend_id.friend_id;
+	`
+	getSubscribersQuery = `
+	SELECT DISTINCT id,
+		first_name,
+		last_name,
+		email,
+		avatar,
+		date_of_birth,
+		created_at,
+		updated_at
+	FROM (
+			SELECT sub2.subscriber_id AS subscriber_id
+			FROM public.subscription sub1
+				RIGHT JOIN public.subscription sub2 ON sub1.subscribed_to_id = sub2.subscriber_id
+				AND sub1.subscriber_id = sub2.subscribed_to_id
+			WHERE sub2.subscribed_to_id = $1
+				AND sub1.id IS NULL
+		) AS subscriber_id
+		JOIN public.user AS u ON u.id = subscriber_id.subscriber_id;
+	`
+	storeSubscriptionQuery = `
+	INSERT INTO public.subscription (subscriber_id, subscribed_to_id)
+	VALUES ($1, $2) 
+	ON CONFLICT (subscriber_id, subscribed_to_id) DO NOTHING
+	RETURNING id,
+		subscriber_id,
+		subscribed_to_id,
+		created_at,
+		updated_at;
+	`
+	deleteSubscriptionQuery = `
+	DELETE FROM public.subscription
+	WHERE subscriber_id = $1
+		AND subscribed_to_id = $2;
+	`
+	getSubscriptionBySubscriberAndSubscribedToIDQuery = `
+	SELECT id,
+		subscriber_id,
+		subscribed_to_id,
+		created_at,
+		updated_at
+	FROM public.subscription
+	WHERE subscriber_id = $1
+		AND subscribed_to_id = $2;
+	`
+)
+
 type Subscriptions struct {
-	db *sql.DB
+	db *pgxpool.Pool
 	TP customtime.TimeProvider
 }
 
-func NewSubscriptions(db *sql.DB, tp customtime.TimeProvider) *Subscriptions {
+func NewSubscriptions(db *pgxpool.Pool, tp customtime.TimeProvider) *Subscriptions {
 	return &Subscriptions{
 		db: db,
 		TP: tp,
 	}
 }
 
-func (s *Subscriptions) serializeIntoUsers(rows *sql.Rows) (users []*domain.User, err error) {
+func (s *Subscriptions) serializeIntoUsers(rows pgx.Rows) (users []*domain.User, err error) {
 	for rows.Next() {
 		user := new(domain.User)
 
@@ -32,7 +118,8 @@ func (s *Subscriptions) serializeIntoUsers(rows *sql.Rows) (users []*domain.User
 			&user.Email,
 			&user.Avatar,
 			&user.DateOfBirth.Time,
-			&user.RegistrationDate.Time,
+			&user.CreatedAt.Time,
+			&user.UpdatedAt.Time,
 		)
 		if err != nil {
 			return
@@ -45,21 +132,10 @@ func (s *Subscriptions) serializeIntoUsers(rows *sql.Rows) (users []*domain.User
 }
 
 func (s *Subscriptions) GetSubscriptions(userID uint) (subscriptions []*domain.User, err error) {
-	rows, err := s.db.Query(`
-		SELECT DISTINCT id, first_name, last_name, email, avatar, date_of_birth, registration_date FROM 
-		(
-			SELECT sub1.subscribed_to AS subscription_id
-			FROM subscriptions sub1
-			LEFT JOIN subscriptions sub2
-			ON sub1.subscribed_to = sub2.subscriber
-			AND sub1.subscriber = sub2.subscribed_to
-			WHERE sub1.subscriber = $1 AND sub2.id IS null
-		) AS sub_ids
-		JOIN users ON users.id=sub_ids.subscription_id;
-	`, userID)
+	rows, err := s.db.Query(context.Background(), getSubscriptionsQuery, userID)
 
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
 
@@ -73,11 +149,6 @@ func (s *Subscriptions) GetSubscriptions(userID uint) (subscriptions []*domain.U
 		return
 	}
 
-	rerr := rows.Close()
-	if rerr != nil {
-		return
-	}
-
 	if err = rows.Err(); err != nil {
 		return
 	}
@@ -86,20 +157,9 @@ func (s *Subscriptions) GetSubscriptions(userID uint) (subscriptions []*domain.U
 }
 
 func (s *Subscriptions) GetFriends(userID uint) (friends []*domain.User, err error) {
-	rows, err := s.db.Query(`
-		SELECT DISTINCT id, first_name, last_name, email, avatar, date_of_birth, registration_date FROM 
-		(
-			SELECT sub1.subscribed_to AS friend_id
-			FROM subscriptions sub1
-			INNER JOIN subscriptions sub2
-			ON sub1.subscribed_to = sub2.subscriber
-			AND sub1.subscriber = sub2.subscribed_to
-			WHERE sub1.subscriber = $1
-		) AS friend_ids
-		JOIN users ON users.id=friend_ids.friend_id;
-	`, userID)
+	rows, err := s.db.Query(context.Background(), getFriendsQuery, userID)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
 
@@ -113,11 +173,6 @@ func (s *Subscriptions) GetFriends(userID uint) (friends []*domain.User, err err
 		return
 	}
 
-	rerr := rows.Close()
-	if rerr != nil {
-		return
-	}
-
 	if err = rows.Err(); err != nil {
 		return
 	}
@@ -126,21 +181,9 @@ func (s *Subscriptions) GetFriends(userID uint) (friends []*domain.User, err err
 }
 
 func (s *Subscriptions) GetSubscribers(userID uint) (subscribers []*domain.User, err error) {
-	rows, err := s.db.Query(`
-		SELECT DISTINCT id, first_name, last_name, email, avatar, date_of_birth, registration_date FROM 
-		(
-			SELECT sub2.subscriber AS subscriber_id
-			FROM subscriptions sub1
-			RIGHT JOIN subscriptions sub2
-			ON sub1.subscribed_to = sub2.subscriber
-			AND sub1.subscriber = sub2.subscribed_to
-			WHERE sub2.subscribed_to = $1
-			AND sub1.id IS NULL
-		) AS subscriber_ids
-		JOIN users ON users.id=subscriber_ids.subscriber_id;
-	`, userID)
+	rows, err := s.db.Query(context.Background(), getSubscribersQuery, userID)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
 
@@ -154,11 +197,6 @@ func (s *Subscriptions) GetSubscribers(userID uint) (subscribers []*domain.User,
 		return
 	}
 
-	rerr := rows.Close()
-	if rerr != nil {
-		return
-	}
-
 	if err = rows.Err(); err != nil {
 		return
 	}
@@ -169,21 +207,19 @@ func (s *Subscriptions) GetSubscribers(userID uint) (subscribers []*domain.User,
 func (s *Subscriptions) Store(sub *domain.Subscription) (subscription *domain.Subscription, err error) {
 	subscription = new(domain.Subscription)
 
-	err = s.db.QueryRow(`
-		INSERT INTO subscriptions 
-		(subscriber, subscribed_to) 
-		VALUES ($1, $2) 
-		RETURNING id, subscriber, subscribed_to, creation_date
-		ON CONFLICT (subscriber, subscribed_to) DO NOTHING;`,
-		sub.SubscriberID, sub.SubscribedToID).Scan(
+	err = s.db.QueryRow(context.Background(), storeSubscriptionQuery,
+		sub.SubscriberID,
+		sub.SubscribedToID,
+	).Scan(
 		&subscription.ID,
 		&subscription.SubscriberID,
 		&subscription.SubscribedToID,
-		&subscription.CreationDate.Time,
+		&subscription.CreatedAt.Time,
+		&subscription.UpdatedAt.Time,
 	)
 
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return
 		}
 
@@ -194,21 +230,17 @@ func (s *Subscriptions) Store(sub *domain.Subscription) (subscription *domain.Su
 }
 
 func (s *Subscriptions) Delete(subsciberID uint, subscribedToID uint) (err error) {
-	result, err := s.db.Exec(`
-		DELETE FROM subscriptions WHERE subscriber = $1 AND subscribed_to = $2;
-	`, subsciberID, subscribedToID)
+	result, err := s.db.Exec(context.Background(), deleteSubscriptionQuery, subsciberID, subscribedToID)
 	if err != nil {
 		return
 	}
 
-	rows, err := result.RowsAffected()
-	if err != nil {
-		return
-	}
-	if rows == 0 {
+	rowsAffected := result.RowsAffected()
+
+	if rowsAffected == 0 {
 		return errors.ErrInvalidBody
 	}
-	if rows != 1 {
+	if rowsAffected != 1 {
 		return errors.ErrRowsAffected
 	}
 
@@ -218,18 +250,18 @@ func (s *Subscriptions) Delete(subsciberID uint, subscribedToID uint) (err error
 func (s *Subscriptions) GetBySubscriberAndSubscribedToID(subscriberID uint, subscribedToID uint) (subscription *domain.Subscription, err error) {
 	subscription = new(domain.Subscription)
 
-	err = s.db.QueryRow(`
-		SELECT id, subscriber, subscribed_to, creation_date 
-		FROM subscriptions 
-		WHERE subscriber = $1 AND subscribed_to = $2;`,
-		subscriberID, subscribedToID).Scan(
+	err = s.db.QueryRow(context.Background(), getSubscriptionBySubscriberAndSubscribedToIDQuery,
+		subscriberID,
+		subscribedToID,
+	).Scan(
 		&subscription.ID,
 		&subscription.SubscriberID,
 		&subscription.SubscribedToID,
-		&subscription.CreationDate.Time,
+		&subscription.CreatedAt.Time,
+		&subscription.UpdatedAt.Time,
 	)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			err = errors.ErrNotFound
 			return
 		}

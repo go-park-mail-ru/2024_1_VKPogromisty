@@ -6,5 +6,6 @@ type Subscription struct {
 	ID             uint                  `json:"subscriptionId"`
 	SubscriberID   uint                  `json:"subscriber"`
 	SubscribedToID uint                  `json:"subscribedTo"`
-	CreationDate   customtime.CustomTime `json:"creationDate,omitempty" swaggertype:"string" example:"2021-01-01T00:00:00Z" format:"date-time"`
+	CreatedAt      customtime.CustomTime `json:"createdAt,omitempty" swaggertype:"string" example:"2021-01-01T00:00:00Z" format:"date-time"`
+	UpdatedAt      customtime.CustomTime `json:"updatedAt,omitempty" swaggertype:"string" example:"2021-01-01T00:00:00Z" format:"date-time"`
 }

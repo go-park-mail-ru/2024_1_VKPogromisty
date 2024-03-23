@@ -20,18 +20,22 @@ definitions:
         type: array
       authorId:
         type: integer
-      creationDate:
+      content:
+        type: string
+      createdAt:
         example: "2021-01-01T00:00:00Z"
         format: date-time
         type: string
       postId:
         type: integer
-      text:
+      updatedAt:
+        example: "2021-01-01T00:00:00Z"
+        format: date-time
         type: string
     type: object
   domain.Subscription:
     properties:
-      creationDate:
+      createdAt:
         example: "2021-01-01T00:00:00Z"
         format: date-time
         type: string
@@ -41,11 +45,19 @@ definitions:
         type: integer
       subscriptionId:
         type: integer
+      updatedAt:
+        example: "2021-01-01T00:00:00Z"
+        format: date-time
+        type: string
     type: object
   domain.User:
     properties:
       avatar:
         example: default_avatar.png
+        type: string
+      createdAt:
+        example: "2021-01-01T00:00:00Z"
+        format: date-time
         type: string
       dateOfBirth:
         example: "2021-01-01T00:00:00Z"
@@ -57,7 +69,7 @@ definitions:
         type: string
       lastName:
         type: string
-      registrationDate:
+      updatedAt:
         example: "2021-01-01T00:00:00Z"
         format: date-time
         type: string

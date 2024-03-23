@@ -708,7 +708,10 @@ const docTemplate = `{
                 "authorId": {
                     "type": "integer"
                 },
-                "creationDate": {
+                "content": {
+                    "type": "string"
+                },
+                "createdAt": {
                     "type": "string",
                     "format": "date-time",
                     "example": "2021-01-01T00:00:00Z"
@@ -716,15 +719,17 @@ const docTemplate = `{
                 "postId": {
                     "type": "integer"
                 },
-                "text": {
-                    "type": "string"
+                "updatedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2021-01-01T00:00:00Z"
                 }
             }
         },
         "domain.Subscription": {
             "type": "object",
             "properties": {
-                "creationDate": {
+                "createdAt": {
                     "type": "string",
                     "format": "date-time",
                     "example": "2021-01-01T00:00:00Z"
@@ -737,6 +742,11 @@ const docTemplate = `{
                 },
                 "subscriptionId": {
                     "type": "integer"
+                },
+                "updatedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2021-01-01T00:00:00Z"
                 }
             }
         },
@@ -746,6 +756,11 @@ const docTemplate = `{
                 "avatar": {
                     "type": "string",
                     "example": "default_avatar.png"
+                },
+                "createdAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2021-01-01T00:00:00Z"
                 },
                 "dateOfBirth": {
                     "type": "string",
@@ -761,7 +776,7 @@ const docTemplate = `{
                 "lastName": {
                     "type": "string"
                 },
-                "registrationDate": {
+                "updatedAt": {
                     "type": "string",
                     "format": "date-time",
                     "example": "2021-01-01T00:00:00Z"
