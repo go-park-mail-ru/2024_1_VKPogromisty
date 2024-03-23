@@ -1,7 +1,7 @@
 package routers
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -10,6 +10,8 @@ import (
 	"socio/internal/rest/middleware"
 	customtime "socio/pkg/time"
 	"socio/utils"
+
+	"github.com/jackc/pgx/v4/pgxpool"
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/gorilla/mux"
@@ -23,7 +25,7 @@ func MountRootRouter() (err error) {
 	rootRouter := mux.NewRouter().PathPrefix("/api/v1/").Subrouter()
 
 	pgConnStr := fmt.Sprintf("user=%s dbname=%s password=%s host=%s port=%s sslmode=disable", os.Getenv("PG_USER"), os.Getenv("PG_DBNAME"), os.Getenv("PG_PASSWORD"), os.Getenv("PG_HOST"), os.Getenv("PG_PORT"))
-	db, err := sql.Open("postgres", pgConnStr)
+	db, err := pgxpool.Connect(context.Background(), pgConnStr)
 	if err != nil {
 		return
 	}

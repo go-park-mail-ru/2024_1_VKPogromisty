@@ -1,11 +1,13 @@
 package repository
 
 import (
-	"database/sql"
+	"context"
 	"socio/domain"
 	"socio/errors"
 	customtime "socio/pkg/time"
 
+	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	_ "github.com/lib/pq"
 )
 
@@ -94,18 +96,18 @@ const (
 )
 
 type Subscriptions struct {
-	db *sql.DB
+	db *pgxpool.Pool
 	TP customtime.TimeProvider
 }
 
-func NewSubscriptions(db *sql.DB, tp customtime.TimeProvider) *Subscriptions {
+func NewSubscriptions(db *pgxpool.Pool, tp customtime.TimeProvider) *Subscriptions {
 	return &Subscriptions{
 		db: db,
 		TP: tp,
 	}
 }
 
-func (s *Subscriptions) serializeIntoUsers(rows *sql.Rows) (users []*domain.User, err error) {
+func (s *Subscriptions) serializeIntoUsers(rows pgx.Rows) (users []*domain.User, err error) {
 	for rows.Next() {
 		user := new(domain.User)
 
@@ -130,10 +132,10 @@ func (s *Subscriptions) serializeIntoUsers(rows *sql.Rows) (users []*domain.User
 }
 
 func (s *Subscriptions) GetSubscriptions(userID uint) (subscriptions []*domain.User, err error) {
-	rows, err := s.db.Query(getSubscriptionsQuery, userID)
+	rows, err := s.db.Query(context.Background(), getSubscriptionsQuery, userID)
 
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
 
@@ -147,11 +149,6 @@ func (s *Subscriptions) GetSubscriptions(userID uint) (subscriptions []*domain.U
 		return
 	}
 
-	rerr := rows.Close()
-	if rerr != nil {
-		return
-	}
-
 	if err = rows.Err(); err != nil {
 		return
 	}
@@ -160,9 +157,9 @@ func (s *Subscriptions) GetSubscriptions(userID uint) (subscriptions []*domain.U
 }
 
 func (s *Subscriptions) GetFriends(userID uint) (friends []*domain.User, err error) {
-	rows, err := s.db.Query(getFriendsQuery, userID)
+	rows, err := s.db.Query(context.Background(), getFriendsQuery, userID)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
 
@@ -176,11 +173,6 @@ func (s *Subscriptions) GetFriends(userID uint) (friends []*domain.User, err err
 		return
 	}
 
-	rerr := rows.Close()
-	if rerr != nil {
-		return
-	}
-
 	if err = rows.Err(); err != nil {
 		return
 	}
@@ -189,9 +181,9 @@ func (s *Subscriptions) GetFriends(userID uint) (friends []*domain.User, err err
 }
 
 func (s *Subscriptions) GetSubscribers(userID uint) (subscribers []*domain.User, err error) {
-	rows, err := s.db.Query(getSubscribersQuery, userID)
+	rows, err := s.db.Query(context.Background(), getSubscribersQuery, userID)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
 
@@ -205,11 +197,6 @@ func (s *Subscriptions) GetSubscribers(userID uint) (subscribers []*domain.User,
 		return
 	}
 
-	rerr := rows.Close()
-	if rerr != nil {
-		return
-	}
-
 	if err = rows.Err(); err != nil {
 		return
 	}
@@ -220,7 +207,10 @@ func (s *Subscriptions) GetSubscribers(userID uint) (subscribers []*domain.User,
 func (s *Subscriptions) Store(sub *domain.Subscription) (subscription *domain.Subscription, err error) {
 	subscription = new(domain.Subscription)
 
-	err = s.db.QueryRow(storeSubscriptionQuery, sub.SubscriberID, sub.SubscribedToID).Scan(
+	err = s.db.QueryRow(context.Background(), storeSubscriptionQuery,
+		sub.SubscriberID,
+		sub.SubscribedToID,
+	).Scan(
 		&subscription.ID,
 		&subscription.SubscriberID,
 		&subscription.SubscribedToID,
@@ -229,7 +219,7 @@ func (s *Subscriptions) Store(sub *domain.Subscription) (subscription *domain.Su
 	)
 
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return
 		}
 
@@ -240,19 +230,17 @@ func (s *Subscriptions) Store(sub *domain.Subscription) (subscription *domain.Su
 }
 
 func (s *Subscriptions) Delete(subsciberID uint, subscribedToID uint) (err error) {
-	result, err := s.db.Exec(deleteSubscriptionQuery, subsciberID, subscribedToID)
+	result, err := s.db.Exec(context.Background(), deleteSubscriptionQuery, subsciberID, subscribedToID)
 	if err != nil {
 		return
 	}
 
-	rows, err := result.RowsAffected()
-	if err != nil {
-		return
-	}
-	if rows == 0 {
+	rowsAffected := result.RowsAffected()
+
+	if rowsAffected == 0 {
 		return errors.ErrInvalidBody
 	}
-	if rows != 1 {
+	if rowsAffected != 1 {
 		return errors.ErrRowsAffected
 	}
 
@@ -262,7 +250,10 @@ func (s *Subscriptions) Delete(subsciberID uint, subscribedToID uint) (err error
 func (s *Subscriptions) GetBySubscriberAndSubscribedToID(subscriberID uint, subscribedToID uint) (subscription *domain.Subscription, err error) {
 	subscription = new(domain.Subscription)
 
-	err = s.db.QueryRow(getSubscriptionBySubscriberAndSubscribedToIDQuery, subscriberID, subscribedToID).Scan(
+	err = s.db.QueryRow(context.Background(), getSubscriptionBySubscriberAndSubscribedToIDQuery,
+		subscriberID,
+		subscribedToID,
+	).Scan(
 		&subscription.ID,
 		&subscription.SubscriberID,
 		&subscription.SubscribedToID,
@@ -270,7 +261,7 @@ func (s *Subscriptions) GetBySubscriberAndSubscribedToID(subscriberID uint, subs
 		&subscription.UpdatedAt.Time,
 	)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			err = errors.ErrNotFound
 			return
 		}

@@ -1,10 +1,12 @@
 package repository
 
 import (
-	"database/sql"
+	"context"
 	"socio/domain"
 	customtime "socio/pkg/time"
 
+	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	_ "github.com/lib/pq"
 )
 
@@ -25,11 +27,11 @@ const (
 )
 
 type Posts struct {
-	db *sql.DB
+	db *pgxpool.Pool
 	TP customtime.TimeProvider
 }
 
-func NewPosts(db *sql.DB, tp customtime.TimeProvider) *Posts {
+func NewPosts(db *pgxpool.Pool, tp customtime.TimeProvider) *Posts {
 	return &Posts{
 		db: db,
 		TP: tp,
@@ -37,14 +39,15 @@ func NewPosts(db *sql.DB, tp customtime.TimeProvider) *Posts {
 }
 
 func (s *Posts) getAttachments(postID uint) (attachments []string, err error) {
-	rows, err := s.db.Query(getAttachmentFilenameQuery, postID)
+	rows, err := s.db.Query(context.Background(), getAttachmentFilenameQuery, postID)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
 
 		return
 	}
+
 	defer rows.Close()
 
 	for rows.Next() {
@@ -56,11 +59,6 @@ func (s *Posts) getAttachments(postID uint) (attachments []string, err error) {
 		attachments = append(attachments, attachment)
 	}
 
-	rerr := rows.Close()
-	if rerr != nil {
-		return
-	}
-
 	if err = rows.Err(); err != nil {
 		return
 	}
@@ -69,9 +67,9 @@ func (s *Posts) getAttachments(postID uint) (attachments []string, err error) {
 }
 
 func (s *Posts) GetAll() (posts []*domain.Post, err error) {
-	rows, err := s.db.Query(getAllPostsQuery)
+	rows, err := s.db.Query(context.Background(), getAllPostsQuery)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
 
@@ -92,11 +90,6 @@ func (s *Posts) GetAll() (posts []*domain.Post, err error) {
 		post.Attachments = attachments
 
 		posts = append(posts, &post)
-	}
-
-	rerr := rows.Close()
-	if rerr != nil {
-		return
 	}
 
 	if err = rows.Err(); err != nil {

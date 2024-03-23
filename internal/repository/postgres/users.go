@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"database/sql"
+	"context"
 	"socio/domain"
 	"socio/errors"
 	"socio/pkg/hash"
@@ -9,6 +9,8 @@ import (
 	customtime "socio/pkg/time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	_ "github.com/lib/pq"
 )
 
@@ -70,11 +72,11 @@ const (
 )
 
 type Users struct {
-	db *sql.DB
+	db *pgxpool.Pool
 	TP customtime.TimeProvider
 }
 
-func NewUsers(db *sql.DB, tp customtime.TimeProvider) *Users {
+func NewUsers(db *pgxpool.Pool, tp customtime.TimeProvider) *Users {
 	return &Users{
 		db: db,
 		TP: tp,
@@ -84,7 +86,7 @@ func NewUsers(db *sql.DB, tp customtime.TimeProvider) *Users {
 func (s *Users) GetUserByID(userID uint) (user *domain.User, err error) {
 	user = &domain.User{}
 
-	err = s.db.QueryRow(getUserByIDQuery, userID).Scan(
+	err = s.db.QueryRow(context.Background(), getUserByIDQuery, userID).Scan(
 		&user.ID,
 		&user.FirstName,
 		&user.LastName,
@@ -97,7 +99,7 @@ func (s *Users) GetUserByID(userID uint) (user *domain.User, err error) {
 		&user.UpdatedAt.Time,
 	)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			err = errors.ErrNotFound
 			return
 		}
@@ -111,7 +113,7 @@ func (s *Users) GetUserByID(userID uint) (user *domain.User, err error) {
 func (s *Users) GetUserByEmail(email string) (user *domain.User, err error) {
 	user = &domain.User{}
 
-	err = s.db.QueryRow(getUserByEmailQuery, email).Scan(
+	err = s.db.QueryRow(context.Background(), getUserByEmailQuery, email).Scan(
 		&user.ID,
 		&user.FirstName,
 		&user.LastName,
@@ -124,7 +126,7 @@ func (s *Users) GetUserByEmail(email string) (user *domain.User, err error) {
 		&user.UpdatedAt.Time,
 	)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			err = errors.ErrNotFound
 			return
 		}
@@ -140,7 +142,7 @@ func (s *Users) StoreUser(user *domain.User) (err error) {
 	user.Password = hash.HashPassword(user.Password, []byte(salt))
 	user.Salt = salt
 
-	err = s.db.QueryRow(storeUserQuery,
+	err = s.db.QueryRow(context.Background(), storeUserQuery,
 		user.FirstName,
 		user.LastName,
 		user.Email,
@@ -170,16 +172,16 @@ func (s *Users) RefreshSaltAndRehashPassword(user *domain.User, password string)
 	user.Password = hash.HashPassword(password, []byte(salt))
 	user.Salt = salt
 
-	result, err := s.db.Exec(refreshSaltAndRehashPasswordQuery, user.Password, user.Salt, user.ID)
+	result, err := s.db.Exec(context.Background(), refreshSaltAndRehashPasswordQuery,
+		user.Password,
+		user.Salt,
+		user.ID,
+	)
 	if err != nil {
 		return
 	}
 
-	rows, err := result.RowsAffected()
-	if err != nil {
-		return
-	}
-	if rows != 1 {
+	if result.RowsAffected() != 1 {
 		return errors.ErrRowsAffected
 	}
 
