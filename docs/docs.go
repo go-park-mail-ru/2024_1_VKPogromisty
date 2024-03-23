@@ -47,13 +47,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/utils.JSONResponse"
+                                    "$ref": "#/definitions/json.JSONResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "body": {
-                                            "$ref": "#/definitions/services.IsAuthorizedResponse"
+                                            "$ref": "#/definitions/auth.IsAuthorizedResponse"
                                         }
                                     }
                                 }
@@ -112,13 +112,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/utils.JSONResponse"
+                                    "$ref": "#/definitions/json.JSONResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "body": {
-                                            "$ref": "#/definitions/services.LoginResponse"
+                                            "$ref": "#/definitions/auth.LoginResponse"
                                         }
                                     }
                                 }
@@ -280,13 +280,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/utils.JSONResponse"
+                                    "$ref": "#/definitions/json.JSONResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "body": {
-                                            "$ref": "#/definitions/services.User"
+                                            "$ref": "#/definitions/domain.User"
                                         }
                                     }
                                 }
@@ -337,13 +337,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/utils.JSONResponse"
+                                    "$ref": "#/definitions/json.JSONResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "body": {
-                                            "$ref": "#/definitions/services.ListPostsResponse"
+                                            "$ref": "#/definitions/posts.ListPostsResponse"
                                         }
                                     }
                                 }
@@ -370,18 +370,314 @@ const docTemplate = `{
                     }
                 }
             }
-        }
-    },
-    "definitions": {
-        "errors.HTTPError": {
-            "type": "object",
-            "properties": {
-                "error": {
-                    "type": "string"
+        },
+        "/subscriptions/": {
+            "post": {
+                "description": "subscribe to user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscriptions"
+                ],
+                "summary": "handle user's subscription flow",
+                "operationId": "subscriptions/subscribe",
+                "parameters": [
+                    {
+                        "description": "Subscribed to ID",
+                        "name": "subscribedTo",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "session_id=some_session",
+                        "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/json.JSONResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/domain.Subscription"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "unsubscribe from user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscriptions"
+                ],
+                "summary": "handle user's unsubscription flow",
+                "operationId": "subscriptions/unsubscribe",
+                "parameters": [
+                    {
+                        "description": "User to unsubscribe from",
+                        "name": "subscribedTo",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "session_id=some_session",
+                        "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    }
                 }
             }
         },
-        "services.IsAuthorizedResponse": {
+        "/subscriptions/friends/": {
+            "get": {
+                "description": "get user's friends",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscriptions"
+                ],
+                "summary": "get user's friends",
+                "operationId": "subscriptions/friends",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "session_id=some_session",
+                        "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/json.JSONResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/subscriptions.GetFriendsResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/subscriptions/subscribers/": {
+            "get": {
+                "description": "get user's subscribers",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscriptions"
+                ],
+                "summary": "get user's subscribers",
+                "operationId": "subscriptions/subscribers",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "session_id=some_session",
+                        "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/json.JSONResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/subscriptions.GetSubscribersResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/subscriptions/subscriptions/": {
+            "get": {
+                "description": "get user's subscriptions",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscriptions"
+                ],
+                "summary": "get user's subscriptions",
+                "operationId": "subscriptions/subscriptions",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "session_id=some_session",
+                        "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/json.JSONResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/subscriptions.GetSubscriptionsResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "auth.IsAuthorizedResponse": {
             "type": "object",
             "properties": {
                 "isAuthorized": {
@@ -389,29 +685,18 @@ const docTemplate = `{
                 }
             }
         },
-        "services.ListPostsResponse": {
-            "type": "object",
-            "properties": {
-                "posts": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/services.PostWithAuthor"
-                    }
-                }
-            }
-        },
-        "services.LoginResponse": {
+        "auth.LoginResponse": {
             "type": "object",
             "properties": {
                 "sessionId": {
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/services.User"
+                    "$ref": "#/definitions/domain.User"
                 }
             }
         },
-        "services.Post": {
+        "domain.Post": {
             "type": "object",
             "properties": {
                 "attachments": {
@@ -436,18 +721,26 @@ const docTemplate = `{
                 }
             }
         },
-        "services.PostWithAuthor": {
+        "domain.Subscription": {
             "type": "object",
             "properties": {
-                "author": {
-                    "$ref": "#/definitions/services.User"
+                "creationDate": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2021-01-01T00:00:00Z"
                 },
-                "post": {
-                    "$ref": "#/definitions/services.Post"
+                "subscribedTo": {
+                    "type": "integer"
+                },
+                "subscriber": {
+                    "type": "integer"
+                },
+                "subscriptionId": {
+                    "type": "integer"
                 }
             }
         },
-        "services.User": {
+        "domain.User": {
             "type": "object",
             "properties": {
                 "avatar": {
@@ -478,10 +771,73 @@ const docTemplate = `{
                 }
             }
         },
-        "utils.JSONResponse": {
+        "errors.HTTPError": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "json.JSONResponse": {
             "type": "object",
             "properties": {
                 "body": {}
+            }
+        },
+        "posts.ListPostsResponse": {
+            "type": "object",
+            "properties": {
+                "posts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/posts.PostWithAuthor"
+                    }
+                }
+            }
+        },
+        "posts.PostWithAuthor": {
+            "type": "object",
+            "properties": {
+                "author": {
+                    "$ref": "#/definitions/domain.User"
+                },
+                "post": {
+                    "$ref": "#/definitions/domain.Post"
+                }
+            }
+        },
+        "subscriptions.GetFriendsResponse": {
+            "type": "object",
+            "properties": {
+                "friends": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.User"
+                    }
+                }
+            }
+        },
+        "subscriptions.GetSubscribersResponse": {
+            "type": "object",
+            "properties": {
+                "subscribers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.User"
+                    }
+                }
+            }
+        },
+        "subscriptions.GetSubscriptionsResponse": {
+            "type": "object",
+            "properties": {
+                "subscriptions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.User"
+                    }
+                }
             }
         }
     }

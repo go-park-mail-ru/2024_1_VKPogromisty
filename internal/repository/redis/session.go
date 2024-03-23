@@ -21,7 +21,6 @@ func (s *Session) CreateSession(userID uint) (sessionID string, err error) {
 	sessionID = uuid.NewString()
 	_, err = s.c.Do("SET", sessionID, userID)
 	if err != nil {
-		err = errors.ErrInternal
 		return
 	}
 

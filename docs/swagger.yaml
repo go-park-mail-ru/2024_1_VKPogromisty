@@ -1,30 +1,18 @@
 basePath: /api/v1
 definitions:
-  errors.HTTPError:
-    properties:
-      error:
-        type: string
-    type: object
-  services.IsAuthorizedResponse:
+  auth.IsAuthorizedResponse:
     properties:
       isAuthorized:
         type: boolean
     type: object
-  services.ListPostsResponse:
-    properties:
-      posts:
-        items:
-          $ref: '#/definitions/services.PostWithAuthor'
-        type: array
-    type: object
-  services.LoginResponse:
+  auth.LoginResponse:
     properties:
       sessionId:
         type: string
       user:
-        $ref: '#/definitions/services.User'
+        $ref: '#/definitions/domain.User'
     type: object
-  services.Post:
+  domain.Post:
     properties:
       attachments:
         items:
@@ -41,14 +29,20 @@ definitions:
       text:
         type: string
     type: object
-  services.PostWithAuthor:
+  domain.Subscription:
     properties:
-      author:
-        $ref: '#/definitions/services.User'
-      post:
-        $ref: '#/definitions/services.Post'
+      creationDate:
+        example: "2021-01-01T00:00:00Z"
+        format: date-time
+        type: string
+      subscribedTo:
+        type: integer
+      subscriber:
+        type: integer
+      subscriptionId:
+        type: integer
     type: object
-  services.User:
+  domain.User:
     properties:
       avatar:
         example: default_avatar.png
@@ -70,9 +64,49 @@ definitions:
       userId:
         type: integer
     type: object
-  utils.JSONResponse:
+  errors.HTTPError:
+    properties:
+      error:
+        type: string
+    type: object
+  json.JSONResponse:
     properties:
       body: {}
+    type: object
+  posts.ListPostsResponse:
+    properties:
+      posts:
+        items:
+          $ref: '#/definitions/posts.PostWithAuthor'
+        type: array
+    type: object
+  posts.PostWithAuthor:
+    properties:
+      author:
+        $ref: '#/definitions/domain.User'
+      post:
+        $ref: '#/definitions/domain.Post'
+    type: object
+  subscriptions.GetFriendsResponse:
+    properties:
+      friends:
+        items:
+          $ref: '#/definitions/domain.User'
+        type: array
+    type: object
+  subscriptions.GetSubscribersResponse:
+    properties:
+      subscribers:
+        items:
+          $ref: '#/definitions/domain.User'
+        type: array
+    type: object
+  subscriptions.GetSubscriptionsResponse:
+    properties:
+      subscriptions:
+        items:
+          $ref: '#/definitions/domain.User'
+        type: array
     type: object
 host: localhost:8080
 info:
@@ -107,10 +141,10 @@ paths:
               type: string
           schema:
             allOf:
-            - $ref: '#/definitions/utils.JSONResponse'
+            - $ref: '#/definitions/json.JSONResponse'
             - properties:
                 body:
-                  $ref: '#/definitions/services.IsAuthorizedResponse'
+                  $ref: '#/definitions/auth.IsAuthorizedResponse'
               type: object
         "500":
           description: Internal Server Error
@@ -147,10 +181,10 @@ paths:
               type: string
           schema:
             allOf:
-            - $ref: '#/definitions/utils.JSONResponse'
+            - $ref: '#/definitions/json.JSONResponse'
             - properties:
                 body:
-                  $ref: '#/definitions/services.LoginResponse'
+                  $ref: '#/definitions/auth.LoginResponse'
               type: object
         "400":
           description: Bad Request
@@ -256,10 +290,10 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/utils.JSONResponse'
+            - $ref: '#/definitions/json.JSONResponse'
             - properties:
                 body:
-                  $ref: '#/definitions/services.User'
+                  $ref: '#/definitions/domain.User'
               type: object
         "400":
           description: Bad Request
@@ -291,10 +325,10 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/utils.JSONResponse'
+            - $ref: '#/definitions/json.JSONResponse'
             - properties:
                 body:
-                  $ref: '#/definitions/services.ListPostsResponse'
+                  $ref: '#/definitions/posts.ListPostsResponse'
               type: object
         "400":
           description: Bad Request
@@ -311,4 +345,195 @@ paths:
       summary: list all posts
       tags:
       - posts
+  /subscriptions/:
+    delete:
+      consumes:
+      - application/json
+      description: unsubscribe from user
+      operationId: subscriptions/unsubscribe
+      parameters:
+      - description: User to unsubscribe from
+        in: body
+        name: subscribedTo
+        required: true
+        schema:
+          type: integer
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: handle user's unsubscription flow
+      tags:
+      - subscriptions
+    post:
+      consumes:
+      - application/json
+      description: subscribe to user
+      operationId: subscriptions/subscribe
+      parameters:
+      - description: Subscribed to ID
+        in: body
+        name: subscribedTo
+        required: true
+        schema:
+          type: integer
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  $ref: '#/definitions/domain.Subscription'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: handle user's subscription flow
+      tags:
+      - subscriptions
+  /subscriptions/friends/:
+    get:
+      consumes:
+      - application/json
+      description: get user's friends
+      operationId: subscriptions/friends
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  $ref: '#/definitions/subscriptions.GetFriendsResponse'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: get user's friends
+      tags:
+      - subscriptions
+  /subscriptions/subscribers/:
+    get:
+      consumes:
+      - application/json
+      description: get user's subscribers
+      operationId: subscriptions/subscribers
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  $ref: '#/definitions/subscriptions.GetSubscribersResponse'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: get user's subscribers
+      tags:
+      - subscriptions
+  /subscriptions/subscriptions/:
+    get:
+      consumes:
+      - application/json
+      description: get user's subscriptions
+      operationId: subscriptions/subscriptions
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  $ref: '#/definitions/subscriptions.GetSubscriptionsResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: get user's subscriptions
+      tags:
+      - subscriptions
 swagger: "2.0"

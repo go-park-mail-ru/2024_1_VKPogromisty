@@ -20,6 +20,7 @@ var HTTPErrors = map[error]int{
 	ErrInvalidFileName:      http.StatusBadRequest,
 	ErrInvalidBody:          http.StatusBadRequest,
 	ErrNotFound:             http.StatusNotFound,
+	ErrRowsAffected:         http.StatusInternalServerError,
 	ErrJSONMarshalling:      http.StatusInternalServerError,
 	ErrInternal:             http.StatusInternalServerError,
 }
