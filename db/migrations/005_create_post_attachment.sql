@@ -1,11 +1,11 @@
 -- Write your migrate up statements here
 CREATE TABLE IF NOT EXISTS public.post_attachment
 (
-    id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    file_name text UNIQUE NOT NULL,
-    post_id bigint NOT NULL,
-    created_at date NOT NULL DEFAULT now(),
-    updated_at date NOT NULL DEFAULT now(),
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    post_id BIGINT NOT NULL,
+    file_name TEXT UNIQUE NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     FOREIGN KEY (post_id)
         REFERENCES public.posts (id) MATCH SIMPLE
         ON UPDATE NO ACTION

@@ -1,12 +1,12 @@
 -- Write your migrate up statements here
 CREATE TABLE IF NOT EXISTS public.personal_message
 (
-    id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    sender_id bigint NOT NULL,
-    receiver_id bigint NOT NULL,
-    content text  NOT NULL DEFAULT ''::text,
-    created_at date NOT NULL DEFAULT now(),
-    updated_at date NOT NULL DEFAULT now(),
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    sender_id BIGINT NOT NULL,
+    receiver_id BIGINT NOT NULL,
+    content TEXT NOT NULL DEFAULT ''::TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     CONSTRAINT messages_receiver_fkey FOREIGN KEY (receiver_id)
         REFERENCES public.users (id) MATCH SIMPLE
         ON UPDATE NO ACTION
