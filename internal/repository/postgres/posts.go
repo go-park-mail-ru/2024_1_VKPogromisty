@@ -2,8 +2,10 @@ package repository
 
 import (
 	"context"
+	"mime/multipart"
 	"socio/domain"
 	customtime "socio/pkg/time"
+	"socio/utils"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -11,20 +13,26 @@ import (
 )
 
 const (
-	getAllPostsQuery = `
-	SELECT id,
+	storePostQuery = `
+	INSERT INTO public.post (author_id, content)
+	VALUES ($1, $2)
+	RETURNING id,
 		author_id,
 		content,
 		created_at,
-		updated_at
-	FROM public.post;
+		updated_at;
 	`
-	getAttachmentFilenameQuery = `
-	SELECT file_name
-	FROM public.post_attachments
-	WHERE post_id = $1;
+	storeAttachmentQuery = `
+	INSERT INTO public.post_attachment (post_id, file_name)
+	VALUES ($1, $2)
+	RETURNING file_name;
 	`
 )
+
+type PostWithAuthor struct {
+	Post   *domain.Post
+	Author *domain.User
+}
 
 type Posts struct {
 	db *pgxpool.Pool
@@ -38,63 +46,63 @@ func NewPosts(db *pgxpool.Pool, tp customtime.TimeProvider) *Posts {
 	}
 }
 
-func (s *Posts) getAttachments(postID uint) (attachments []string, err error) {
-	rows, err := s.db.Query(context.Background(), getAttachmentFilenameQuery, postID)
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, nil
-		}
+func (p *Posts) GetUserPosts(userID int) (posts []domain.Post, err error) {
+	return
+}
 
+func (p *Posts) GetUserFriendsPosts(userID int) (posts []domain.Post, err error) {
+	return
+}
+
+func (p *Posts) StorePost(post *domain.Post, attachments []*multipart.FileHeader) (newPost *domain.Post, err error) {
+	newPost = new(domain.Post)
+
+	tx, err := p.db.BeginTx(context.Background(), pgx.TxOptions{})
+
+	if err != nil {
 		return
 	}
 
-	defer rows.Close()
+	defer tx.Rollback(context.Background())
 
-	for rows.Next() {
-		var attachment string
-		err = rows.Scan(&attachment)
+	err = tx.QueryRow(context.Background(), storePostQuery, post.AuthorID, post.Content).Scan(
+		&newPost.ID,
+		&newPost.AuthorID,
+		&newPost.Content,
+		&newPost.CreatedAt.Time,
+		&newPost.UpdatedAt.Time,
+	)
+	if err != nil {
+		return
+	}
+
+	for _, attachment := range attachments {
+		var fileName string
+		fileName, err = utils.SaveImage(attachment)
 		if err != nil {
 			return
 		}
-		attachments = append(attachments, attachment)
+
+		err = tx.QueryRow(context.Background(), storeAttachmentQuery, newPost.ID, fileName).Scan(&fileName)
+		if err != nil {
+			return
+		}
+
+		newPost.Attachments = append(newPost.Attachments, fileName)
 	}
 
-	if err = rows.Err(); err != nil {
+	err = tx.Commit(context.Background())
+	if err != nil {
 		return
 	}
 
 	return
 }
 
-func (s *Posts) GetAll() (posts []*domain.Post, err error) {
-	rows, err := s.db.Query(context.Background(), getAllPostsQuery)
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, nil
-		}
+func (p *Posts) UpdatePost(post *domain.Post) (updatedPost *domain.Post, err error) {
+	return
+}
 
-		return
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		post := domain.Post{}
-		err = rows.Scan(&post.ID, &post.AuthorID, &post.Content, &post.CreatedAt.Time, &post.UpdatedAt.Time)
-		if err != nil {
-			return
-		}
-		attachments, err := s.getAttachments(post.ID)
-		if err != nil {
-			return nil, err
-		}
-		post.Attachments = attachments
-
-		posts = append(posts, &post)
-	}
-
-	if err = rows.Err(); err != nil {
-		return
-	}
-
+func (p *Posts) DeletePost(postID int) (err error) {
 	return
 }

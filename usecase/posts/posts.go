@@ -1,8 +1,9 @@
 package posts
 
 import (
+	"mime/multipart"
 	"socio/domain"
-	"sort"
+	"socio/errors"
 )
 
 type PostWithAuthor struct {
@@ -10,62 +11,57 @@ type PostWithAuthor struct {
 	Author domain.User `json:"author"`
 }
 
-type PostsStorage interface {
-	GetAll() (posts []*domain.Post, err error)
+type PostInput struct {
+	Content     string                  `json:"content"`
+	AuthorID    uint                    `json:"author_id"`
+	Attachments []*multipart.FileHeader `json:"attachments"`
 }
 
-type UsersStorage interface {
+type UserStorage interface {
 	GetUserByID(userID uint) (user *domain.User, err error)
+}
+
+type PostsStorage interface {
+	StorePost(post *domain.Post, attachments []*multipart.FileHeader) (newPost *domain.Post, err error)
 }
 
 type Service struct {
 	PostsStorage PostsStorage
-	UsersStorage UsersStorage
+	UserStorage  UserStorage
 }
 
 type ListPostsResponse struct {
 	Posts []PostWithAuthor `json:"posts"`
 }
 
-func NewPostsService(postsStorage PostsStorage, usersStorage UsersStorage) (postsService *Service) {
+func NewPostsService(postsStorage PostsStorage, userStorage UserStorage) (postsService *Service) {
 	postsService = &Service{
 		PostsStorage: postsStorage,
-		UsersStorage: usersStorage,
+		UserStorage:  userStorage,
 	}
 
 	return
 }
 
-func (p *Service) AugmentPostsWithAuthors() (postsWithAuthors []PostWithAuthor, err error) {
-	posts, err := p.PostsStorage.GetAll()
+func (s *Service) CreatePost(input PostInput) (postWithAuthor *PostWithAuthor, err error) {
+	if len(input.Content) == 0 && len(input.Attachments) == 0 {
+		err = errors.ErrInvalidBody
+		return
+	}
+
+	author, err := s.UserStorage.GetUserByID(input.AuthorID)
 	if err != nil {
 		return
 	}
 
-	for _, post := range posts {
-		author, userErr := p.UsersStorage.GetUserByID(post.AuthorID)
-		if userErr != nil {
-			err = userErr
-			return
-		}
-
-		postsWithAuthors = append(postsWithAuthors, PostWithAuthor{
-			Post:   *post,
-			Author: *author,
-		})
-	}
-
-	sort.Slice(postsWithAuthors, func(i, j int) bool {
-		return postsWithAuthors[i].Post.ID < postsWithAuthors[j].Post.ID
-	})
-
-	return
-}
-
-func (p *Service) ListPosts() (postsWithAuthors []PostWithAuthor, err error) {
-	postsWithAuthors, err = p.AugmentPostsWithAuthors()
+	newPost, err := s.PostsStorage.StorePost(&domain.Post{AuthorID: input.AuthorID, Content: input.Content}, input.Attachments)
 	if err != nil {
 		return
+	}
+
+	postWithAuthor = &PostWithAuthor{
+		Post:   *newPost,
+		Author: *author,
 	}
 
 	return

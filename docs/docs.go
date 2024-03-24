@@ -309,10 +309,10 @@ const docTemplate = `{
             }
         },
         "/posts/": {
-            "get": {
-                "description": "list posts to authorized user",
+            "post": {
+                "description": "create post with attachments",
                 "consumes": [
-                    "application/json"
+                    "multipart/form-data"
                 ],
                 "produces": [
                     "application/json"
@@ -320,8 +320,8 @@ const docTemplate = `{
                 "tags": [
                     "posts"
                 ],
-                "summary": "list all posts",
-                "operationId": "posts/",
+                "summary": "create post",
+                "operationId": "posts/create",
                 "parameters": [
                     {
                         "type": "string",
@@ -329,11 +329,24 @@ const docTemplate = `{
                         "name": "Cookie",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Content of the post",
+                        "name": "content",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Attachments of the post",
+                        "name": "attachments",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "allOf": [
                                 {
@@ -343,7 +356,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "body": {
-                                            "$ref": "#/definitions/posts.ListPostsResponse"
+                                            "$ref": "#/definitions/posts.PostWithAuthor"
                                         }
                                     }
                                 }
@@ -1015,17 +1028,6 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "body": {}
-            }
-        },
-        "posts.ListPostsResponse": {
-            "type": "object",
-            "properties": {
-                "posts": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/posts.PostWithAuthor"
-                    }
-                }
             }
         },
         "posts.PostWithAuthor": {
