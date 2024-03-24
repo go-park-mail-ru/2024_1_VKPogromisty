@@ -99,6 +99,15 @@ definitions:
       post:
         $ref: '#/definitions/domain.Post'
     type: object
+  profile.UserWithSubsInfo:
+    properties:
+      is_subscribed_to:
+        type: boolean
+      is_subscriber:
+        type: boolean
+      user:
+        $ref: '#/definitions/domain.User'
+    type: object
   subscriptions.GetFriendsResponse:
     properties:
       friends:
@@ -357,6 +366,45 @@ paths:
       summary: list all posts
       tags:
       - posts
+  /profile/{userID}:
+    get:
+      consumes:
+      - application/json
+      description: get user profile with subscriptions info
+      operationId: profile/get
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  $ref: '#/definitions/profile.UserWithSubsInfo'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: get user profile with subscriptions info
+      tags:
+      - profile
   /subscriptions/:
     delete:
       consumes:
