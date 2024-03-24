@@ -10,6 +10,7 @@ import (
 type ContextKey string
 
 const UserIDKey ContextKey = "userID"
+const SessionIDKey ContextKey = "sessionID"
 
 func CreateCheckIsAuthorizedMiddleware(sessionStorage auth.SessionStorage) func(h http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
@@ -28,6 +29,7 @@ func CreateCheckIsAuthorizedMiddleware(sessionStorage auth.SessionStorage) func(
 			}
 
 			ctx := context.WithValue(r.Context(), UserIDKey, userID)
+			ctx = context.WithValue(ctx, SessionIDKey, session.Value)
 
 			h.ServeHTTP(w, r.WithContext(ctx))
 		})

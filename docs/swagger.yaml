@@ -396,6 +396,76 @@ paths:
       summary: delete user profile
       tags:
       - profile
+    put:
+      consumes:
+      - multipart/form-data
+      description: update user profile
+      operationId: profile/update
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: First name
+        in: formData
+        name: firstName
+        type: string
+      - description: Last name
+        in: formData
+        name: lastName
+        type: string
+      - description: Email
+        in: formData
+        name: email
+        type: string
+      - description: Password
+        in: formData
+        name: password
+        type: string
+      - description: Repeat password
+        in: formData
+        name: repeatPassword
+        type: string
+      - description: Date of birth
+        in: formData
+        name: dateOfBirth
+        type: string
+      - description: Avatar
+        in: formData
+        name: avatar
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  $ref: '#/definitions/domain.User'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: update user profile
+      tags:
+      - profile
   /profile/{userID}:
     get:
       consumes:
