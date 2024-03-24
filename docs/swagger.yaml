@@ -366,6 +366,36 @@ paths:
       summary: list all posts
       tags:
       - posts
+  /profile/:
+    delete:
+      consumes:
+      - application/json
+      description: delete user profile
+      operationId: profile/delete
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: delete user profile
+      tags:
+      - profile
   /profile/{userID}:
     get:
       consumes:

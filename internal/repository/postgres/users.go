@@ -102,6 +102,10 @@ const (
 		salt = $2
 	WHERE id = $3;
 	`
+	deleteUserQuery = `
+	DELETE FROM public.user
+	WHERE id = $1;
+	`
 )
 
 type Users struct {
@@ -245,6 +249,24 @@ func (s *Users) RefreshSaltAndRehashPassword(user *domain.User, password string)
 	}
 
 	if result.RowsAffected() != 1 {
+		return errors.ErrRowsAffected
+	}
+
+	return
+}
+
+func (s *Users) DeleteUser(userID uint) (err error) {
+	result, err := s.db.Exec(context.Background(), deleteUserQuery, userID)
+	if err != nil {
+		return
+	}
+
+	rowsAffected := result.RowsAffected()
+
+	if rowsAffected == 0 {
+		err = errors.ErrNotFound
+		return
+	} else if rowsAffected != 1 {
 		return errors.ErrRowsAffected
 	}
 

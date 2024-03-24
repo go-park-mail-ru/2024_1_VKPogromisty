@@ -61,3 +61,31 @@ func (h *ProfileHandler) HandleGetProfile(w http.ResponseWriter, r *http.Request
 
 	json.ServeJSONBody(w, userWithInfo)
 }
+
+// HandleDeleteProfile godoc
+//
+//	@Summary		delete user profile
+//	@Description	delete user profile
+//	@Tags			profile
+//	@license.name	Apache 2.0
+//	@ID				profile/delete
+//	@Accept			json
+//
+//	@Param			Cookie	header	string	true	"session_id=some_session"
+//
+//	@Success		204
+//	@Failure		401	{object}	errors.HTTPError
+//	@Failure		404	{object}	errors.HTTPError
+//	@Failure		500	{object}	errors.HTTPError
+//	@Router			/profile/ [delete]
+func (h *ProfileHandler) HandleDeleteProfile(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(middleware.UserIDKey).(uint)
+
+	err := h.Service.DeleteUser(userID)
+	if err != nil {
+		json.ServeJSONError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}

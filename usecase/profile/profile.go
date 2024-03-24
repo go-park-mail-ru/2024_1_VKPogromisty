@@ -4,6 +4,7 @@ import "socio/domain"
 
 type UserStorage interface {
 	GetUserByIDWithSubsInfo(userID, authorizedUserID uint) (user *domain.User, isSubscribedTo bool, isSubscriber bool, err error)
+	DeleteUser(userID uint) (err error)
 }
 
 type UserWithSubsInfo struct {
@@ -24,6 +25,15 @@ func NewProfileService(userStorage UserStorage) (p *Service) {
 
 func (p *Service) GetUserByIDWithSubsInfo(userID, authorizedUserID uint) (userWithInfo UserWithSubsInfo, err error) {
 	userWithInfo.User, userWithInfo.IsSubscribedTo, userWithInfo.IsSubscriber, err = p.UserStorage.GetUserByIDWithSubsInfo(userID, authorizedUserID)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (p *Service) DeleteUser(userID uint) (err error) {
+	err = p.UserStorage.DeleteUser(userID)
 	if err != nil {
 		return
 	}
