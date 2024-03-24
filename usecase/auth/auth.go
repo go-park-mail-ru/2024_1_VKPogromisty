@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"fmt"
 	"mime/multipart"
 	"net/http"
 	"socio/domain"
@@ -118,7 +117,6 @@ func (a *Service) RegistrateUser(userInput RegistrationInput) (user *domain.User
 func (a *Service) Login(loginInput LoginInput) (user *domain.User, session *http.Cookie, err error) {
 	user, err = a.UserStorage.GetUserByEmail(loginInput.Email)
 	if err != nil {
-		fmt.Println(err)
 		err = errors.ErrInvalidLoginData
 		return
 	}
