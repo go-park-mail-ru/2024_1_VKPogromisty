@@ -371,6 +371,69 @@ const docTemplate = `{
                 }
             }
         },
+        "/profile/{userID}": {
+            "get": {
+                "description": "get user profile with subscriptions info",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "profile"
+                ],
+                "summary": "get user profile with subscriptions info",
+                "operationId": "profile/get",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "session_id=some_session",
+                        "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/json.JSONResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/profile.UserWithSubsInfo"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/subscriptions/": {
             "post": {
                 "description": "subscribe to user",
@@ -819,6 +882,20 @@ const docTemplate = `{
                 },
                 "post": {
                     "$ref": "#/definitions/domain.Post"
+                }
+            }
+        },
+        "profile.UserWithSubsInfo": {
+            "type": "object",
+            "properties": {
+                "is_subscribed_to": {
+                    "type": "boolean"
+                },
+                "is_subscriber": {
+                    "type": "boolean"
+                },
+                "user": {
+                    "$ref": "#/definitions/domain.User"
                 }
             }
         },

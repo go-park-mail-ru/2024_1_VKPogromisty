@@ -21,6 +21,23 @@ func NewProfileHandler(userStorage profile.UserStorage) (h *ProfileHandler) {
 	}
 }
 
+// HandleGetProfile godoc
+//
+//	@Summary		get user profile with subscriptions info
+//	@Description	get user profile with subscriptions info
+//	@Tags			profile
+//	@license.name	Apache 2.0
+//	@ID				profile/get
+//	@Accept			json
+//
+//	@Param			Cookie	header	string	true	"session_id=some_session"
+//
+//	@Produce		json
+//	@Success		200	{object}	json.JSONResponse{body=profile.UserWithSubsInfo}
+//	@Failure		401	{object}	errors.HTTPError
+//	@Failure		404	{object}	errors.HTTPError
+//	@Failure		500	{object}	errors.HTTPError
+//	@Router			/profile/{userID} [get]
 func (h *ProfileHandler) HandleGetProfile(w http.ResponseWriter, r *http.Request) {
 	userIDData := mux.Vars(r)["userID"]
 	if len(userIDData) == 0 {
