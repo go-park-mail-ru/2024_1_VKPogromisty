@@ -53,7 +53,7 @@ type IsAuthorizedResponse struct {
 	IsAuthorized bool `json:"isAuthorized"`
 }
 
-func NewService(tp customtime.TimeProvider, userStorage UserStorage, sessionStorage SessionStorage) (a *Service) {
+func NewService(userStorage UserStorage, sessionStorage SessionStorage) (a *Service) {
 	return &Service{
 		UserStorage:    userStorage,
 		SessionStorage: sessionStorage,

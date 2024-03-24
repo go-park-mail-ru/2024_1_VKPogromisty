@@ -18,7 +18,7 @@ import (
 
 var userStorage = repository.NewUsers(customtime.MockTimeProvider{}, &sync.Map{})
 var sessionStorage, _ = repository.NewSessions(&sync.Map{})
-var AuthHandler = rest.NewAuthHandler(customtime.MockTimeProvider{}, userStorage, sessionStorage)
+var AuthHandler = rest.NewAuthHandler(userStorage, sessionStorage)
 
 type LoginTestCase struct {
 	Method          string
@@ -304,7 +304,7 @@ func TestHandleRegistration(t *testing.T) {
 func TestCheckIsAuthorized(t *testing.T) {
 	var userStorage = repository.NewUsers(customtime.MockTimeProvider{}, &sync.Map{})
 	var sessionStorage, _ = repository.NewSessions(&sync.Map{})
-	var authHandler = rest.NewAuthHandler(customtime.MockTimeProvider{}, userStorage, sessionStorage)
+	var authHandler = rest.NewAuthHandler(userStorage, sessionStorage)
 
 	sessionID, _ := authHandler.Service.SessionStorage.CreateSession(0)
 

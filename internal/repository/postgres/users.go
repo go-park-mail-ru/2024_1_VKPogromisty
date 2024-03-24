@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"socio/domain"
 	"socio/errors"
 	"socio/pkg/hash"
@@ -26,6 +27,38 @@ const (
 		date_of_birth,
 		created_at,
 		updated_at
+	FROM public.user
+	WHERE id = $1;
+	`
+	getUserByIDWithSubsInfoQuery = `
+	SELECT id,
+		first_name,
+		last_name,
+		email,
+		hashed_password,
+		salt,
+		avatar,
+		date_of_birth,
+		created_at,
+		updated_at,
+		CASE
+			WHEN EXISTS (
+				SELECT 1
+				FROM subscription
+				WHERE subscriber_id = $2
+					AND subscribed_to_id = $1
+			) THEN TRUE
+			ELSE FALSE
+		END AS is_subscribed_to,
+		CASE
+			WHEN EXISTS (
+				SELECT 1
+				FROM subscription
+				WHERE subscriber_id = $1
+					AND subscribed_to_id = $2
+			) THEN TRUE
+			ELSE FALSE
+		END AS is_subscriber
 	FROM public.user
 	WHERE id = $1;
 	`
@@ -99,6 +132,36 @@ func (s *Users) GetUserByID(userID uint) (user *domain.User, err error) {
 		&user.UpdatedAt.Time,
 	)
 	if err != nil {
+		if err == pgx.ErrNoRows {
+			err = errors.ErrNotFound
+			return
+		}
+
+		return
+	}
+
+	return
+}
+
+func (s *Users) GetUserByIDWithSubsInfo(userID, authorizedUserID uint) (user *domain.User, isSubscribedTo bool, isSubscriber bool, err error) {
+	user = &domain.User{}
+
+	err = s.db.QueryRow(context.Background(), getUserByIDWithSubsInfoQuery, userID, authorizedUserID).Scan(
+		&user.ID,
+		&user.FirstName,
+		&user.LastName,
+		&user.Email,
+		&user.Password,
+		&user.Salt,
+		&user.Avatar,
+		&user.DateOfBirth.Time,
+		&user.CreatedAt.Time,
+		&user.UpdatedAt.Time,
+		&isSubscribedTo,
+		&isSubscriber,
+	)
+	if err != nil {
+		fmt.Println(err)
 		if err == pgx.ErrNoRows {
 			err = errors.ErrNotFound
 			return

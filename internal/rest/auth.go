@@ -16,9 +16,9 @@ type AuthHandler struct {
 	TimeProvider customtime.TimeProvider
 }
 
-func NewAuthHandler(tp customtime.TimeProvider, userStorage auth.UserStorage, sessionStorage auth.SessionStorage) (handler *AuthHandler) {
+func NewAuthHandler(userStorage auth.UserStorage, sessionStorage auth.SessionStorage) (handler *AuthHandler) {
 	handler = &AuthHandler{
-		Service: auth.NewService(tp, userStorage, sessionStorage),
+		Service: auth.NewService(userStorage, sessionStorage),
 	}
 	return
 }
