@@ -1,6 +1,7 @@
 package rest
 
 import (
+	defJSON "encoding/json"
 	"fmt"
 	"net/http"
 	"socio/errors"
@@ -9,6 +10,10 @@ import (
 	"socio/usecase/posts"
 	"strings"
 )
+
+type DeletePostInput struct {
+	PostID uint `json:"post_id"`
+}
 
 type PostsHandler struct {
 	Service *posts.Service
@@ -65,4 +70,48 @@ func (h *PostsHandler) HandleCreatePost(w http.ResponseWriter, r *http.Request) 
 
 	w.WriteHeader(http.StatusCreated)
 	json.ServeJSONBody(w, postWithAuthor)
+}
+
+// HandleDeletePost godoc
+//
+//	@Summary		delete post
+//	@Description	delete post by id
+//	@Tags			posts
+//	@license.name	Apache 2.0
+//	@ID				posts/delete
+//	@Accept			json
+//
+//	@Param			Cookie		header		string	true	"session_id=some_session"
+//	@Param			post_id		body		uint	true	"ID of the post"
+//
+//	@Produce		json
+//	@Success		204	{object}	json.JSONResponse
+//	@Failure		400	{object}	errors.HTTPError
+//	@Failure		401	{object}	errors.HTTPError
+//	@Failure		500	{object}	errors.HTTPError
+//	@Router			/posts/ [delete]
+func (h *PostsHandler) HandleDeletePost(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	var input DeletePostInput
+
+	decoder := defJSON.NewDecoder(r.Body)
+	err := decoder.Decode(&input)
+	if err != nil {
+		json.ServeJSONError(w, errors.ErrJSONUnmarshalling)
+		return
+	}
+
+	if err != nil {
+		json.ServeJSONError(w, err)
+		return
+	}
+
+	err = h.Service.DeletePost(input.PostID)
+	if err != nil {
+		json.ServeJSONError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

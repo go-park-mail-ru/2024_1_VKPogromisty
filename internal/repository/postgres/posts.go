@@ -4,6 +4,7 @@ import (
 	"context"
 	"mime/multipart"
 	"socio/domain"
+	"socio/errors"
 	customtime "socio/pkg/time"
 	"socio/utils"
 
@@ -27,6 +28,15 @@ const (
 	VALUES ($1, $2)
 	RETURNING file_name;
 	`
+	selectAttachmentsQuery = `
+	SELECT array_agg(file_name) AS attachments
+	FROM public.post_attachment
+	WHERE post_id = $1;
+	`
+	deletePostQuery = `
+	DELETE FROM public.post
+	WHERE id = $1;
+	`
 )
 
 type PostWithAuthor struct {
@@ -46,11 +56,11 @@ func NewPosts(db *pgxpool.Pool, tp customtime.TimeProvider) *Posts {
 	}
 }
 
-func (p *Posts) GetUserPosts(userID int) (posts []domain.Post, err error) {
+func (p *Posts) GetUserPosts(userID uint) (posts []domain.Post, err error) {
 	return
 }
 
-func (p *Posts) GetUserFriendsPosts(userID int) (posts []domain.Post, err error) {
+func (p *Posts) GetUserFriendsPosts(userID uint) (posts []domain.Post, err error) {
 	return
 }
 
@@ -103,6 +113,39 @@ func (p *Posts) UpdatePost(post *domain.Post) (updatedPost *domain.Post, err err
 	return
 }
 
-func (p *Posts) DeletePost(postID int) (err error) {
+func (p *Posts) DeletePost(postID uint) (err error) {
+	tx, err := p.db.BeginTx(context.Background(), pgx.TxOptions{})
+	if err != nil {
+		return
+	}
+	defer tx.Rollback(context.Background())
+
+	var attachments []string
+	err = tx.QueryRow(context.Background(), selectAttachmentsQuery, postID).Scan(&attachments)
+	if err != nil && err != pgx.ErrNoRows {
+		return
+	}
+
+	for _, attachment := range attachments {
+		err = utils.RemoveImage(attachment)
+		if err != nil {
+			return
+		}
+	}
+
+	result, err := tx.Exec(context.Background(), deletePostQuery, postID)
+	if err != nil {
+		return
+	}
+
+	if result.RowsAffected() != 1 {
+		return errors.ErrRowsAffected
+	}
+
+	err = tx.Commit(context.Background())
+	if err != nil {
+		return
+	}
+
 	return
 }

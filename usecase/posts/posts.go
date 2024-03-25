@@ -23,6 +23,7 @@ type UserStorage interface {
 
 type PostsStorage interface {
 	StorePost(post *domain.Post, attachments []*multipart.FileHeader) (newPost *domain.Post, err error)
+	DeletePost(postID uint) (err error)
 }
 
 type Service struct {
@@ -64,5 +65,10 @@ func (s *Service) CreatePost(input PostInput) (postWithAuthor *PostWithAuthor, e
 		Author: *author,
 	}
 
+	return
+}
+
+func (s *Service) DeletePost(postID uint) (err error) {
+	err = s.PostsStorage.DeletePost(postID)
 	return
 }

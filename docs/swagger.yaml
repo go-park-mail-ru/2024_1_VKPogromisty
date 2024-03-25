@@ -321,6 +321,45 @@ paths:
       tags:
       - auth
   /posts/:
+    delete:
+      consumes:
+      - application/json
+      description: delete post by id
+      operationId: posts/delete
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: ID of the post
+        in: body
+        name: post_id
+        required: true
+        schema:
+          type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            $ref: '#/definitions/json.JSONResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: delete post
+      tags:
+      - posts
     post:
       consumes:
       - multipart/form-data
