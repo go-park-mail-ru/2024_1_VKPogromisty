@@ -12,22 +12,9 @@ import (
 	"strings"
 )
 
-type ListUserPostsInput struct {
-	UserID     uint `json:"user_id"`
-	LastPostID uint `json:"last_post_id"`
-}
-
-type ListUserFriendsPostsInput struct {
-	LastPostID uint `json:"last_post_id"`
-}
-
 type ListUserPostsResponse struct {
 	Posts  []*domain.Post `json:"posts"`
 	Author *domain.User   `json:"author"`
-}
-
-type DeletePostInput struct {
-	PostID uint `json:"post_id"`
 }
 
 type PostsHandler struct {
@@ -63,7 +50,7 @@ func NewPostsHandler(postsStorage posts.PostsStorage, usersStorage posts.UserSto
 func (h *PostsHandler) HandleGetUserPosts(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	var input ListUserPostsInput
+	var input posts.ListUserPostsInput
 
 	decoder := defJSON.NewDecoder(r.Body)
 	err := decoder.Decode(&input)
@@ -107,7 +94,7 @@ func (h *PostsHandler) HandleGetUserPosts(w http.ResponseWriter, r *http.Request
 func (h *PostsHandler) HandleGetUserFriendsPosts(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	var input ListUserFriendsPostsInput
+	var input posts.ListUserFriendsPostsInput
 
 	decoder := defJSON.NewDecoder(r.Body)
 	err := decoder.Decode(&input)
@@ -173,6 +160,27 @@ func (h *PostsHandler) HandleCreatePost(w http.ResponseWriter, r *http.Request) 
 	json.ServeJSONBody(w, postWithAuthor)
 }
 
+// HandleUpdatePost godoc
+//
+//	@Summary		update post
+//	@Description	update post by id
+//	@Tags			posts
+//	@license.name	Apache 2.0
+//	@ID				posts/update
+//	@Accept			json
+//
+//	@Param			Cookie		header		string	true	"session_id=some_session"
+//	@Param			post_id		body		uint	true	"ID of the post"
+//	@Param			content		body		string	true	"Content of the post"
+//
+//	@Produce		json
+//	@Success		200	{object}	json.JSONResponse{body=domain.Post}
+//	@Failure		400	{object}	errors.HTTPError
+//	@Failure		401	{object}	errors.HTTPError
+//	@Failure		403	{object}	errors.HTTPError
+//	@Failure		404	{object}	errors.HTTPError
+//	@Failure		500	{object}	errors.HTTPError
+//	@Router			/posts/ [put]
 func (h *PostsHandler) HandleUpdatePost(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
@@ -218,7 +226,7 @@ func (h *PostsHandler) HandleUpdatePost(w http.ResponseWriter, r *http.Request) 
 func (h *PostsHandler) HandleDeletePost(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	var input DeletePostInput
+	var input posts.DeletePostInput
 
 	decoder := defJSON.NewDecoder(r.Body)
 	err := decoder.Decode(&input)

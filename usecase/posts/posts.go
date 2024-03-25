@@ -12,9 +12,22 @@ type PostInput struct {
 	Attachments []*multipart.FileHeader `json:"attachments"`
 }
 
+type ListUserPostsInput struct {
+	UserID     uint `json:"user_id"`
+	LastPostID uint `json:"last_post_id"`
+}
+
+type ListUserFriendsPostsInput struct {
+	LastPostID uint `json:"last_post_id"`
+}
+
 type PostUpdateInput struct {
 	PostID  uint   `json:"post_id"`
 	Content string `json:"content"`
+}
+
+type DeletePostInput struct {
+	PostID uint `json:"post_id"`
 }
 
 type UserStorage interface {
