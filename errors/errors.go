@@ -23,5 +23,6 @@ var (
 	ErrNotFound             = errors.New("not found")
 	ErrInternal             = errors.New("internal server error")
 	ErrInvalidFileName      = errors.New("invalid file name")
+	ErrInvalidSlug          = errors.New("invalid slug parameters")
 	ErrRowsAffected         = errors.New("wrong number of rows affected")
 )
