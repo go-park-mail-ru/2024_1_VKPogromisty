@@ -2,7 +2,6 @@ package routers
 
 import (
 	"socio/internal/rest"
-	customtime "socio/pkg/time"
 	"socio/usecase/auth"
 
 	"github.com/gorilla/mux"
@@ -10,7 +9,7 @@ import (
 
 func MountAuthRouter(rootRouter *mux.Router, userStorage auth.UserStorage, sessionStorage auth.SessionStorage) {
 	r := rootRouter.PathPrefix("/auth").Subrouter()
-	h := rest.NewAuthHandler(customtime.RealTimeProvider{}, userStorage, sessionStorage)
+	h := rest.NewAuthHandler(userStorage, sessionStorage)
 
 	r.HandleFunc("/login", h.HandleLogin).Methods("POST", "OPTIONS")
 	r.HandleFunc("/signup", h.HandleRegistration).Methods("POST", "OPTIONS")

@@ -43,6 +43,7 @@ func MountRootRouter() (err error) {
 	sessionStorage := redisRepo.NewSession(sessionConn)
 
 	MountAuthRouter(rootRouter, userStorage, sessionStorage)
+	MountProfileRouter(rootRouter, userStorage, sessionStorage)
 	MountPostsRouter(rootRouter, postStorage, userStorage, sessionStorage)
 	MountSubscriptionsRouter(rootRouter, subStorage, userStorage, sessionStorage)
 	MountStaticRouter(rootRouter)

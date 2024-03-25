@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"fmt"
 	"mime/multipart"
 	"net/http"
 	"socio/domain"
@@ -53,7 +52,7 @@ type IsAuthorizedResponse struct {
 	IsAuthorized bool `json:"isAuthorized"`
 }
 
-func NewService(tp customtime.TimeProvider, userStorage UserStorage, sessionStorage SessionStorage) (a *Service) {
+func NewService(userStorage UserStorage, sessionStorage SessionStorage) (a *Service) {
 	return &Service{
 		UserStorage:    userStorage,
 		SessionStorage: sessionStorage,
@@ -118,7 +117,6 @@ func (a *Service) RegistrateUser(userInput RegistrationInput) (user *domain.User
 func (a *Service) Login(loginInput LoginInput) (user *domain.User, session *http.Cookie, err error) {
 	user, err = a.UserStorage.GetUserByEmail(loginInput.Email)
 	if err != nil {
-		fmt.Println(err)
 		err = errors.ErrInvalidLoginData
 		return
 	}
