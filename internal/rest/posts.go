@@ -17,6 +17,10 @@ type ListUserPostsInput struct {
 	LastPostID uint `json:"last_post_id"`
 }
 
+type ListUserFriendsPostsInput struct {
+	LastPostID uint `json:"last_post_id"`
+}
+
 type ListUserPostsResponse struct {
 	Posts  []*domain.Post `json:"posts"`
 	Author *domain.User   `json:"author"`
@@ -40,18 +44,18 @@ func NewPostsHandler(postsStorage posts.PostsStorage, usersStorage posts.UserSto
 // HandleGetUserPosts godoc
 //
 //	@Summary		get user posts
-//	@Description	get user posts by id
+//	@Description	get user posts
 //	@Tags			posts
 //	@license.name	Apache 2.0
-//	@ID				posts/get
+//	@ID				posts/get_user_posts
 //	@Accept			json
 //
 //	@Param			Cookie		header		string	true	"session_id=some_session"
-//	@Param			user_id		body		uint	true	"ID of the user."
+//	@Param			user_id		body		uint	true	"ID of the user"
 //	@Param			last_post_id	body		uint	false	"ID of the last post"
 //
 //	@Produce		json
-//	@Success		200	{object}	posts.ListUserPostsResponse
+//	@Success		200	{object}	ListUserPostsResponse
 //	@Failure		400	{object}	errors.HTTPError
 //	@Failure		401	{object}	errors.HTTPError
 //	@Failure		500	{object}	errors.HTTPError
@@ -81,6 +85,48 @@ func (h *PostsHandler) HandleGetUserPosts(w http.ResponseWriter, r *http.Request
 	json.ServeJSONBody(w, response)
 }
 
+// HandleGetUserFriendsPosts godoc
+//
+//	@Summary		get user friends posts
+//	@Description	get user friends posts
+//	@Tags			posts
+//	@license.name	Apache 2.0
+//	@ID				posts/get_user_friends_posts
+//	@Accept			json
+//
+//	@Param			Cookie		header		string	true	"session_id=some_session"
+//	@Param			user_id		body		uint	true	"ID of the user"
+//	@Param			last_post_id	body		uint	false	"ID of the last post"
+//
+//	@Produce		json
+//	@Success		200	{object}	json.JSONResponse{body=[]domain.PostWithAuthor}
+//	@Failure		400	{object}	errors.HTTPError
+//	@Failure		401	{object}	errors.HTTPError
+//	@Failure		500	{object}	errors.HTTPError
+//	@Router			/posts/friends [get]
+func (h *PostsHandler) HandleGetUserFriendsPosts(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	var input ListUserFriendsPostsInput
+
+	decoder := defJSON.NewDecoder(r.Body)
+	err := decoder.Decode(&input)
+	if err != nil {
+		json.ServeJSONError(w, errors.ErrJSONUnmarshalling)
+		return
+	}
+
+	userID := r.Context().Value(middleware.UserIDKey).(uint)
+
+	postsWithAuthors, err := h.Service.PostsStorage.GetUserFriendsPosts(userID, input.LastPostID)
+	if err != nil {
+		json.ServeJSONError(w, err)
+		return
+	}
+
+	json.ServeJSONBody(w, postsWithAuthors)
+}
+
 // HandleCreatePost godoc
 //
 //	@Summary		create post
@@ -95,7 +141,7 @@ func (h *PostsHandler) HandleGetUserPosts(w http.ResponseWriter, r *http.Request
 //	@Param			attachments	formData	file	false	"Attachments of the post"
 //
 //	@Produce		json
-//	@Success		201	{object}	json.JSONResponse{body=posts.PostWithAuthor}
+//	@Success		201	{object}	json.JSONResponse{body=domain.PostWithAuthor}
 //	@Failure		400	{object}	errors.HTTPError
 //	@Failure		401	{object}	errors.HTTPError
 //	@Failure		500	{object}	errors.HTTPError

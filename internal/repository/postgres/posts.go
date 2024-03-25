@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	postsByPage       = 20
+	PostsByPage       = 20
 	getUserPostsQuery = `
 	SELECT id,
 		author_id,
@@ -32,6 +32,38 @@ const (
 	WHERE author_id = $1
 		AND id > $2
 	ORDER BY created_at DESC
+	LIMIT $3;
+	`
+	getUserFriendsPostsQuery = `
+	SELECT public.post.id,
+		author_id,
+		content,
+		public.post.created_at,
+		public.post.updated_at,
+		attachments,
+		public.user.id AS user_id,
+		public.user.first_name,
+		public.user.last_name,
+		public.user.email,
+		public.user.avatar,
+		public.user.date_of_birth,
+		public.user.created_at AS user_created_at,
+		public.user.updated_at AS user_updated_at
+	FROM public.post
+		LEFT JOIN (
+			SELECT post_id,
+				array_agg(file_name) AS attachments
+			FROM public.post_attachment
+			GROUP BY post_id
+		) AS post_attachments ON public.post.id = post_attachments.post_id
+		LEFT JOIN public.user ON public.post.author_id = public.user.id
+	WHERE author_id IN (
+			SELECT subscribed_to_id
+			FROM public.subscription
+			WHERE subscriber_id = $1
+		)
+		AND public.post.id > $2
+	ORDER BY public.post.created_at DESC
 	LIMIT $3;
 	`
 	storePostQuery = `
@@ -59,11 +91,6 @@ const (
 	`
 )
 
-type PostWithAuthor struct {
-	Post   *domain.Post
-	Author *domain.User
-}
-
 type Posts struct {
 	db *pgxpool.Pool
 	TP customtime.TimeProvider
@@ -77,7 +104,7 @@ func NewPosts(db *pgxpool.Pool, tp customtime.TimeProvider) *Posts {
 }
 
 func (p *Posts) GetUserPosts(userID uint, lastPostID uint) (posts []*domain.Post, err error) {
-	rows, err := p.db.Query(context.Background(), getUserPostsQuery, userID, lastPostID, postsByPage)
+	rows, err := p.db.Query(context.Background(), getUserPostsQuery, userID, lastPostID, PostsByPage)
 	if err != nil {
 		return
 	}
@@ -102,7 +129,40 @@ func (p *Posts) GetUserPosts(userID uint, lastPostID uint) (posts []*domain.Post
 	return
 }
 
-func (p *Posts) GetUserFriendsPosts(userID uint) (posts []domain.Post, err error) {
+func (p *Posts) GetUserFriendsPosts(userID uint, lastPostID uint) (posts []domain.PostWithAuthor, err error) {
+	rows, err := p.db.Query(context.Background(), getUserFriendsPostsQuery, userID, lastPostID, PostsByPage)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		post := domain.PostWithAuthor{
+			Post:   new(domain.Post),
+			Author: new(domain.User),
+		}
+		err = rows.Scan(
+			&post.Post.ID,
+			&post.Post.AuthorID,
+			&post.Post.Content,
+			&post.Post.CreatedAt.Time,
+			&post.Post.UpdatedAt.Time,
+			&post.Post.Attachments,
+			&post.Author.ID,
+			&post.Author.FirstName,
+			&post.Author.LastName,
+			&post.Author.Email,
+			&post.Author.Avatar,
+			&post.Author.DateOfBirth.Time,
+			&post.Author.CreatedAt.Time,
+			&post.Author.UpdatedAt.Time,
+		)
+		if err != nil {
+			return
+		}
+		posts = append(posts, post)
+	}
+
 	return
 }
 

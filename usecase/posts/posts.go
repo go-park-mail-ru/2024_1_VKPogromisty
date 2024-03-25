@@ -6,11 +6,6 @@ import (
 	"socio/errors"
 )
 
-type PostWithAuthor struct {
-	Post   domain.Post `json:"post"`
-	Author domain.User `json:"author"`
-}
-
 type PostInput struct {
 	Content     string                  `json:"content"`
 	AuthorID    uint                    `json:"author_id"`
@@ -23,6 +18,7 @@ type UserStorage interface {
 
 type PostsStorage interface {
 	GetUserPosts(userID uint, lastPostID uint) (posts []*domain.Post, err error)
+	GetUserFriendsPosts(userID uint, lastPostID uint) (posts []domain.PostWithAuthor, err error)
 	StorePost(post *domain.Post, attachments []*multipart.FileHeader) (newPost *domain.Post, err error)
 	DeletePost(postID uint) (err error)
 }
@@ -33,7 +29,7 @@ type Service struct {
 }
 
 type ListPostsResponse struct {
-	Posts []PostWithAuthor `json:"posts"`
+	Posts []domain.PostWithAuthor `json:"posts"`
 }
 
 func NewPostsService(postsStorage PostsStorage, userStorage UserStorage) (postsService *Service) {
@@ -55,7 +51,7 @@ func (s *Service) GetUserPosts(userID uint, lastPostID uint) (posts []*domain.Po
 	return
 }
 
-func (s *Service) CreatePost(input PostInput) (postWithAuthor *PostWithAuthor, err error) {
+func (s *Service) CreatePost(input PostInput) (postWithAuthor domain.PostWithAuthor, err error) {
 	if len(input.Content) == 0 && len(input.Attachments) == 0 {
 		err = errors.ErrInvalidBody
 		return
@@ -71,9 +67,9 @@ func (s *Service) CreatePost(input PostInput) (postWithAuthor *PostWithAuthor, e
 		return
 	}
 
-	postWithAuthor = &PostWithAuthor{
-		Post:   *newPost,
-		Author: *author,
+	postWithAuthor = domain.PostWithAuthor{
+		Post:   newPost,
+		Author: author,
 	}
 
 	return
