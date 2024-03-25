@@ -14,7 +14,23 @@ import (
 )
 
 const (
-	PostsByPage       = 20
+	PostsByPage      = 20
+	getPostByIDQuery = `
+	SELECT id,
+		author_id,
+		content,
+		created_at,
+		updated_at,
+		attachments
+	FROM public.post
+		LEFT JOIN (
+			SELECT post_id,
+				array_agg(file_name) AS attachments
+			FROM public.post_attachment
+			GROUP BY post_id
+		) AS post_attachments ON public.post.id = post_attachments.post_id
+	WHERE id = $1;
+	`
 	getUserPostsQuery = `
 	SELECT id,
 		author_id,
@@ -80,6 +96,16 @@ const (
 	VALUES ($1, $2)
 	RETURNING file_name;
 	`
+	updatePostQuery = `
+	UPDATE public.post
+	SET content = $1
+	WHERE id = $2
+	RETURNING id,
+		author_id,
+		content,
+		created_at,
+		updated_at;
+	`
 	selectAttachmentsQuery = `
 	SELECT array_agg(file_name) AS attachments
 	FROM public.post_attachment
@@ -101,6 +127,24 @@ func NewPosts(db *pgxpool.Pool, tp customtime.TimeProvider) *Posts {
 		db: db,
 		TP: tp,
 	}
+}
+
+func (p *Posts) GetPostByID(postID uint) (post *domain.Post, err error) {
+	post = new(domain.Post)
+
+	err = p.db.QueryRow(context.Background(), getPostByIDQuery, postID).Scan(
+		&post.ID,
+		&post.AuthorID,
+		&post.Content,
+		&post.CreatedAt.Time,
+		&post.UpdatedAt.Time,
+		&post.Attachments,
+	)
+	if err != nil {
+		return
+	}
+
+	return
 }
 
 func (p *Posts) GetUserPosts(userID uint, lastPostID uint) (posts []*domain.Post, err error) {
@@ -212,6 +256,19 @@ func (p *Posts) StorePost(post *domain.Post, attachments []*multipart.FileHeader
 }
 
 func (p *Posts) UpdatePost(post *domain.Post) (updatedPost *domain.Post, err error) {
+	updatedPost = new(domain.Post)
+
+	err = p.db.QueryRow(context.Background(), updatePostQuery, post.Content, post.ID).Scan(
+		&updatedPost.ID,
+		&updatedPost.AuthorID,
+		&updatedPost.Content,
+		&updatedPost.CreatedAt.Time,
+		&updatedPost.UpdatedAt.Time,
+	)
+	if err != nil {
+		return
+	}
+
 	return
 }
 

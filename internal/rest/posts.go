@@ -118,7 +118,7 @@ func (h *PostsHandler) HandleGetUserFriendsPosts(w http.ResponseWriter, r *http.
 
 	userID := r.Context().Value(middleware.UserIDKey).(uint)
 
-	postsWithAuthors, err := h.Service.PostsStorage.GetUserFriendsPosts(userID, input.LastPostID)
+	postsWithAuthors, err := h.Service.GetUserFriendsPosts(userID, input.LastPostID)
 	if err != nil {
 		json.ServeJSONError(w, err)
 		return
@@ -171,6 +171,30 @@ func (h *PostsHandler) HandleCreatePost(w http.ResponseWriter, r *http.Request) 
 
 	w.WriteHeader(http.StatusCreated)
 	json.ServeJSONBody(w, postWithAuthor)
+}
+
+func (h *PostsHandler) HandleUpdatePost(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	var input posts.PostUpdateInput
+
+	decoder := defJSON.NewDecoder(r.Body)
+	err := decoder.Decode(&input)
+	if err != nil {
+		json.ServeJSONError(w, errors.ErrJSONUnmarshalling)
+		return
+	}
+
+	userID := r.Context().Value(middleware.UserIDKey).(uint)
+
+	updatedPost, err := h.Service.UpdatePost(userID, input)
+	if err != nil {
+		json.ServeJSONError(w, err)
+		return
+	}
+
+	json.ServeJSONBody(w, updatedPost)
+
 }
 
 // HandleDeletePost godoc
