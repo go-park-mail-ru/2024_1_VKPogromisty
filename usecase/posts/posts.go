@@ -22,6 +22,7 @@ type UserStorage interface {
 }
 
 type PostsStorage interface {
+	GetUserPosts(userID uint, lastPostID uint) (posts []*domain.Post, err error)
 	StorePost(post *domain.Post, attachments []*multipart.FileHeader) (newPost *domain.Post, err error)
 	DeletePost(postID uint) (err error)
 }
@@ -41,6 +42,16 @@ func NewPostsService(postsStorage PostsStorage, userStorage UserStorage) (postsS
 		UserStorage:  userStorage,
 	}
 
+	return
+}
+
+func (s *Service) GetUserPosts(userID uint, lastPostID uint) (posts []*domain.Post, author *domain.User, err error) {
+	author, err = s.UserStorage.GetUserByID(userID)
+	if err != nil {
+		return
+	}
+
+	posts, err = s.PostsStorage.GetUserPosts(userID, lastPostID)
 	return
 }
 

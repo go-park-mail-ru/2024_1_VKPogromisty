@@ -14,7 +14,7 @@ var (
 	ErrUnauthorized         = errors.New("unauthorized")
 	ErrNotMatchingPasswords = errors.New("password and repeated password are not equal")
 	ErrPasswordMinLength    = errors.New("password should contain at least 6 characters")
-	ErrEmailsDuplicate      = errors.New("uses with such email already exists")
+	ErrEmailsDuplicate      = errors.New("user with such email already exists")
 	ErrInvalidDate          = errors.New("invalid date provided")
 	ErrJSONUnmarshalling    = errors.New("unable to unmarshal json")
 	ErrJSONMarshalling      = errors.New("unable to return json reponse")

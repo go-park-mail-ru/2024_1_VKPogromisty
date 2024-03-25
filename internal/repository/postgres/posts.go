@@ -14,6 +14,26 @@ import (
 )
 
 const (
+	postsByPage       = 20
+	getUserPostsQuery = `
+	SELECT id,
+		author_id,
+		content,
+		created_at,
+		updated_at,
+		attachments
+	FROM public.post
+		LEFT JOIN (
+			SELECT post_id,
+				array_agg(file_name) AS attachments
+			FROM public.post_attachment
+			GROUP BY post_id
+		) AS post_attachments ON public.post.id = post_attachments.post_id
+	WHERE author_id = $1
+		AND id > $2
+	ORDER BY created_at DESC
+	LIMIT $3;
+	`
 	storePostQuery = `
 	INSERT INTO public.post (author_id, content)
 	VALUES ($1, $2)
@@ -56,7 +76,29 @@ func NewPosts(db *pgxpool.Pool, tp customtime.TimeProvider) *Posts {
 	}
 }
 
-func (p *Posts) GetUserPosts(userID uint) (posts []domain.Post, err error) {
+func (p *Posts) GetUserPosts(userID uint, lastPostID uint) (posts []*domain.Post, err error) {
+	rows, err := p.db.Query(context.Background(), getUserPostsQuery, userID, lastPostID, postsByPage)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		post := new(domain.Post)
+		err = rows.Scan(
+			&post.ID,
+			&post.AuthorID,
+			&post.Content,
+			&post.CreatedAt.Time,
+			&post.UpdatedAt.Time,
+			&post.Attachments,
+		)
+		if err != nil {
+			return
+		}
+		posts = append(posts, post)
+	}
+
 	return
 }
 

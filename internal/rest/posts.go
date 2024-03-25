@@ -4,12 +4,23 @@ import (
 	defJSON "encoding/json"
 	"fmt"
 	"net/http"
+	"socio/domain"
 	"socio/errors"
 	"socio/internal/rest/middleware"
 	"socio/pkg/json"
 	"socio/usecase/posts"
 	"strings"
 )
+
+type ListUserPostsInput struct {
+	UserID     uint `json:"user_id"`
+	LastPostID uint `json:"last_post_id"`
+}
+
+type ListUserPostsResponse struct {
+	Posts  []*domain.Post `json:"posts"`
+	Author *domain.User   `json:"author"`
+}
 
 type DeletePostInput struct {
 	PostID uint `json:"post_id"`
@@ -24,6 +35,50 @@ func NewPostsHandler(postsStorage posts.PostsStorage, usersStorage posts.UserSto
 		Service: posts.NewPostsService(postsStorage, usersStorage),
 	}
 	return
+}
+
+// HandleGetUserPosts godoc
+//
+//	@Summary		get user posts
+//	@Description	get user posts by id
+//	@Tags			posts
+//	@license.name	Apache 2.0
+//	@ID				posts/get
+//	@Accept			json
+//
+//	@Param			Cookie		header		string	true	"session_id=some_session"
+//	@Param			user_id		body		uint	true	"ID of the user."
+//	@Param			last_post_id	body		uint	false	"ID of the last post"
+//
+//	@Produce		json
+//	@Success		200	{object}	posts.ListUserPostsResponse
+//	@Failure		400	{object}	errors.HTTPError
+//	@Failure		401	{object}	errors.HTTPError
+//	@Failure		500	{object}	errors.HTTPError
+//	@Router			/posts/ [get]
+func (h *PostsHandler) HandleGetUserPosts(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	var input ListUserPostsInput
+
+	decoder := defJSON.NewDecoder(r.Body)
+	err := decoder.Decode(&input)
+	if err != nil {
+		json.ServeJSONError(w, errors.ErrJSONUnmarshalling)
+		return
+	}
+
+	posts, author, err := h.Service.GetUserPosts(input.UserID, input.LastPostID)
+	if err != nil {
+		json.ServeJSONError(w, err)
+		return
+	}
+
+	response := ListUserPostsResponse{
+		Posts:  posts,
+		Author: author,
+	}
+	json.ServeJSONBody(w, response)
 }
 
 // HandleCreatePost godoc
