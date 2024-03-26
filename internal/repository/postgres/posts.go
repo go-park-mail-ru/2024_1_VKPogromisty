@@ -219,7 +219,16 @@ func (p *Posts) StorePost(post *domain.Post, attachments []*multipart.FileHeader
 		return
 	}
 
-	defer tx.Rollback(context.Background())
+	defer func() {
+		if err != nil {
+			return
+		}
+		if err = tx.Rollback(context.Background()); err != nil && err != pgx.ErrTxClosed {
+			return
+		}
+
+		err = nil
+	}()
 
 	err = tx.QueryRow(context.Background(), storePostQuery, post.AuthorID, post.Content).Scan(
 		&newPost.ID,
@@ -277,7 +286,17 @@ func (p *Posts) DeletePost(postID uint) (err error) {
 	if err != nil {
 		return
 	}
-	defer tx.Rollback(context.Background())
+
+	defer func() {
+		if err != nil {
+			return
+		}
+		if err = tx.Rollback(context.Background()); err != nil && err != pgx.ErrTxClosed {
+			return
+		}
+
+		err = nil
+	}()
 
 	var attachments []string
 	err = tx.QueryRow(context.Background(), selectAttachmentsQuery, postID).Scan(&attachments)
