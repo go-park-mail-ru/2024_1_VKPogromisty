@@ -8,6 +8,7 @@ import (
 	customtime "socio/pkg/time"
 	"socio/utils"
 
+	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	_ "github.com/lib/pq"
@@ -134,20 +135,33 @@ func NewPosts(db *pgxpool.Pool, tp customtime.TimeProvider) *Posts {
 	}
 }
 
+func textArrayIntoStringSlice(arr pgtype.TextArray) (res []string) {
+	for _, v := range arr.Elements {
+		if v.Status == pgtype.Present {
+			res = append(res, v.String)
+		}
+	}
+
+	return
+}
+
 func (p *Posts) GetPostByID(postID uint) (post *domain.Post, err error) {
 	post = new(domain.Post)
 
+	var attachments pgtype.TextArray
 	err = p.db.QueryRow(context.Background(), getPostByIDQuery, postID).Scan(
 		&post.ID,
 		&post.AuthorID,
 		&post.Content,
 		&post.CreatedAt.Time,
 		&post.UpdatedAt.Time,
-		&post.Attachments,
+		&attachments,
 	)
 	if err != nil {
 		return
 	}
+
+	post.Attachments = textArrayIntoStringSlice(attachments)
 
 	return
 }
@@ -161,17 +175,21 @@ func (p *Posts) GetUserPosts(userID uint, lastPostID uint) (posts []*domain.Post
 
 	for rows.Next() {
 		post := new(domain.Post)
+		var attachments pgtype.TextArray
 		err = rows.Scan(
 			&post.ID,
 			&post.AuthorID,
 			&post.Content,
 			&post.CreatedAt.Time,
 			&post.UpdatedAt.Time,
-			&post.Attachments,
+			&attachments,
 		)
 		if err != nil {
 			return
 		}
+
+		post.Attachments = textArrayIntoStringSlice(attachments)
+
 		posts = append(posts, post)
 	}
 
@@ -190,13 +208,14 @@ func (p *Posts) GetUserFriendsPosts(userID uint, lastPostID uint) (posts []domai
 			Post:   new(domain.Post),
 			Author: new(domain.User),
 		}
+		var attachments pgtype.TextArray
 		err = rows.Scan(
 			&post.Post.ID,
 			&post.Post.AuthorID,
 			&post.Post.Content,
 			&post.Post.CreatedAt.Time,
 			&post.Post.UpdatedAt.Time,
-			&post.Post.Attachments,
+			&attachments,
 			&post.Author.ID,
 			&post.Author.FirstName,
 			&post.Author.LastName,
@@ -209,6 +228,9 @@ func (p *Posts) GetUserFriendsPosts(userID uint, lastPostID uint) (posts []domai
 		if err != nil {
 			return
 		}
+
+		post.Post.Attachments = textArrayIntoStringSlice(attachments)
+
 		posts = append(posts, post)
 	}
 
@@ -303,16 +325,18 @@ func (p *Posts) DeletePost(postID uint) (err error) {
 		err = nil
 	}()
 
-	var attachments []string
+	var attachments pgtype.TextArray
 	err = tx.QueryRow(context.Background(), selectAttachmentsQuery, postID).Scan(&attachments)
 	if err != nil && err != pgx.ErrNoRows {
 		return
 	}
 
-	for _, attachment := range attachments {
-		err = utils.RemoveImage(attachment)
-		if err != nil {
-			return
+	for _, v := range attachments.Elements {
+		if v.Status == pgtype.Present {
+			err = utils.RemoveImage(v.String)
+			if err != nil {
+				return
+			}
 		}
 	}
 

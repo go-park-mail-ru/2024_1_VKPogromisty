@@ -417,7 +417,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "application/json\"\t\"Attachments is always null!!!",
                         "schema": {
                             "allOf": [
                                 {
@@ -1342,10 +1342,10 @@ const docTemplate = `{
         "profile.UserWithSubsInfo": {
             "type": "object",
             "properties": {
-                "is_subscribed_to": {
+                "isSubscribedTo": {
                     "type": "boolean"
                 },
-                "is_subscriber": {
+                "isSubscriber": {
                     "type": "boolean"
                 },
                 "user": {

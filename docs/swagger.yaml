@@ -94,9 +94,9 @@ definitions:
     type: object
   profile.UserWithSubsInfo:
     properties:
-      is_subscribed_to:
+      isSubscribedTo:
         type: boolean
-      is_subscriber:
+      isSubscriber:
         type: boolean
       user:
         $ref: '#/definitions/domain.User'
@@ -487,7 +487,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: "application/json\"\t\"Attachments is always null!!!"
           schema:
             allOf:
             - $ref: '#/definitions/json.JSONResponse'

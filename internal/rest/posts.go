@@ -37,9 +37,9 @@ func NewPostsHandler(postsStorage posts.PostsStorage, usersStorage posts.UserSto
 //	@ID				posts/get_user_posts
 //	@Accept			json
 //
-//	@Param			Cookie		header		string	true	"session_id=some_session"
-//	@Param			user_id		body		uint	true	"ID of the user"
-//	@Param			last_post_id	body		uint	false	"ID of the last post"
+//	@Param			Cookie			header	string	true	"session_id=some_session"
+//	@Param			user_id			body	uint	true	"ID of the user"
+//	@Param			last_post_id	body	uint	false	"ID of the last post"
 //
 //	@Produce		json
 //	@Success		200	{object}	ListUserPostsResponse
@@ -81,9 +81,9 @@ func (h *PostsHandler) HandleGetUserPosts(w http.ResponseWriter, r *http.Request
 //	@ID				posts/get_user_friends_posts
 //	@Accept			json
 //
-//	@Param			Cookie		header		string	true	"session_id=some_session"
-//	@Param			user_id		body		uint	true	"ID of the user"
-//	@Param			last_post_id	body		uint	false	"ID of the last post"
+//	@Param			Cookie			header	string	true	"session_id=some_session"
+//	@Param			user_id			body	uint	true	"ID of the user"
+//	@Param			last_post_id	body	uint	false	"ID of the last post"
 //
 //	@Produce		json
 //	@Success		200	{object}	json.JSONResponse{body=[]domain.PostWithAuthor}
@@ -169,12 +169,12 @@ func (h *PostsHandler) HandleCreatePost(w http.ResponseWriter, r *http.Request) 
 //	@ID				posts/update
 //	@Accept			json
 //
-//	@Param			Cookie		header		string	true	"session_id=some_session"
-//	@Param			post_id		body		uint	true	"ID of the post"
-//	@Param			content		body		string	true	"Content of the post"
+//	@Param			Cookie	header	string	true	"session_id=some_session"
+//	@Param			post_id	body	uint	true	"ID of the post"
+//	@Param			content	body	string	true	"Content of the post"
 //
 //	@Produce		json
-//	@Success		200	{object}	json.JSONResponse{body=domain.Post}
+//	@Success		200	{object}	json.JSONResponse{body=domain.Post}	"application/json"	"Attachments is always null!!!"
 //	@Failure		400	{object}	errors.HTTPError
 //	@Failure		401	{object}	errors.HTTPError
 //	@Failure		403	{object}	errors.HTTPError
@@ -214,8 +214,8 @@ func (h *PostsHandler) HandleUpdatePost(w http.ResponseWriter, r *http.Request) 
 //	@ID				posts/delete
 //	@Accept			json
 //
-//	@Param			Cookie		header		string	true	"session_id=some_session"
-//	@Param			post_id		body		uint	true	"ID of the post"
+//	@Param			Cookie	header	string	true	"session_id=some_session"
+//	@Param			post_id	body	uint	true	"ID of the post"
 //
 //	@Produce		json
 //	@Success		204	{object}	json.JSONResponse
