@@ -33,6 +33,13 @@ definitions:
         format: date-time
         type: string
     type: object
+  domain.PostWithAuthor:
+    properties:
+      author:
+        $ref: '#/definitions/domain.User'
+      post:
+        $ref: '#/definitions/domain.Post'
+    type: object
   domain.Subscription:
     properties:
       createdAt:
@@ -85,28 +92,23 @@ definitions:
     properties:
       body: {}
     type: object
-  posts.ListPostsResponse:
-    properties:
-      posts:
-        items:
-          $ref: '#/definitions/posts.PostWithAuthor'
-        type: array
-    type: object
-  posts.PostWithAuthor:
-    properties:
-      author:
-        $ref: '#/definitions/domain.User'
-      post:
-        $ref: '#/definitions/domain.Post'
-    type: object
   profile.UserWithSubsInfo:
     properties:
-      is_subscribed_to:
+      isSubscribedTo:
         type: boolean
-      is_subscriber:
+      isSubscriber:
         type: boolean
       user:
         $ref: '#/definitions/domain.User'
+    type: object
+  rest.ListUserPostsResponse:
+    properties:
+      author:
+        $ref: '#/definitions/domain.User'
+      posts:
+        items:
+          $ref: '#/definitions/domain.Post'
+        type: array
     type: object
   subscriptions.GetFriendsResponse:
     properties:
@@ -328,28 +330,120 @@ paths:
       tags:
       - auth
   /posts/:
-    get:
+    delete:
       consumes:
       - application/json
-      description: list posts to authorized user
-      operationId: posts/
+      description: delete post by id
+      operationId: posts/delete
       parameters:
       - description: session_id=some_session
         in: header
         name: Cookie
         required: true
         type: string
+      - description: ID of the post
+        in: body
+        name: post_id
+        required: true
+        schema:
+          type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            $ref: '#/definitions/json.JSONResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: delete post
+      tags:
+      - posts
+    get:
+      consumes:
+      - application/json
+      description: get user posts
+      operationId: posts/get_user_posts
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: ID of the user
+        in: body
+        name: user_id
+        required: true
+        schema:
+          type: integer
+      - description: ID of the last post
+        in: body
+        name: last_post_id
+        schema:
+          type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
+            $ref: '#/definitions/rest.ListUserPostsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: get user posts
+      tags:
+      - posts
+    post:
+      consumes:
+      - multipart/form-data
+      description: create post with attachments
+      operationId: posts/create
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: Content of the post
+        in: formData
+        name: content
+        required: true
+        type: string
+      - description: Attachments of the post
+        in: formData
+        name: attachments
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
             allOf:
             - $ref: '#/definitions/json.JSONResponse'
             - properties:
                 body:
-                  $ref: '#/definitions/posts.ListPostsResponse'
+                  $ref: '#/definitions/domain.PostWithAuthor'
               type: object
         "400":
           description: Bad Request
@@ -363,7 +457,117 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/errors.HTTPError'
-      summary: list all posts
+      summary: create post
+      tags:
+      - posts
+    put:
+      consumes:
+      - application/json
+      description: update post by id
+      operationId: posts/update
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: ID of the post
+        in: body
+        name: post_id
+        required: true
+        schema:
+          type: integer
+      - description: Content of the post
+        in: body
+        name: content
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: "application/json\"\t\"Attachments is always null!!!"
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  $ref: '#/definitions/domain.Post'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: update post
+      tags:
+      - posts
+  /posts/friends:
+    get:
+      consumes:
+      - application/json
+      description: get user friends posts
+      operationId: posts/get_user_friends_posts
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: ID of the user
+        in: body
+        name: user_id
+        required: true
+        schema:
+          type: integer
+      - description: ID of the last post
+        in: body
+        name: last_post_id
+        schema:
+          type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/domain.PostWithAuthor'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: get user friends posts
       tags:
       - posts
   /profile/:
