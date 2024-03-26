@@ -22,8 +22,8 @@ type SessionStorage interface {
 
 type UserWithSubsInfo struct {
 	User           *domain.User
-	IsSubscriber   bool `json:"is_subscriber"`
-	IsSubscribedTo bool `json:"is_subscribed_to"`
+	IsSubscriber   bool `json:"isSubscriber"`
+	IsSubscribedTo bool `json:"isSubscribedTo"`
 }
 
 type UpdateUserInput struct {

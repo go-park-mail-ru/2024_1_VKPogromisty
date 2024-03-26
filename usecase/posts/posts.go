@@ -8,26 +8,26 @@ import (
 
 type PostInput struct {
 	Content     string                  `json:"content"`
-	AuthorID    uint                    `json:"author_id"`
+	AuthorID    uint                    `json:"authorId"`
 	Attachments []*multipart.FileHeader `json:"attachments"`
 }
 
 type ListUserPostsInput struct {
-	UserID     uint `json:"user_id"`
-	LastPostID uint `json:"last_post_id"`
+	UserID     uint `json:"userId"`
+	LastPostID uint `json:"lastPostId"`
 }
 
 type ListUserFriendsPostsInput struct {
-	LastPostID uint `json:"last_post_id"`
+	LastPostID uint `json:"lastPostId"`
 }
 
 type PostUpdateInput struct {
-	PostID  uint   `json:"post_id"`
+	PostID  uint   `json:"postId"`
 	Content string `json:"content"`
 }
 
 type DeletePostInput struct {
-	PostID uint `json:"post_id"`
+	PostID uint `json:"postId"`
 }
 
 type UserStorage interface {
