@@ -16,70 +16,75 @@ import (
 const (
 	PostsByPage      = 20
 	getPostByIDQuery = `
-	SELECT id,
-		author_id,
-		content,
-		created_at,
-		updated_at,
-		attachments
-	FROM public.post
-		LEFT JOIN (
-			SELECT post_id,
-				array_agg(file_name) AS attachments
-			FROM public.post_attachment
-			GROUP BY post_id
-		) AS post_attachments ON public.post.id = post_attachments.post_id
-	WHERE id = $1;
+	SELECT p.id,
+		p.author_id,
+		p.content,
+		p.created_at,
+		p.updated_at,
+		array_agg(pa.file_name) AS attachments
+	FROM public.post AS p
+		LEFT JOIN public.post_attachment AS pa ON p.id = pa.post_id
+	WHERE p.id = $1
+	GROUP BY p.id,
+		p.author_id,
+		p.content,
+		p.created_at,
+		p.updated_at;
 	`
 	getUserPostsQuery = `
-	SELECT id,
-		author_id,
-		content,
-		created_at,
-		updated_at,
-		attachments
-	FROM public.post
-		LEFT JOIN (
-			SELECT post_id,
-				array_agg(file_name) AS attachments
-			FROM public.post_attachment
-			GROUP BY post_id
-		) AS post_attachments ON public.post.id = post_attachments.post_id
-	WHERE author_id = $1
-		AND id > $2
-	ORDER BY created_at DESC
+	SELECT p.id,
+		p.author_id,
+		p.content,
+		p.created_at,
+		p.updated_at,
+		array_agg(pa.file_name) AS attachments
+	FROM public.post AS p
+		LEFT JOIN public.post_attachment AS pa ON p.id = pa.post_id
+	WHERE p.author_id = $1
+		AND p.id > $2
+	GROUP BY p.id,
+		p.author_id,
+		p.content,
+		p.created_at,
+		p.updated_at
+	ORDER BY p.created_at DESC
 	LIMIT $3;
 	`
 	getUserFriendsPostsQuery = `
-	SELECT public.post.id,
-		author_id,
-		content,
-		public.post.created_at,
-		public.post.updated_at,
-		attachments,
-		public.user.id AS user_id,
-		public.user.first_name,
-		public.user.last_name,
-		public.user.email,
-		public.user.avatar,
-		public.user.date_of_birth,
-		public.user.created_at AS user_created_at,
-		public.user.updated_at AS user_updated_at
-	FROM public.post
-		LEFT JOIN (
-			SELECT post_id,
-				array_agg(file_name) AS attachments
-			FROM public.post_attachment
-			GROUP BY post_id
-		) AS post_attachments ON public.post.id = post_attachments.post_id
-		LEFT JOIN public.user ON public.post.author_id = public.user.id
-	WHERE author_id IN (
-			SELECT subscribed_to_id
-			FROM public.subscription
-			WHERE subscriber_id = $1
-		)
-		AND public.post.id > $2
-	ORDER BY public.post.created_at DESC
+	SELECT p.id,
+		p.author_id,
+		p.content,
+		p.created_at,
+		p.updated_at,
+		array_agg(pa.file_name) AS attachments,
+		u.id AS user_id,
+		u.first_name,
+		u.last_name,
+		u.email,
+		u.avatar,
+		u.date_of_birth,
+		u.created_at AS user_created_at,
+		u.updated_at AS user_updated_at
+	FROM public.post AS p
+		LEFT JOIN public.post_attachment AS pa ON p.id = pa.post_id
+		INNER JOIN public.user AS u ON p.author_id = u.id
+		INNER JOIN public.subscription AS s ON u.id = s.subscribed_to_id
+	WHERE s.subscriber_id = $1
+		AND p.id > $2
+	GROUP BY p.id,
+		p.author_id,
+		p.content,
+		p.created_at,
+		p.updated_at,
+		u.id,
+		u.first_name,
+		u.last_name,
+		u.email,
+		u.avatar,
+		u.date_of_birth,
+		u.created_at,
+		u.updated_at
+	ORDER BY p.created_at DESC
 	LIMIT $3;
 	`
 	storePostQuery = `
