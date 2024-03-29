@@ -6,7 +6,7 @@ import (
 	"path"
 	"socio/errors"
 	"socio/pkg/json"
-	"socio/utils"
+	"socio/pkg/static"
 
 	"github.com/gorilla/mux"
 )
@@ -21,7 +21,7 @@ func (s *StaticHandler) HandleServeStatic(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	filePath := path.Join(utils.StaticFilePath, fileName)
+	filePath := path.Join(static.StaticFilePath, fileName)
 
 	file, err := os.Open(filePath)
 	if err != nil {

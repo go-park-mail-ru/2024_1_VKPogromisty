@@ -3,7 +3,7 @@ package rest_test
 import (
 	"net/http/httptest"
 	"socio/internal/rest"
-	"socio/utils"
+	"socio/pkg/static"
 	"testing"
 
 	"github.com/gorilla/mux"
@@ -40,7 +40,7 @@ var ServeStaticTestCases = map[string]ServeStaticTestCase{
 }
 
 func TestHandleServeStatic(t *testing.T) {
-	utils.StaticFilePath = "../../static"
+	static.StaticFilePath = "../../static"
 
 	for name, tc := range ServeStaticTestCases {
 		t.Run(name, func(t *testing.T) {

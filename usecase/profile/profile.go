@@ -3,8 +3,8 @@ package profile
 import (
 	"mime/multipart"
 	"socio/domain"
+	"socio/pkg/static"
 	customtime "socio/pkg/time"
-	"socio/utils"
 	"time"
 )
 
@@ -92,12 +92,12 @@ func (p *Service) UpdateUser(input UpdateUserInput) (updatedUser *domain.User, e
 	}
 
 	if input.Avatar != nil {
-		err = utils.RemoveImage(updatedUser.Avatar)
+		err = static.RemoveImage(updatedUser.Avatar)
 		if err != nil {
 			return nil, err
 		}
 
-		fileName, err := utils.SaveImage(input.Avatar)
+		fileName, err := static.SaveImage(input.Avatar)
 		if err != nil {
 			return nil, err
 		}
