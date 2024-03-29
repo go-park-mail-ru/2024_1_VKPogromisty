@@ -5,8 +5,8 @@ import (
 	"mime/multipart"
 	"socio/domain"
 	"socio/errors"
+	"socio/pkg/static"
 	customtime "socio/pkg/time"
-	"socio/utils"
 
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
@@ -270,7 +270,7 @@ func (p *Posts) StorePost(post *domain.Post, attachments []*multipart.FileHeader
 
 	for _, attachment := range attachments {
 		var fileName string
-		fileName, err = utils.SaveImage(attachment)
+		fileName, err = static.SaveImage(attachment)
 		if err != nil {
 			return
 		}
@@ -333,7 +333,7 @@ func (p *Posts) DeletePost(postID uint) (err error) {
 
 	for _, v := range attachments.Elements {
 		if v.Status == pgtype.Present {
-			err = utils.RemoveImage(v.String)
+			err = static.RemoveImage(v.String)
 			if err != nil {
 				return
 			}

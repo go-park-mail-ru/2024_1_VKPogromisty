@@ -2,14 +2,19 @@ package middleware
 
 import (
 	"net/http"
-	"socio/utils"
 )
 
 func SetUpCORS(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", utils.ALLOWED_ORIGIN)
-		w.Header().Set("Access-Control-Allow-Headers", utils.ALLOWED_HEADERS)
-		w.Header().Set("Access-Control-Allow-Methods", utils.ALLOWED_METHODS)
+		origin := r.Header.Get("Origin")
+		if origin == "" || !CheckAllowedOrigin(origin) {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+		w.Header().Set("Access-Control-Allow-Headers", ALLOWED_HEADERS)
+		w.Header().Set("Access-Control-Allow-Methods", ALLOWED_METHODS)
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
 
 		if r.Method == "OPTIONS" {
