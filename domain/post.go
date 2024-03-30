@@ -12,3 +12,8 @@ type Post struct {
 	CreatedAt   customtime.CustomTime `json:"createdAt,omitempty" swaggertype:"string" example:"2021-01-01T00:00:00Z" format:"date-time"`
 	UpdatedAt   customtime.CustomTime `json:"updatedAt,omitempty" swaggertype:"string" example:"2021-01-01T00:00:00Z" format:"date-time"`
 }
+
+type PostWithAuthor struct {
+	Post   *Post `json:"post"`
+	Author *User `json:"author"`
+}

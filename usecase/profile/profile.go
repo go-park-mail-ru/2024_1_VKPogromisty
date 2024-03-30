@@ -3,8 +3,8 @@ package profile
 import (
 	"mime/multipart"
 	"socio/domain"
+	"socio/pkg/static"
 	customtime "socio/pkg/time"
-	"socio/utils"
 	"time"
 )
 
@@ -22,8 +22,8 @@ type SessionStorage interface {
 
 type UserWithSubsInfo struct {
 	User           *domain.User
-	IsSubscriber   bool `json:"is_subscriber"`
-	IsSubscribedTo bool `json:"is_subscribed_to"`
+	IsSubscriber   bool `json:"isSubscriber"`
+	IsSubscribedTo bool `json:"isSubscribedTo"`
 }
 
 type UpdateUserInput struct {
@@ -92,12 +92,12 @@ func (p *Service) UpdateUser(input UpdateUserInput) (updatedUser *domain.User, e
 	}
 
 	if input.Avatar != nil {
-		err = utils.RemoveImage(updatedUser.Avatar)
+		err = static.RemoveImage(updatedUser.Avatar)
 		if err != nil {
 			return nil, err
 		}
 
-		fileName, err := utils.SaveImage(input.Avatar)
+		fileName, err := static.SaveImage(input.Avatar)
 		if err != nil {
 			return nil, err
 		}

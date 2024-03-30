@@ -1,6 +1,7 @@
 package validators
 
 import (
+	"fmt"
 	"net/mail"
 	"socio/domain"
 	"socio/errors"
@@ -53,6 +54,7 @@ func ValidateDateOfBirth(date string) (err error) {
 
 func CheckDuplicatedEmail(email string, userStorage UserStorage) (err error) {
 	if _, err = userStorage.GetUserByEmail(email); err != errors.ErrNotFound {
+		fmt.Println("CheckDuplicatedEmail: ", err)
 		err = errors.ErrEmailsDuplicate
 		return
 	}

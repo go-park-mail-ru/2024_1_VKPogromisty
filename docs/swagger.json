@@ -304,7 +304,7 @@
         },
         "/posts/": {
             "get": {
-                "description": "list posts to authorized user",
+                "description": "get user posts",
                 "consumes": [
                     "application/json"
                 ],
@@ -314,8 +314,8 @@
                 "tags": [
                     "posts"
                 ],
-                "summary": "list all posts",
-                "operationId": "posts/",
+                "summary": "get user posts",
+                "operationId": "posts/get_user_posts",
                 "parameters": [
                     {
                         "type": "string",
@@ -323,6 +323,314 @@
                         "name": "Cookie",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "description": "ID of the user",
+                        "name": "user_id",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "ID of the last post",
+                        "name": "last_post_id",
+                        "in": "body",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ListUserPostsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "update post by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "posts"
+                ],
+                "summary": "update post",
+                "operationId": "posts/update",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "session_id=some_session",
+                        "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "ID of the post",
+                        "name": "post_id",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "Content of the post",
+                        "name": "content",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "application/json\"\t\"Attachments is always null!!!",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/json.JSONResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/domain.Post"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "create post with attachments",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "posts"
+                ],
+                "summary": "create post",
+                "operationId": "posts/create",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "session_id=some_session",
+                        "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Content of the post",
+                        "name": "content",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Attachments of the post",
+                        "name": "attachments",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/json.JSONResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/domain.PostWithAuthor"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "delete post by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "posts"
+                ],
+                "summary": "delete post",
+                "operationId": "posts/delete",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "session_id=some_session",
+                        "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "ID of the post",
+                        "name": "post_id",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content",
+                        "schema": {
+                            "$ref": "#/definitions/json.JSONResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/posts/friends": {
+            "get": {
+                "description": "get user friends posts",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "posts"
+                ],
+                "summary": "get user friends posts",
+                "operationId": "posts/get_user_friends_posts",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "session_id=some_session",
+                        "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "ID of the user",
+                        "name": "user_id",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "ID of the last post",
+                        "name": "last_post_id",
+                        "in": "body",
+                        "schema": {
+                            "type": "integer"
+                        }
                     }
                 ],
                 "responses": {
@@ -337,7 +645,10 @@
                                     "type": "object",
                                     "properties": {
                                         "body": {
-                                            "$ref": "#/definitions/posts.ListPostsResponse"
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/domain.PostWithAuthor"
+                                            }
                                         }
                                     }
                                 }
@@ -943,6 +1254,17 @@
                 }
             }
         },
+        "domain.PostWithAuthor": {
+            "type": "object",
+            "properties": {
+                "author": {
+                    "$ref": "#/definitions/domain.User"
+                },
+                "post": {
+                    "$ref": "#/definitions/domain.Post"
+                }
+            }
+        },
         "domain.Subscription": {
             "type": "object",
             "properties": {
@@ -1017,39 +1339,31 @@
                 "body": {}
             }
         },
-        "posts.ListPostsResponse": {
+        "profile.UserWithSubsInfo": {
             "type": "object",
             "properties": {
-                "posts": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/posts.PostWithAuthor"
-                    }
+                "isSubscribedTo": {
+                    "type": "boolean"
+                },
+                "isSubscriber": {
+                    "type": "boolean"
+                },
+                "user": {
+                    "$ref": "#/definitions/domain.User"
                 }
             }
         },
-        "posts.PostWithAuthor": {
+        "rest.ListUserPostsResponse": {
             "type": "object",
             "properties": {
                 "author": {
                     "$ref": "#/definitions/domain.User"
                 },
-                "post": {
-                    "$ref": "#/definitions/domain.Post"
-                }
-            }
-        },
-        "profile.UserWithSubsInfo": {
-            "type": "object",
-            "properties": {
-                "is_subscribed_to": {
-                    "type": "boolean"
-                },
-                "is_subscriber": {
-                    "type": "boolean"
-                },
-                "user": {
-                    "$ref": "#/definitions/domain.User"
+                "posts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.Post"
+                    }
                 }
             }
         },

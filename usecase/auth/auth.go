@@ -6,8 +6,8 @@ import (
 	"socio/domain"
 	"socio/errors"
 	"socio/pkg/hash"
+	"socio/pkg/static"
 	customtime "socio/pkg/time"
-	"socio/utils"
 	"time"
 )
 
@@ -88,7 +88,7 @@ func (a *Service) RegistrateUser(userInput RegistrationInput) (user *domain.User
 		return
 	}
 
-	fileName, err := utils.SaveImage(userInput.Avatar)
+	fileName, err := static.SaveImage(userInput.Avatar)
 	if err != nil {
 		return
 	}

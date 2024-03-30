@@ -9,7 +9,6 @@ import (
 	redisRepo "socio/internal/repository/redis"
 	"socio/internal/rest/middleware"
 	customtime "socio/pkg/time"
-	"socio/utils"
 
 	"github.com/jackc/pgx/v4/pgxpool"
 
@@ -51,8 +50,9 @@ func MountRootRouter() (err error) {
 	rootRouter.Use(middleware.SetUpCORS)
 	rootRouter.Use(middleware.DisableCache)
 
-	fmt.Printf("started on port %s\n", utils.PORT)
-	http.ListenAndServe(utils.PORT, rootRouter)
+	appPort := os.Getenv("APP_PORT")
+	fmt.Printf("started on port %s\n", appPort)
+	http.ListenAndServe(appPort, rootRouter)
 
 	return
 }
