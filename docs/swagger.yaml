@@ -7,8 +7,6 @@ definitions:
     type: object
   auth.LoginResponse:
     properties:
-      sessionId:
-        type: string
       user:
         $ref: '#/definitions/domain.User'
     type: object

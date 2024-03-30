@@ -1207,9 +1207,6 @@ const docTemplate = `{
         "auth.LoginResponse": {
             "type": "object",
             "properties": {
-                "sessionId": {
-                    "type": "string"
-                },
                 "user": {
                     "$ref": "#/definitions/domain.User"
                 }

@@ -44,8 +44,7 @@ type Service struct {
 }
 
 type LoginResponse struct {
-	SessionID string      `json:"sessionId"`
-	User      domain.User `json:"user"`
+	User domain.User `json:"user"`
 }
 
 type IsAuthorizedResponse struct {
