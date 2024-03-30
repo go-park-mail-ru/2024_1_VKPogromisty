@@ -32,7 +32,7 @@ func NewProfileHandler(userStorage profile.UserStorage, sessionStorage profile.S
 //	@Accept			json
 //
 //	@Param			Cookie	header	string	true	"session_id=some_session"
-//	@Param			userID	path	string	false	"User ID"
+//	@Param			userID	path	string	false	"User ID, if empty - get authorized user profile"
 //
 //	@Produce		json
 //	@Success		200	{object}	json.JSONResponse{body=profile.UserWithSubsInfo}

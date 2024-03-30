@@ -396,6 +396,48 @@ paths:
       summary: delete user profile
       tags:
       - profile
+    get:
+      consumes:
+      - application/json
+      description: get user profile with subscriptions info
+      operationId: profile/get
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: User ID, if empty - get authorized user profile
+        in: path
+        name: userID
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  $ref: '#/definitions/profile.UserWithSubsInfo'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: get user profile with subscriptions info
+      tags:
+      - profile
     put:
       consumes:
       - multipart/form-data
@@ -464,45 +506,6 @@ paths:
           schema:
             $ref: '#/definitions/errors.HTTPError'
       summary: update user profile
-      tags:
-      - profile
-  /profile/{userID}:
-    get:
-      consumes:
-      - application/json
-      description: get user profile with subscriptions info
-      operationId: profile/get
-      parameters:
-      - description: session_id=some_session
-        in: header
-        name: Cookie
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/json.JSONResponse'
-            - properties:
-                body:
-                  $ref: '#/definitions/profile.UserWithSubsInfo'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/errors.HTTPError'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/errors.HTTPError'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/errors.HTTPError'
-      summary: get user profile with subscriptions info
       tags:
       - profile
   /subscriptions/:
