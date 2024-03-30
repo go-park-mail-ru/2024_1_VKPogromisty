@@ -11,6 +11,7 @@ import (
 	customtime "socio/pkg/time"
 
 	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/rs/cors"
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/gorilla/mux"
@@ -47,12 +48,18 @@ func MountRootRouter() (err error) {
 	MountSubscriptionsRouter(rootRouter, subStorage, userStorage, sessionStorage)
 	MountStaticRouter(rootRouter)
 
-	rootRouter.Use(middleware.SetUpCORS)
 	rootRouter.Use(middleware.DisableCache)
+
+	handler := cors.New(cors.Options{
+		AllowedOrigins:   middleware.ALLOWED_ORIGINS,
+		AllowedMethods:   middleware.ALLOWED_METHODS,
+		AllowedHeaders:   middleware.ALLOWED_HEADERS,
+		AllowCredentials: true,
+	}).Handler(rootRouter)
 
 	appPort := os.Getenv("APP_PORT")
 	fmt.Printf("started on port %s\n", appPort)
-	http.ListenAndServe(appPort, rootRouter)
+	http.ListenAndServe(appPort, handler)
 
 	return
 }

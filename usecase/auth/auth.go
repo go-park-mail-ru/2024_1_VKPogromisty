@@ -71,8 +71,9 @@ func (a *Service) newSession(userID uint) (session *http.Cookie, err error) {
 		Value:    sessionID,
 		MaxAge:   10 * 60 * 60,
 		HttpOnly: true,
-		Secure:   false,
+		Secure:   true,
 		Path:     "/",
+		SameSite: http.SameSiteNoneMode,
 	}
 	return
 }

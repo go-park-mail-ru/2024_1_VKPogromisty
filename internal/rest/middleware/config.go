@@ -1,19 +1,22 @@
 package middleware
 
-const (
-	ALLOWED_HEADERS = "Accept, Accept-Language, Content-Type"
-	ALLOWED_METHODS = "GET, POST, PUT, DELETE, OPTIONS"
-)
+import "net/http"
 
 var (
-	ALLOWED_ORIGINS = []string{"http://localhost:3000", "http://94.139.246.134"}
-)
-
-func CheckAllowedOrigin(origin string) bool {
-	for _, v := range ALLOWED_ORIGINS {
-		if v == origin {
-			return true
-		}
+	ALLOWED_HEADERS = []string{"Accept", "Accept-Language", "Content-Type"}
+	ALLOWED_ORIGINS = []string{
+		"http://localhost",
+		"http://localhost:3000",
+		"http://94.139.246.134",
+		"http://socio-project.ru",
+		"http://127.0.0.1",
+		"http://127.0.0.1:3000",
 	}
-	return false
-}
+	ALLOWED_METHODS = []string{
+		http.MethodGet,
+		http.MethodPost,
+		http.MethodPut,
+		http.MethodDelete,
+		http.MethodOptions,
+	}
+)
