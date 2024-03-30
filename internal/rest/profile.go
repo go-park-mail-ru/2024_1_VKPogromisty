@@ -32,6 +32,7 @@ func NewProfileHandler(userStorage profile.UserStorage, sessionStorage profile.S
 //	@Accept			json
 //
 //	@Param			Cookie	header	string	true	"session_id=some_session"
+//	@Param			userID	path	string	false	"User ID, if empty - get authorized user profile"
 //
 //	@Produce		json
 //	@Success		200	{object}	json.JSONResponse{body=profile.UserWithSubsInfo}
@@ -41,18 +42,20 @@ func NewProfileHandler(userStorage profile.UserStorage, sessionStorage profile.S
 //	@Router			/profile/{userID} [get]
 func (h *ProfileHandler) HandleGetProfile(w http.ResponseWriter, r *http.Request) {
 	userIDData := mux.Vars(r)["userID"]
-	if len(userIDData) == 0 {
-		json.ServeJSONError(w, errors.ErrInvalidSlug)
-		return
-	}
-
-	userID, err := strconv.ParseUint(userIDData, 10, 0)
-	if err != nil {
-		json.ServeJSONError(w, errors.ErrInvalidSlug)
-		return
-	}
+	var userID uint64
+	var err error
 
 	authorizedUserID := r.Context().Value(middleware.UserIDKey).(uint)
+
+	if len(userIDData) != 0 {
+		userID, err = strconv.ParseUint(userIDData, 10, 0)
+		if err != nil {
+			json.ServeJSONError(w, errors.ErrInvalidSlug)
+			return
+		}
+	} else {
+		userID = uint64(authorizedUserID)
+	}
 
 	userWithInfo, err := h.Service.GetUserByIDWithSubsInfo(uint(userID), authorizedUserID)
 	if err != nil {

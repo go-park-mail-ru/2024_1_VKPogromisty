@@ -682,6 +682,10 @@ paths:
         name: Cookie
         required: true
         type: string
+      - description: User ID, if empty - get authorized user profile
+        in: path
+        name: userID
+        type: string
       produces:
       - application/json
       responses:

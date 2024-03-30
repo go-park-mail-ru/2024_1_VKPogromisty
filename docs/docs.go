@@ -857,6 +857,12 @@ const docTemplate = `{
                         "name": "Cookie",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "User ID, if empty - get authorized user profile",
+                        "name": "userID",
+                        "in": "path"
                     }
                 ],
                 "responses": {
