@@ -32,14 +32,14 @@ func NewProfileHandler(userStorage profile.UserStorage, sessionStorage profile.S
 //	@Accept			json
 //
 //	@Param			Cookie	header	string	true	"session_id=some_session"
-//	@Param			userID	path	string	false	"User ID"
+//	@Param			userID	path	string	false	"User ID, if empty - get authorized user profile"
 //
 //	@Produce		json
 //	@Success		200	{object}	json.JSONResponse{body=profile.UserWithSubsInfo}
 //	@Failure		401	{object}	errors.HTTPError
 //	@Failure		404	{object}	errors.HTTPError
 //	@Failure		500	{object}	errors.HTTPError
-//	@Router			/profile/ [get]
+//	@Router			/profile/{userID} [get]
 func (h *ProfileHandler) HandleGetProfile(w http.ResponseWriter, r *http.Request) {
 	userIDData := mux.Vars(r)["userID"]
 	var userID uint64
