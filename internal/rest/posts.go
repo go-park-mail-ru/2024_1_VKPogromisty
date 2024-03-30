@@ -9,6 +9,7 @@ import (
 	"socio/internal/rest/middleware"
 	"socio/pkg/json"
 	"socio/usecase/posts"
+	"strconv"
 	"strings"
 )
 
@@ -38,8 +39,8 @@ func NewPostsHandler(postsStorage posts.PostsStorage, usersStorage posts.UserSto
 //	@Accept			json
 //
 //	@Param			Cookie			header	string	true	"session_id=some_session"
-//	@Param			user_id			body	uint	true	"ID of the user"
-//	@Param			last_post_id	body	uint	false	"ID of the last post"
+//	@Param			userId			query	uint	true	"ID of the user"
+//	@Param			lastPostId		query	uint	false	"ID of the last post, if 0 - get first posts"
 //
 //	@Produce		json
 //	@Success		200	{object}	ListUserPostsResponse
@@ -52,12 +53,21 @@ func (h *PostsHandler) HandleGetUserPosts(w http.ResponseWriter, r *http.Request
 
 	var input posts.ListUserPostsInput
 
-	decoder := defJSON.NewDecoder(r.Body)
-	err := decoder.Decode(&input)
+	userID, err := strconv.Atoi(r.URL.Query().Get("userId"))
 	if err != nil {
-		json.ServeJSONError(w, errors.ErrJSONUnmarshalling)
+		json.ServeJSONError(w, errors.ErrInvalidData)
 		return
 	}
+
+	input.UserID = uint(userID)
+
+	lastPostID, err := strconv.Atoi(r.URL.Query().Get("lastPostId"))
+	if err != nil {
+		json.ServeJSONError(w, errors.ErrInvalidData)
+		return
+	}
+
+	input.LastPostID = uint(lastPostID)
 
 	posts, author, err := h.Service.GetUserPosts(input.UserID, input.LastPostID)
 	if err != nil {
@@ -82,8 +92,7 @@ func (h *PostsHandler) HandleGetUserPosts(w http.ResponseWriter, r *http.Request
 //	@Accept			json
 //
 //	@Param			Cookie			header	string	true	"session_id=some_session"
-//	@Param			user_id			body	uint	true	"ID of the user"
-//	@Param			last_post_id	body	uint	false	"ID of the last post"
+//	@Param			lastPostId		query	uint	false	"ID of the last post"
 //
 //	@Produce		json
 //	@Success		200	{object}	json.JSONResponse{body=[]domain.PostWithAuthor}
@@ -96,12 +105,13 @@ func (h *PostsHandler) HandleGetUserFriendsPosts(w http.ResponseWriter, r *http.
 
 	var input posts.ListUserFriendsPostsInput
 
-	decoder := defJSON.NewDecoder(r.Body)
-	err := decoder.Decode(&input)
+	lastPostID, err := strconv.Atoi(r.URL.Query().Get("lastPostId"))
 	if err != nil {
-		json.ServeJSONError(w, errors.ErrJSONUnmarshalling)
+		json.ServeJSONError(w, errors.ErrInvalidData)
 		return
 	}
+
+	input.LastPostID = uint(lastPostID)
 
 	userID := r.Context().Value(middleware.UserIDKey).(uint)
 

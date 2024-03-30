@@ -381,16 +381,14 @@ paths:
         required: true
         type: string
       - description: ID of the user
-        in: body
-        name: user_id
+        in: query
+        name: userId
         required: true
-        schema:
-          type: integer
-      - description: ID of the last post
-        in: body
-        name: last_post_id
-        schema:
-          type: integer
+        type: integer
+      - description: ID of the last post, if 0 - get first posts
+        in: query
+        name: lastPostId
+        type: integer
       produces:
       - application/json
       responses:
@@ -530,17 +528,10 @@ paths:
         name: Cookie
         required: true
         type: string
-      - description: ID of the user
-        in: body
-        name: user_id
-        required: true
-        schema:
-          type: integer
       - description: ID of the last post
-        in: body
-        name: last_post_id
-        schema:
-          type: integer
+        in: query
+        name: lastPostId
+        type: integer
       produces:
       - application/json
       responses:

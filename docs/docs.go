@@ -331,21 +331,17 @@ const docTemplate = `{
                         "required": true
                     },
                     {
+                        "type": "integer",
                         "description": "ID of the user",
-                        "name": "user_id",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
+                        "name": "userId",
+                        "in": "query",
+                        "required": true
                     },
                     {
-                        "description": "ID of the last post",
-                        "name": "last_post_id",
-                        "in": "body",
-                        "schema": {
-                            "type": "integer"
-                        }
+                        "type": "integer",
+                        "description": "ID of the last post, if 0 - get first posts",
+                        "name": "lastPostId",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -622,21 +618,10 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "ID of the user",
-                        "name": "user_id",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    },
-                    {
+                        "type": "integer",
                         "description": "ID of the last post",
-                        "name": "last_post_id",
-                        "in": "body",
-                        "schema": {
-                            "type": "integer"
-                        }
+                        "name": "lastPostId",
+                        "in": "query"
                     }
                 ],
                 "responses": {
