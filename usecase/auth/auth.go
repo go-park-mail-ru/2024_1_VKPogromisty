@@ -145,6 +145,9 @@ func (a *Service) Logout(session *http.Cookie) (err error) {
 	session.MaxAge = 0
 	session.Value = ""
 	session.Path = "/"
+	session.HttpOnly = true
+	session.Secure = true
+	session.SameSite = http.SameSiteNoneMode
 
 	return
 }
