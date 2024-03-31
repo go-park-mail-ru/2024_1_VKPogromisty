@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"fmt"
 	"socio/errors"
 
 	"github.com/gomodule/redigo/redis"
@@ -37,9 +38,18 @@ func (s *Session) DeleteSession(sessionID string) (err error) {
 }
 
 func (s *Session) GetUserIDBySession(sessionID string) (userID uint, err error) {
-	userIDData, err := redis.Uint64(s.c.Do("GET", sessionID))
+	result, err := s.c.Do("GET", sessionID)
 	if err != nil {
+		fmt.Println(err)
 		err = errors.ErrUnauthorized
+		return
+	}
+
+	userIDData, err := redis.Uint64(result, err)
+	if err != nil {
+		fmt.Println(err)
+		err = errors.ErrUnauthorized
+		return
 	}
 
 	userID = uint(userIDData)
