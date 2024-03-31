@@ -13,7 +13,6 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/rs/cors"
 
-	"github.com/gomodule/redigo/redis"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 )
@@ -35,12 +34,10 @@ func MountRootRouter() (err error) {
 	postStorage := pgRepo.NewPosts(db, customtime.RealTimeProvider{})
 	subStorage := pgRepo.NewSubscriptions(db, customtime.RealTimeProvider{})
 
-	sessionConn, err := redis.Dial(os.Getenv("REDIS_PROTOCOL"), os.Getenv("REDIS_HOST")+":"+os.Getenv("REDIS_PORT"), redis.DialPassword(os.Getenv("REDIS_PASSWORD")))
-	if err != nil {
-		return
-	}
-	defer sessionConn.Close()
-	sessionStorage := redisRepo.NewSession(sessionConn)
+	redisPool := redisRepo.NewPool(os.Getenv("REDIS_PROTOCOL"), os.Getenv("REDIS_HOST")+":"+os.Getenv("REDIS_PORT"), os.Getenv("REDIS_PASSWORD"))
+	defer redisPool.Close()
+
+	sessionStorage := redisRepo.NewSession(redisPool)
 
 	MountAuthRouter(rootRouter, userStorage, sessionStorage)
 	MountProfileRouter(rootRouter, userStorage, sessionStorage)
