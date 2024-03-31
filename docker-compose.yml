@@ -10,7 +10,7 @@ services:
     ports:
       - 5431:5432
     volumes:
-      - ./volumes/pg_data/:/var/lib/postgresql/data/
+      - pg_data:/var/lib/postgresql/data/
 
   redis:
     image: redis:7.2.4
@@ -19,7 +19,7 @@ services:
     ports:
       - 6379:6379
     volumes:
-      - ./volumes/redis_data/:/root/redis/
+      - redis_data:/root/redis/
       - ./volumes/redis_data/redis.conf:/usr/local/etc/redis/redis.conf
     environment:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
@@ -53,6 +53,7 @@ services:
   
   nginx:
     image: nginx:1.25.4
+    restart: always
     volumes:
       - ./volumes/nginx/:/etc/nginx/
       - ./static/:/static/
@@ -68,3 +69,9 @@ services:
     volumes:
       - ./volumes/certbot/www/:/var/www/certbot/:rw
       - ./volumes/certbot/conf/:/etc/letsencrypt/:rw
+    depends_on:
+      - nginx
+
+volumes:
+  pg_data:
+  redis_data:
