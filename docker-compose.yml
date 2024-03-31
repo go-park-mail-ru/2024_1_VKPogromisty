@@ -46,10 +46,23 @@ services:
     restart: on-failure
     volumes:
       - .:/app
+      - ./static/:/static/
     depends_on:
       - postgresdb
       - redis
+  
+  nginx:
+    image: nginx:1.25.4
+    volumes:
+      - ./nginx/:/etc/nginx/
+      - ./static/:/static/
+    ports:
+      - 80:80
+    depends_on:
+      - app
 
 volumes:
   pg_data:
   redis_data:
+  nginx:
+  static:
