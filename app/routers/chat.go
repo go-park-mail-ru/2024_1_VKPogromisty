@@ -14,5 +14,7 @@ func MountChatRouter(rootRouter *mux.Router, pubSubRepo chat.PubSubRepository, m
 	h := rest.NewChatServer(pubSubRepo, messagesRepo)
 
 	r.HandleFunc("/", h.ServeWS).Methods("GET", "OPTIONS")
+	r.HandleFunc("/dialogs", h.HandleGetDialogs).Methods("GET", "OPTIONS")
+	r.HandleFunc("/messages", h.HandleGetMessagesByDialog).Methods("GET", "OPTIONS")
 	r.Use(middleware.CreateCheckIsAuthorizedMiddleware(sessionStorage))
 }

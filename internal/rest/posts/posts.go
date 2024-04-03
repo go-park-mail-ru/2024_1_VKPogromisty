@@ -144,7 +144,7 @@ func (h *PostsHandler) HandleGetUserFriendsPosts(w http.ResponseWriter, r *http.
 //	@Failure		500	{object}	errors.HTTPError
 //	@Router			/posts/ [post]
 func (h *PostsHandler) HandleCreatePost(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseMultipartForm(100 << 20)
+	err := r.ParseMultipartForm(1000 << 20)
 	if err != nil {
 		json.ServeJSONError(w, errors.ErrInvalidBody)
 		return

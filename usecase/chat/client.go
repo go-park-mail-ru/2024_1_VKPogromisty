@@ -16,6 +16,9 @@ const (
 )
 
 type PersonalMessagesRepository interface {
+	GetLastMessageID(senderID, receiverID uint) (lastMessageID uint, err error)
+	GetMessagesByDialog(senderID, receiverID, lastMessageID uint) (messages []*domain.PersonalMessage, err error)
+	GetDialogsByUserID(userID uint) (dialogs []*Dialog, err error)
 	StoreMessage(message *domain.PersonalMessage) (newMessage *domain.PersonalMessage, err error)
 	UpdateMessage(message *domain.PersonalMessage) (updatedMessage *domain.PersonalMessage, err error)
 	DeleteMessage(messageID uint) (err error)

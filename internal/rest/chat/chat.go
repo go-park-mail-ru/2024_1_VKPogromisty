@@ -1,10 +1,14 @@
 package rest
 
 import (
-	"encoding/json"
+	defJSON "encoding/json"
 	"net/http"
+	"socio/domain"
+	"socio/errors"
 	"socio/internal/rest/middleware"
+	"socio/pkg/json"
 	"socio/usecase/chat"
+	"strconv"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -25,13 +29,62 @@ type ChatServer struct {
 var upgrader = &websocket.Upgrader{
 	ReadBufferSize:  4096,
 	WriteBufferSize: 4096,
-	CheckOrigin:     middleware.CheckOrigin, // FIX THIS
+	CheckOrigin:     middleware.CheckOrigin,
 }
 
 func NewChatServer(pubSubRepo chat.PubSubRepository, messagesRepo chat.PersonalMessagesRepository) (chatServer *ChatServer) {
 	return &ChatServer{
 		Service: chat.NewChatService(pubSubRepo, messagesRepo),
 	}
+}
+
+func (c *ChatServer) HandleGetDialogs(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(middleware.UserIDKey).(uint)
+
+	dialogs, err := c.Service.GetDialogsByUserID(userID)
+	if err != nil {
+		json.ServeJSONError(w, err)
+		return
+	}
+
+	json.ServeJSONBody(w, map[string][]*chat.Dialog{"dialogs": dialogs})
+}
+
+func (c *ChatServer) HandleGetMessagesByDialog(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(middleware.UserIDKey).(uint)
+
+	peerIDData := r.URL.Query().Get("peerId")
+	if peerIDData == "" {
+		json.ServeJSONError(w, errors.ErrInvalidData)
+		return
+	}
+
+	peerID, err := strconv.ParseUint(peerIDData, 0, 0)
+	if err != nil {
+		json.ServeJSONError(w, errors.ErrInvalidData)
+		return
+	}
+
+	lastMessageIDData := r.URL.Query().Get("lastMessageId")
+	var lastMessageID uint64
+	if lastMessageIDData == "" {
+		lastMessageID = 0
+	} else {
+		lastMessageID, err = strconv.ParseUint(lastMessageIDData, 0, 0)
+		if err != nil {
+			json.ServeJSONError(w, errors.ErrInvalidData)
+			return
+		}
+	}
+
+	messages, err := c.Service.GetMessagesByDialog(userID, uint(peerID), uint(lastMessageID))
+	if err != nil {
+		json.ServeJSONError(w, err)
+		return
+	}
+
+	json.ServeJSONBody(w, map[string][]*domain.PersonalMessage{"messages": messages})
+
 }
 
 func (c *ChatServer) ServeWS(w http.ResponseWriter, r *http.Request) {
@@ -77,7 +130,7 @@ func (c *ChatServer) ListenRead(conn *websocket.Conn, client *chat.Client) {
 		}
 
 		action := new(chat.Action)
-		err = json.Unmarshal(jsonMessage, action)
+		err = defJSON.Unmarshal(jsonMessage, action)
 		if err != nil {
 			return
 		}
@@ -116,7 +169,7 @@ func (c *ChatServer) ListenWrite(conn *websocket.Conn, client *chat.Client) {
 				return
 			}
 
-			messageData, err := json.Marshal(message)
+			messageData, err := defJSON.Marshal(message)
 			if err != nil {
 				return
 			}
@@ -125,7 +178,7 @@ func (c *ChatServer) ListenWrite(conn *websocket.Conn, client *chat.Client) {
 
 			n := len(client.Send)
 			for i := 0; i < n; i++ {
-				messageData, err = json.Marshal(<-client.Send)
+				messageData, err = defJSON.Marshal(<-client.Send)
 				if err != nil {
 					return
 				}

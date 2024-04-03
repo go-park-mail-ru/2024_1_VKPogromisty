@@ -2,6 +2,7 @@ package chat
 
 import (
 	"encoding/json"
+	"socio/domain"
 	"socio/errors"
 	"sync"
 )
@@ -14,9 +15,9 @@ type Service struct {
 }
 
 type Action struct {
-	Type     string `json:"type"`
-	Receiver uint   `json:"receiver"`
-	Payload  json.RawMessage
+	Type     string          `json:"type"`
+	Receiver uint            `json:"receiver"`
+	Payload  json.RawMessage `json:"payload"`
 }
 
 type SendMessagePayload struct {
@@ -30,6 +31,12 @@ type UpdateMessagePayload struct {
 
 type DeleteMessagePayload struct {
 	MessageID uint `json:"messageId"`
+}
+
+type Dialog struct {
+	User1       *domain.User            `json:"user1"`
+	User2       *domain.User            `json:"user2"`
+	LastMessage *domain.PersonalMessage `json:"lastMessage"`
 }
 
 func NewChatService(pubSubRepo PubSubRepository, messagesRepo PersonalMessagesRepository) (chatService *Service) {
@@ -62,6 +69,32 @@ func (s *Service) Unregister(userID uint) (err error) {
 	_, ok := s.Clients.LoadAndDelete(userID)
 	if !ok {
 		return errors.ErrNotFound
+	}
+
+	return
+}
+
+func (s *Service) GetMessagesByDialog(userID, peerID, lastMessageID uint) (messages []*domain.PersonalMessage, err error) {
+	if lastMessageID == 0 {
+		lastMessageID, err = s.MessagesRepo.GetLastMessageID(userID, peerID)
+		if err != nil {
+			return
+		}
+		lastMessageID++
+	}
+
+	messages, err = s.MessagesRepo.GetMessagesByDialog(userID, peerID, lastMessageID)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (s *Service) GetDialogsByUserID(userID uint) (dialogs []*Dialog, err error) {
+	dialogs, err = s.MessagesRepo.GetDialogsByUserID(userID)
+	if err != nil {
+		return
 	}
 
 	return
