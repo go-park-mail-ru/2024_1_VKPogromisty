@@ -3,7 +3,6 @@ package rest
 import (
 	defJSON "encoding/json"
 	"net/http"
-	"socio/domain"
 	"socio/errors"
 	"socio/internal/rest/middleware"
 	"socio/pkg/json"
@@ -21,7 +20,6 @@ const (
 	maxMessageSize = 10000
 )
 
-// ChatServer will: listen for ws connection messages, register and unregister clients based on state of ws connections
 type ChatServer struct {
 	Service *chat.Service
 }
@@ -38,6 +36,23 @@ func NewChatServer(pubSubRepo chat.PubSubRepository, messagesRepo chat.PersonalM
 	}
 }
 
+// HandleGetDialogs godoc
+//
+//	@Summary		get user dialogs
+//	@Description	get user dialogs
+//	@Tags			chat
+//	@license.name	Apache 2.0
+//	@ID				chat/get_dialogs
+//	@Accept			json
+//
+//	@Param			Cookie	header	string	true	"session_id=some_session"
+//
+//	@Produce		json
+//	@Success		200	{object}	json.JSONResponse{body=[]chat.Dialog}
+//	@Failure		400	{object}	errors.HTTPError
+//	@Failure		401	{object}	errors.HTTPError
+//	@Failure		500	{object}	errors.HTTPError
+//	@Router			/chat/dialogs/ [get]
 func (c *ChatServer) HandleGetDialogs(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value(middleware.UserIDKey).(uint)
 
@@ -47,9 +62,28 @@ func (c *ChatServer) HandleGetDialogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.ServeJSONBody(w, map[string][]*chat.Dialog{"dialogs": dialogs})
+	json.ServeJSONBody(w, dialogs)
 }
 
+// HandleGetMessagesByDialog godoc
+//
+//	@Summary		get messages by dialog
+//	@Description	get messages by dialog with pagination
+//	@Tags			chat
+//	@license.name	Apache 2.0
+//	@ID				chat/get_messages
+//	@Accept			json
+//
+//	@Param			Cookie			header	string	true	"session_id=some_session"
+//	@Param			peerId			query	uint	true	"ID of the peer"
+//	@Param			lastMessageId	query	uint	false	"ID of the last message, if last messages needed, should be set to 0"
+//
+//	@Produce		json
+//	@Success		200	{object}	json.JSONResponse{body=[]domain.PersonalMessage}
+//	@Failure		400	{object}	errors.HTTPError
+//	@Failure		401	{object}	errors.HTTPError
+//	@Failure		500	{object}	errors.HTTPError
+//	@Router			/chat/messages/ [get]
 func (c *ChatServer) HandleGetMessagesByDialog(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value(middleware.UserIDKey).(uint)
 
@@ -83,10 +117,27 @@ func (c *ChatServer) HandleGetMessagesByDialog(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	json.ServeJSONBody(w, map[string][]*domain.PersonalMessage{"messages": messages})
+	json.ServeJSONBody(w, messages)
 
 }
 
+// ServeWS godoc
+//
+//	@Summary		serve websocket connection
+//	@Description	serve websocket connection
+//	@Tags			chat
+//	@license.name	Apache 2.0
+//	@ID				chat/serve_ws
+//	@Accept			json
+//
+//	@Param			Cookie	header	string	true	"session_id=some_session"
+//
+//	@Produce		json
+//	@Success		200
+//	@Failure		400	{object}	errors.HTTPError
+//	@Failure		401	{object}	errors.HTTPError
+//	@Failure		500	{object}	errors.HTTPError
+//	@Router			/chat/ [get]
 func (c *ChatServer) ServeWS(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value(middleware.UserIDKey).(uint)
 
@@ -100,11 +151,11 @@ func (c *ChatServer) ServeWS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	go c.ListenWrite(conn, client)
-	go c.ListenRead(conn, client)
+	go c.listenWrite(conn, client)
+	go c.listenRead(conn, client)
 }
 
-func (c *ChatServer) ListenRead(conn *websocket.Conn, client *chat.Client) {
+func (c *ChatServer) listenRead(conn *websocket.Conn, client *chat.Client) {
 	defer func() {
 		err := conn.Close()
 		if err != nil {
@@ -139,7 +190,7 @@ func (c *ChatServer) ListenRead(conn *websocket.Conn, client *chat.Client) {
 	}
 }
 
-func (c *ChatServer) ListenWrite(conn *websocket.Conn, client *chat.Client) {
+func (c *ChatServer) listenWrite(conn *websocket.Conn, client *chat.Client) {
 	ticker := time.NewTicker(pingPeriod)
 
 	defer func() {
