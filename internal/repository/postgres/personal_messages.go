@@ -96,7 +96,7 @@ func (pm *PersonalMessages) GetMessagesByDialog(senderID, receiverID uint) (mess
 
 }
 
-func (pm *PersonalMessages) StorePersonalMessage(msg *domain.PersonalMessage) (newMsg *domain.PersonalMessage, err error) {
+func (pm *PersonalMessages) StoreMessage(msg *domain.PersonalMessage) (newMsg *domain.PersonalMessage, err error) {
 	newMsg = new(domain.PersonalMessage)
 	err = pm.db.QueryRow(context.Background(), storePersonalMessageQuery,
 		msg.SenderID,
@@ -117,7 +117,7 @@ func (pm *PersonalMessages) StorePersonalMessage(msg *domain.PersonalMessage) (n
 	return
 }
 
-func (pm *PersonalMessages) UpdatePersonalMessage(msg *domain.PersonalMessage) (updatedMsg *domain.PersonalMessage, err error) {
+func (pm *PersonalMessages) UpdateMessage(msg *domain.PersonalMessage) (updatedMsg *domain.PersonalMessage, err error) {
 	updatedMsg = new(domain.PersonalMessage)
 	err = pm.db.QueryRow(context.Background(), updatePersonalMessageQuery, msg.Content, msg.ID).Scan(
 		&updatedMsg.ID,
@@ -134,7 +134,7 @@ func (pm *PersonalMessages) UpdatePersonalMessage(msg *domain.PersonalMessage) (
 	return
 }
 
-func (pm *PersonalMessages) DeletePersonalMessage(msgID uint) (err error) {
+func (pm *PersonalMessages) DeleteMessage(msgID uint) (err error) {
 	result, err := pm.db.Exec(context.Background(), deletePersonalMessageQuery, msgID)
 	if err != nil {
 		return

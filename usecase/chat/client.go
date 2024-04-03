@@ -1,0 +1,129 @@
+package chat
+
+import (
+	"bytes"
+	"encoding/json"
+	"socio/domain"
+)
+
+const (
+	sendChanSize        = 256
+	SendMessageAction   = "SEND_MESSAGE"
+	UpdateMessageAction = "UPDATE_MESSAGE"
+	DeleteMessageAction = "DELETE_MESSAGE"
+	SetOnlineAction     = "SET_ONLINE"
+	SetOfflineAction    = "SET_OFFLINE"
+)
+
+type PersonalMessagesRepository interface {
+	StoreMessage(message *domain.PersonalMessage) (newMessage *domain.PersonalMessage, err error)
+	UpdateMessage(message *domain.PersonalMessage) (updatedMessage *domain.PersonalMessage, err error)
+	DeleteMessage(messageID uint) (err error)
+}
+
+type PubSubRepository interface {
+	ReadActions(userID uint, ch chan *Action) (err error)
+	WriteAction(action *Action) (err error)
+}
+
+// Client will: read Actions from redis and write Actions into Send, subscribe to corresponding redis channel
+type Client struct {
+	UserID               uint
+	Send                 chan *Action
+	PersonalMessagesRepo PersonalMessagesRepository
+	PubSubRepository     PubSubRepository
+}
+
+func NewClient(userID uint, pubSubRepo PubSubRepository, messagesRepo PersonalMessagesRepository) (client *Client, err error) {
+	if err != nil {
+		return
+	}
+
+	client = &Client{
+		UserID:               userID,
+		Send:                 make(chan *Action, sendChanSize),
+		PubSubRepository:     pubSubRepo,
+		PersonalMessagesRepo: messagesRepo,
+	}
+
+	return
+}
+
+func (c *Client) ReadPump() {
+	actionsCh := make(chan *Action)
+	defer close(actionsCh)
+
+	go c.PubSubRepository.ReadActions(c.UserID, c.Send)
+}
+
+func (c *Client) HandleAction(action *Action) {
+	switch action.Type {
+	case SendMessageAction:
+		payload := new(SendMessagePayload)
+		err := json.NewDecoder(bytes.NewReader(action.Payload)).Decode(payload)
+		if err != nil {
+			return
+		}
+		c.handleSendMessageAction(action, payload)
+
+	case UpdateMessageAction:
+		payload := new(UpdateMessagePayload)
+		json.NewDecoder(bytes.NewReader(action.Payload)).Decode(payload)
+		c.handleUpdateMessageAction(action, payload)
+
+	case DeleteMessageAction:
+		payload := new(DeleteMessagePayload)
+		json.NewDecoder(bytes.NewReader(action.Payload)).Decode(payload)
+		c.handleDeleteMessageAction(action, payload.MessageID)
+	}
+}
+
+func (c *Client) handleSendMessageAction(action *Action, message *SendMessagePayload) (err error) {
+	msg := &domain.PersonalMessage{
+		Content:    message.Content,
+		SenderID:   c.UserID,
+		ReceiverID: action.Receiver,
+	}
+
+	newMessage, err := c.PersonalMessagesRepo.StoreMessage(msg)
+	if err != nil {
+		return
+	}
+
+	action.Payload, err = json.Marshal(newMessage)
+	if err != nil {
+		return
+	}
+
+	c.PubSubRepository.WriteAction(action)
+
+	return
+}
+
+func (c *Client) handleUpdateMessageAction(action *Action, message *UpdateMessagePayload) {
+	msg := &domain.PersonalMessage{
+		ID:      message.MessageID,
+		Content: message.Content,
+	}
+
+	newMessage, err := c.PersonalMessagesRepo.UpdateMessage(msg)
+	if err != nil {
+		return
+	}
+
+	action.Payload, err = json.Marshal(newMessage)
+	if err != nil {
+		return
+	}
+
+	c.PubSubRepository.WriteAction(action)
+}
+
+func (c *Client) handleDeleteMessageAction(action *Action, messageID uint) {
+	err := c.PersonalMessagesRepo.DeleteMessage(messageID)
+	if err != nil {
+		return
+	}
+
+	c.PubSubRepository.WriteAction(action)
+}

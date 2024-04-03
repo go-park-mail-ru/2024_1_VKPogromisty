@@ -33,13 +33,16 @@ func MountRootRouter() (err error) {
 	userStorage := pgRepo.NewUsers(db, customtime.RealTimeProvider{})
 	postStorage := pgRepo.NewPosts(db, customtime.RealTimeProvider{})
 	subStorage := pgRepo.NewSubscriptions(db, customtime.RealTimeProvider{})
+	personalMessageStorage := pgRepo.NewPersonalMessages(db, customtime.RealTimeProvider{})
 
 	redisPool := redisRepo.NewPool(os.Getenv("REDIS_PROTOCOL"), os.Getenv("REDIS_HOST")+":"+os.Getenv("REDIS_PORT"), os.Getenv("REDIS_PASSWORD"))
 	defer redisPool.Close()
 
 	sessionStorage := redisRepo.NewSession(redisPool)
+	chatPubSubRepository := redisRepo.NewChatPubSub(redisPool)
 
 	MountAuthRouter(rootRouter, userStorage, sessionStorage)
+	MountChatRouter(rootRouter, chatPubSubRepository, personalMessageStorage, sessionStorage)
 	MountProfileRouter(rootRouter, userStorage, sessionStorage)
 	MountPostsRouter(rootRouter, postStorage, userStorage, sessionStorage)
 	MountSubscriptionsRouter(rootRouter, subStorage, userStorage, sessionStorage)

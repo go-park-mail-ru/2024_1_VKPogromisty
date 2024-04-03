@@ -1,7 +1,7 @@
 package routers
 
 import (
-	"socio/internal/rest"
+	rest "socio/internal/rest/static"
 
 	"github.com/gorilla/mux"
 )
