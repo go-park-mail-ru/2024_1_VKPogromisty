@@ -15,10 +15,13 @@ import (
 )
 
 const (
-	pongWait       = 60 * time.Second
-	pingPeriod     = (pongWait * 9) / 10
-	writeWait      = 10 * time.Second
-	maxMessageSize = 10000
+	pongWait        = 60 * time.Second
+	pingPeriod      = (pongWait * 9) / 10
+	writeWait       = 10 * time.Second
+	maxMessageSize  = 10000
+	readBufferSize  = 4096
+	writeBufferSize = 4096
+	newline         = '\n'
 )
 
 type ChatServer struct {
@@ -26,8 +29,8 @@ type ChatServer struct {
 }
 
 var upgrader = &websocket.Upgrader{
-	ReadBufferSize:  4096,
-	WriteBufferSize: 4096,
+	ReadBufferSize:  readBufferSize,
+	WriteBufferSize: writeBufferSize,
 	CheckOrigin:     middleware.CheckOrigin,
 }
 
@@ -156,11 +159,13 @@ func (c *ChatServer) ServeWS(w http.ResponseWriter, r *http.Request) {
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
+		json.ServeJSONError(w, err)
 		return
 	}
 
 	client, err := c.Service.Register(userID)
 	if err != nil {
+		json.ServeJSONError(w, err)
 		return
 	}
 
@@ -246,7 +251,7 @@ func (c *ChatServer) listenWrite(conn *websocket.Conn, client *chat.Client) {
 				if err != nil {
 					return
 				}
-				w.Write([]byte{'\n'})
+				w.Write([]byte{newline})
 				w.Write(messageData)
 			}
 
