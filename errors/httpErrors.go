@@ -44,7 +44,7 @@ func ParseHTTPError(err error) (msg string, status int) {
 	return
 }
 
-func MarshalError(err error) (data []byte) {
-	data, _ = json.Marshal(map[string]string{"error": err.Error()})
+func MarshalError(err error) (data []byte, marshalErr error) {
+	data, marshalErr = json.Marshal(map[string]string{"error": err.Error()})
 	return
 }

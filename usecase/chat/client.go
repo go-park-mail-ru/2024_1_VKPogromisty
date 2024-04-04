@@ -99,14 +99,22 @@ func (c *Client) handleSendMessageAction(action *Action, message *SendMessagePay
 
 	newMessage, err := c.PersonalMessagesRepo.StoreMessage(msg)
 	if err != nil {
-		action.Payload = errors.MarshalError(err)
+		action.Payload, err = errors.MarshalError(err)
+		if err != nil {
+			return
+		}
+
 		c.PubSubRepository.WriteAction(action)
 		return
 	}
 
 	action.Payload, err = json.Marshal(newMessage)
 	if err != nil {
-		action.Payload = errors.MarshalError(err)
+		action.Payload, err = errors.MarshalError(err)
+		if err != nil {
+			return
+		}
+
 		c.PubSubRepository.WriteAction(action)
 		return
 	}
@@ -122,14 +130,22 @@ func (c *Client) handleUpdateMessageAction(action *Action, message *UpdateMessag
 
 	newMessage, err := c.PersonalMessagesRepo.UpdateMessage(msg)
 	if err != nil {
-		action.Payload = errors.MarshalError(err)
+		action.Payload, err = errors.MarshalError(err)
+		if err != nil {
+			return
+		}
+
 		c.PubSubRepository.WriteAction(action)
 		return
 	}
 
 	action.Payload, err = json.Marshal(newMessage)
 	if err != nil {
-		action.Payload = errors.MarshalError(err)
+		action.Payload, err = errors.MarshalError(err)
+		if err != nil {
+			return
+		}
+
 		c.PubSubRepository.WriteAction(action)
 		return
 	}
@@ -140,7 +156,11 @@ func (c *Client) handleUpdateMessageAction(action *Action, message *UpdateMessag
 func (c *Client) handleDeleteMessageAction(action *Action, messageID uint) {
 	err := c.PersonalMessagesRepo.DeleteMessage(messageID)
 	if err != nil {
-		action.Payload = errors.MarshalError(err)
+		action.Payload, err = errors.MarshalError(err)
+		if err != nil {
+			return
+		}
+
 		c.PubSubRepository.WriteAction(action)
 		return
 	}
