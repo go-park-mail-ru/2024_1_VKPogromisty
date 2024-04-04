@@ -10,6 +10,7 @@ import (
 	"socio/pkg/json"
 	"socio/pkg/requestcontext"
 	"socio/usecase/chat"
+	"socio/domain"
 	"strconv"
 	"time"
 
@@ -130,6 +131,10 @@ func (c *ChatServer) HandleGetMessagesByDialog(w http.ResponseWriter, r *http.Re
 		fmt.Println(err)
 		json.ServeJSONError(r.Context(), w, err)
 		return
+	}
+
+	if messages == nil {
+		messages = make([]*domain.PersonalMessage, 0)
 	}
 
 	json.ServeJSONBody(r.Context(), w, messages)

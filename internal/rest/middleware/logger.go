@@ -15,7 +15,7 @@ type Logger struct {
 }
 
 func NewZapLogger() (sugar *zap.SugaredLogger) {
-	logger, _ := zap.NewProduction()
+	logger, _ := zap.NewDevelopment()
 
 	sugar = logger.Sugar()
 
