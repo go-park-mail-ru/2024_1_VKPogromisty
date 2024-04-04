@@ -35,7 +35,7 @@ const (
 	LIMIT $4;
 	`
 	getLastMessageIDQuery = `
-	SELECT MAX(id) AS last_message_id
+	SELECT COALESCE(MAX(id), 0) AS last_message_id
 	FROM public.personal_message
 	WHERE (
 			(

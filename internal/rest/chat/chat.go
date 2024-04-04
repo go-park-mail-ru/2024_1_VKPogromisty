@@ -2,6 +2,7 @@ package rest
 
 import (
 	defJSON "encoding/json"
+	"fmt"
 	"net/http"
 	"socio/errors"
 	"socio/internal/rest/middleware"
@@ -125,6 +126,7 @@ func (c *ChatServer) HandleGetMessagesByDialog(w http.ResponseWriter, r *http.Re
 
 	messages, err := c.Service.GetMessagesByDialog(userID, uint(peerID), uint(lastMessageID))
 	if err != nil {
+		fmt.Println(err)
 		json.ServeJSONError(w, err)
 		return
 	}

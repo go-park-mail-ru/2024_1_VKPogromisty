@@ -12,6 +12,7 @@ import (
 
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/rs/cors"
+	"go.uber.org/zap"
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
@@ -48,7 +49,15 @@ func MountRootRouter() (err error) {
 	MountSubscriptionsRouter(rootRouter, subStorage, userStorage, sessionStorage)
 	MountStaticRouter(rootRouter)
 
+	zapLogger, _ := zap.NewProduction()
+	defer zapLogger.Sync()
+
+	sugar := zapLogger.Sugar()
+
+	logger := middleware.NewLogger(sugar)
+
 	rootRouter.Use(middleware.DisableCache)
+	rootRouter.Use(logger.LoggerMiddleware)
 
 	handler := cors.New(cors.Options{
 		AllowedOrigins:   middleware.ALLOWED_ORIGINS,
