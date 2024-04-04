@@ -6,6 +6,7 @@ import (
 	"socio/errors"
 	"socio/internal/rest/middleware"
 	"socio/pkg/json"
+	"socio/pkg/requestcontext"
 	"socio/usecase/chat"
 	"strconv"
 	"time"
@@ -54,7 +55,11 @@ func NewChatServer(pubSubRepo chat.PubSubRepository, messagesRepo chat.PersonalM
 //	@Failure		500	{object}	errors.HTTPError
 //	@Router			/chat/dialogs/ [get]
 func (c *ChatServer) HandleGetDialogs(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value(middleware.UserIDKey).(uint)
+	userID, err := requestcontext.GetUserID(r)
+	if err != nil {
+		json.ServeJSONError(w, err)
+		return
+	}
 
 	dialogs, err := c.Service.GetDialogsByUserID(userID)
 	if err != nil {
@@ -85,7 +90,11 @@ func (c *ChatServer) HandleGetDialogs(w http.ResponseWriter, r *http.Request) {
 //	@Failure		500	{object}	errors.HTTPError
 //	@Router			/chat/messages/ [get]
 func (c *ChatServer) HandleGetMessagesByDialog(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value(middleware.UserIDKey).(uint)
+	userID, err := requestcontext.GetUserID(r)
+	if err != nil {
+		json.ServeJSONError(w, err)
+		return
+	}
 
 	peerIDData := r.URL.Query().Get("peerId")
 	if peerIDData == "" {
@@ -139,7 +148,11 @@ func (c *ChatServer) HandleGetMessagesByDialog(w http.ResponseWriter, r *http.Re
 //	@Failure		500	{object}	errors.HTTPError
 //	@Router			/chat/ [get]
 func (c *ChatServer) ServeWS(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value(middleware.UserIDKey).(uint)
+	userID, err := requestcontext.GetUserID(r)
+	if err != nil {
+		json.ServeJSONError(w, err)
+		return
+	}
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {

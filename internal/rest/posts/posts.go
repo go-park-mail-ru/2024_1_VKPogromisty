@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"socio/domain"
 	"socio/errors"
-	"socio/internal/rest/middleware"
 	"socio/pkg/json"
+	"socio/pkg/requestcontext"
 	"socio/usecase/posts"
 	"strconv"
 	"strings"
@@ -113,7 +113,11 @@ func (h *PostsHandler) HandleGetUserFriendsPosts(w http.ResponseWriter, r *http.
 
 	input.LastPostID = uint(lastPostID)
 
-	userID := r.Context().Value(middleware.UserIDKey).(uint)
+	userID, err := requestcontext.GetUserID(r)
+	if err != nil {
+		json.ServeJSONError(w, err)
+		return
+	}
 
 	postsWithAuthors, err := h.Service.GetUserFriendsPosts(userID, input.LastPostID)
 	if err != nil {
@@ -152,7 +156,12 @@ func (h *PostsHandler) HandleCreatePost(w http.ResponseWriter, r *http.Request) 
 
 	var postInput posts.PostInput
 
-	postInput.AuthorID = r.Context().Value(middleware.UserIDKey).(uint)
+	postInput.AuthorID, err = requestcontext.GetUserID(r)
+	if err != nil {
+		json.ServeJSONError(w, err)
+		return
+	}
+
 	postInput.Content = strings.Trim(r.PostFormValue("content"), " \n\r\t")
 
 	for _, fileHeaders := range r.MultipartForm.File {
@@ -203,7 +212,11 @@ func (h *PostsHandler) HandleUpdatePost(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	userID := r.Context().Value(middleware.UserIDKey).(uint)
+	userID, err := requestcontext.GetUserID(r)
+	if err != nil {
+		json.ServeJSONError(w, err)
+		return
+	}
 
 	updatedPost, err := h.Service.UpdatePost(userID, input)
 	if err != nil {

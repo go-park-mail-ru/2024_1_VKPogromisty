@@ -4,13 +4,9 @@ import (
 	"context"
 	"net/http"
 	"socio/pkg/json"
+	"socio/pkg/requestcontext"
 	"socio/usecase/auth"
 )
-
-type ContextKey string
-
-const UserIDKey ContextKey = "userID"
-const SessionIDKey ContextKey = "sessionID"
 
 func CreateCheckIsAuthorizedMiddleware(sessionStorage auth.SessionStorage) func(h http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
@@ -28,8 +24,8 @@ func CreateCheckIsAuthorizedMiddleware(sessionStorage auth.SessionStorage) func(
 				return
 			}
 
-			ctx := context.WithValue(r.Context(), UserIDKey, userID)
-			ctx = context.WithValue(ctx, SessionIDKey, session.Value)
+			ctx := context.WithValue(r.Context(), requestcontext.UserIDKey, userID)
+			ctx = context.WithValue(ctx, requestcontext.SessionIDKey, session.Value)
 
 			h.ServeHTTP(w, r.WithContext(ctx))
 		})

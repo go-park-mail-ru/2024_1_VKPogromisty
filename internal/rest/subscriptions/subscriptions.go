@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"socio/domain"
 	"socio/errors"
-	"socio/internal/rest/middleware"
 	"socio/pkg/json"
+	"socio/pkg/requestcontext"
 	"socio/usecase/subscriptions"
 )
 
@@ -53,7 +53,11 @@ func (api *SubscriptionsHandler) HandleSubscription(w http.ResponseWriter, r *ht
 		return
 	}
 
-	userID := r.Context().Value(middleware.UserIDKey).(uint)
+	userID, err := requestcontext.GetUserID(r)
+	if err != nil {
+		json.ServeJSONError(w, err)
+		return
+	}
 
 	subscription, err := api.Service.Subscribe(&domain.Subscription{SubscriberID: userID, SubscribedToID: input.SubscribedToID})
 	if err != nil {
@@ -95,7 +99,11 @@ func (api *SubscriptionsHandler) HandleUnsubscription(w http.ResponseWriter, r *
 		return
 	}
 
-	userID := r.Context().Value(middleware.UserIDKey).(uint)
+	userID, err := requestcontext.GetUserID(r)
+	if err != nil {
+		json.ServeJSONError(w, err)
+		return
+	}
 
 	err = api.Service.Unsubscribe(&domain.Subscription{SubscriberID: userID, SubscribedToID: input.SubscribedToID})
 	if err != nil {
@@ -127,7 +135,11 @@ func (api *SubscriptionsHandler) HandleUnsubscription(w http.ResponseWriter, r *
 func (api *SubscriptionsHandler) HandleGetSubscriptions(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	userID := r.Context().Value(middleware.UserIDKey).(uint)
+	userID, err := requestcontext.GetUserID(r)
+	if err != nil {
+		json.ServeJSONError(w, err)
+		return
+	}
 
 	subscriptions, err := api.Service.GetSubscriptions(userID)
 	if err != nil {
@@ -159,7 +171,11 @@ func (api *SubscriptionsHandler) HandleGetSubscriptions(w http.ResponseWriter, r
 func (api *SubscriptionsHandler) HandleGetSubscribers(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	userID := r.Context().Value(middleware.UserIDKey).(uint)
+	userID, err := requestcontext.GetUserID(r)
+	if err != nil {
+		json.ServeJSONError(w, err)
+		return
+	}
 
 	subscribers, err := api.Service.GetSubscribers(userID)
 	if err != nil {
@@ -190,7 +206,11 @@ func (api *SubscriptionsHandler) HandleGetSubscribers(w http.ResponseWriter, r *
 func (api *SubscriptionsHandler) HandleGetFriends(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	userID := r.Context().Value(middleware.UserIDKey).(uint)
+	userID, err := requestcontext.GetUserID(r)
+	if err != nil {
+		json.ServeJSONError(w, err)
+		return
+	}
 
 	friends, err := api.Service.GetFriends(userID)
 	if err != nil {

@@ -3,8 +3,8 @@ package rest
 import (
 	"net/http"
 	"socio/errors"
-	"socio/internal/rest/middleware"
 	"socio/pkg/json"
+	"socio/pkg/requestcontext"
 	"socio/usecase/profile"
 	"strconv"
 	"strings"
@@ -45,7 +45,11 @@ func (h *ProfileHandler) HandleGetProfile(w http.ResponseWriter, r *http.Request
 	var userID uint64
 	var err error
 
-	authorizedUserID := r.Context().Value(middleware.UserIDKey).(uint)
+	authorizedUserID, err := requestcontext.GetUserID(r)
+	if err != nil {
+		json.ServeJSONError(w, err)
+		return
+	}
 
 	if len(userIDData) != 0 {
 		userID, err = strconv.ParseUint(userIDData, 10, 0)
@@ -99,7 +103,11 @@ func (h *ProfileHandler) HandleUpdateProfile(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	userID := r.Context().Value(middleware.UserIDKey).(uint)
+	userID, err := requestcontext.GetUserID(r)
+	if err != nil {
+		json.ServeJSONError(w, err)
+		return
+	}
 
 	var input profile.UpdateUserInput
 	input.ID = userID
@@ -141,10 +149,19 @@ func (h *ProfileHandler) HandleUpdateProfile(w http.ResponseWriter, r *http.Requ
 //	@Failure		500	{object}	errors.HTTPError
 //	@Router			/profile/ [delete]
 func (h *ProfileHandler) HandleDeleteProfile(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value(middleware.UserIDKey).(uint)
-	sessionID := r.Context().Value(middleware.SessionIDKey).(string)
+	userID, err := requestcontext.GetUserID(r)
+	if err != nil {
+		json.ServeJSONError(w, err)
+		return
+	}
 
-	err := h.Service.DeleteUser(userID, sessionID)
+	sessionID, err := requestcontext.GetSessionID(r)
+	if err != nil {
+		json.ServeJSONError(w, err)
+		return
+	}
+
+	err = h.Service.DeleteUser(userID, sessionID)
 	if err != nil {
 		json.ServeJSONError(w, err)
 		return
