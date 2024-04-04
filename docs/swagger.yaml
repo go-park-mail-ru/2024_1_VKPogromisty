@@ -359,7 +359,33 @@ paths:
     get:
       consumes:
       - application/json
-      description: serve websocket connection
+      description: |
+        Serve websocket connection. You can send actions to connection following simple structure:
+
+        {
+        "type": ActionType,
+        "receiver": uint,
+        "payload": interface{}
+        }
+
+        ActionType is a string with one of following values: "SEND_MESSAGE", "UPDATE_MESSAGE", "DELETE_MESSAGE"
+
+        If "type" = "SEND_MESSAGE", then payload should be {"content": string}
+        If "type" = "UPDATE_MESSAGE", then payload should be {"messageId": uint, "content": string}
+        If "type" = "DELETE_MESSAGE", then payload should be {"messageId": uint}
+
+        In response clients, subscribed to corresponding channel, will get same structure back:
+        {
+        "type": ActionType,
+        "receiver": uint,
+        "payload": interface{}
+        }
+
+        "payload" can be:
+        PersonalMessage if "type" = "SEND_MESSAGE"
+        PersonalMessage if "type" = "UPDATE_MESSAGE"
+        Absent if "type" = "DELETE_MESSAGE"
+        {"error": string} if error happened at any point of query processing
       operationId: chat/serve_ws
       parameters:
       - description: session_id=some_session
