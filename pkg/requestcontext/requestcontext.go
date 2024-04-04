@@ -7,8 +7,11 @@ import (
 
 type ContextKey string
 
-const UserIDKey ContextKey = "userID"
-const SessionIDKey ContextKey = "sessionID"
+const (
+	UserIDKey    ContextKey = "userID"
+	SessionIDKey ContextKey = "sessionID"
+	RequestIDKey ContextKey = "requestID"
+)
 
 func GetUserID(r *http.Request) (userID uint, err error) {
 	userID, ok := r.Context().Value(UserIDKey).(uint)
