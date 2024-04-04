@@ -10,3 +10,7 @@ dump.rdb
 tern.conf
 .vscode
 socio-docker.session.sql
+fullchain.pem
+privkey.pem
+socio.conf
+/static
