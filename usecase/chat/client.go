@@ -4,16 +4,25 @@ import (
 	"bytes"
 	"encoding/json"
 	"socio/domain"
+	"socio/errors"
 )
 
 const (
-	sendChanSize        = 256
-	SendMessageAction   = "SEND_MESSAGE"
-	UpdateMessageAction = "UPDATE_MESSAGE"
-	DeleteMessageAction = "DELETE_MESSAGE"
-	SetOnlineAction     = "SET_ONLINE"
-	SetOfflineAction    = "SET_OFFLINE"
+	sendChanSize                   = 256
+	SendMessageAction   ChatAction = "SEND_MESSAGE"
+	UpdateMessageAction ChatAction = "UPDATE_MESSAGE"
+	DeleteMessageAction ChatAction = "DELETE_MESSAGE"
+	SetOnlineAction     ChatAction = "SET_ONLINE"
+	SetOfflineAction    ChatAction = "SET_OFFLINE"
 )
+
+type ChatAction string
+
+type Action struct {
+	Type     ChatAction      `json:"type"`
+	Receiver uint            `json:"receiver"`
+	Payload  json.RawMessage `json:"payload"`
+}
 
 type PersonalMessagesRepository interface {
 	GetLastMessageID(senderID, receiverID uint) (lastMessageID uint, err error)
@@ -90,11 +99,15 @@ func (c *Client) handleSendMessageAction(action *Action, message *SendMessagePay
 
 	newMessage, err := c.PersonalMessagesRepo.StoreMessage(msg)
 	if err != nil {
+		action.Payload = errors.MarshalError(err)
+		c.PubSubRepository.WriteAction(action)
 		return
 	}
 
 	action.Payload, err = json.Marshal(newMessage)
 	if err != nil {
+		action.Payload = errors.MarshalError(err)
+		c.PubSubRepository.WriteAction(action)
 		return
 	}
 
@@ -111,11 +124,15 @@ func (c *Client) handleUpdateMessageAction(action *Action, message *UpdateMessag
 
 	newMessage, err := c.PersonalMessagesRepo.UpdateMessage(msg)
 	if err != nil {
+		action.Payload = errors.MarshalError(err)
+		c.PubSubRepository.WriteAction(action)
 		return
 	}
 
 	action.Payload, err = json.Marshal(newMessage)
 	if err != nil {
+		action.Payload = errors.MarshalError(err)
+		c.PubSubRepository.WriteAction(action)
 		return
 	}
 
@@ -125,6 +142,8 @@ func (c *Client) handleUpdateMessageAction(action *Action, message *UpdateMessag
 func (c *Client) handleDeleteMessageAction(action *Action, messageID uint) {
 	err := c.PersonalMessagesRepo.DeleteMessage(messageID)
 	if err != nil {
+		action.Payload = errors.MarshalError(err)
+		c.PubSubRepository.WriteAction(action)
 		return
 	}
 

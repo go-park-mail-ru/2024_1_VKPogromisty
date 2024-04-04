@@ -1,7 +1,6 @@
 package chat
 
 import (
-	"encoding/json"
 	"socio/domain"
 	"socio/errors"
 	"sync"
@@ -12,12 +11,6 @@ type Service struct {
 	Clients          *sync.Map
 	PubSubRepository PubSubRepository
 	MessagesRepo     PersonalMessagesRepository
-}
-
-type Action struct {
-	Type     string          `json:"type"`
-	Receiver uint            `json:"receiver"`
-	Payload  json.RawMessage `json:"payload"`
 }
 
 type SendMessagePayload struct {
