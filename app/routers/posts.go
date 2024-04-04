@@ -1,8 +1,8 @@
 package routers
 
 import (
-	"socio/internal/rest"
 	"socio/internal/rest/middleware"
+	rest "socio/internal/rest/posts"
 	"socio/usecase/auth"
 	"socio/usecase/posts"
 

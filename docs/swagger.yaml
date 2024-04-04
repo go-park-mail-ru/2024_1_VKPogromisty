@@ -10,6 +10,34 @@ definitions:
       user:
         $ref: '#/definitions/domain.User'
     type: object
+  chat.Dialog:
+    properties:
+      lastMessage:
+        $ref: '#/definitions/domain.PersonalMessage'
+      user1:
+        $ref: '#/definitions/domain.User'
+      user2:
+        $ref: '#/definitions/domain.User'
+    type: object
+  domain.PersonalMessage:
+    properties:
+      content:
+        type: string
+      createdAt:
+        example: "2021-01-01T00:00:00Z"
+        format: date-time
+        type: string
+      id:
+        type: integer
+      receiverId:
+        type: integer
+      senderId:
+        type: integer
+      updatedAt:
+        example: "2021-01-01T00:00:00Z"
+        format: date-time
+        type: string
+    type: object
   domain.Post:
     properties:
       attachments:
@@ -327,6 +355,156 @@ paths:
       summary: handle user's registration flow
       tags:
       - auth
+  /chat/:
+    get:
+      consumes:
+      - application/json
+      description: |
+        Serve websocket connection. You can send actions to connection following simple structure:
+
+        {
+        "type": ActionType,
+        "receiver": uint,
+        "payload": interface{}
+        }
+
+        ActionType is a string with one of following values: "SEND_MESSAGE", "UPDATE_MESSAGE", "DELETE_MESSAGE"
+
+        If "type" = "SEND_MESSAGE", then payload should be {"content": string}
+        If "type" = "UPDATE_MESSAGE", then payload should be {"messageId": uint, "content": string}
+        If "type" = "DELETE_MESSAGE", then payload should be {"messageId": uint}
+
+        In response clients, subscribed to corresponding channel, will get same structure back:
+        {
+        "type": ActionType,
+        "receiver": uint,
+        "payload": interface{}
+        }
+
+        "payload" can be:
+        PersonalMessage if "type" = "SEND_MESSAGE"
+        PersonalMessage if "type" = "UPDATE_MESSAGE"
+        Absent if "type" = "DELETE_MESSAGE"
+        {"error": string} if error happened at any point of query processing
+      operationId: chat/serve_ws
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: serve websocket connection
+      tags:
+      - chat
+  /chat/dialogs/:
+    get:
+      consumes:
+      - application/json
+      description: get user dialogs
+      operationId: chat/get_dialogs
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/chat.Dialog'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: get user dialogs
+      tags:
+      - chat
+  /chat/messages/:
+    get:
+      consumes:
+      - application/json
+      description: get messages by dialog with pagination
+      operationId: chat/get_messages
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: ID of the peer
+        in: query
+        name: peerId
+        required: true
+        type: integer
+      - description: ID of the last message, if last messages needed, should be set
+          to 0
+        in: query
+        name: lastMessageId
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/domain.PersonalMessage'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: get messages by dialog
+      tags:
+      - chat
   /posts/:
     delete:
       consumes:

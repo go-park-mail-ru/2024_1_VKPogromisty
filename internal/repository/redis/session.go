@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"fmt"
 	"socio/errors"
 
 	"github.com/gomodule/redigo/redis"
@@ -10,21 +9,6 @@ import (
 
 type Session struct {
 	pool *redis.Pool
-}
-
-func NewPool(protocol, address, password string) *redis.Pool {
-	return &redis.Pool{
-		MaxIdle:   100,
-		MaxActive: 100,
-		Dial: func() (redis.Conn, error) {
-			c, err := redis.Dial(protocol, address, redis.DialPassword(password))
-			if err != nil {
-				return nil, err
-			}
-
-			return c, nil
-		},
-	}
 }
 
 func NewSession(pool *redis.Pool) (s *Session) {
@@ -64,14 +48,12 @@ func (s *Session) GetUserIDBySession(sessionID string) (userID uint, err error) 
 
 	result, err := c.Do("GET", sessionID)
 	if err != nil {
-		fmt.Println(err)
 		err = errors.ErrUnauthorized
 		return
 	}
 
 	userIDData, err := redis.Uint64(result, err)
 	if err != nil {
-		fmt.Println(err)
 		err = errors.ErrUnauthorized
 		return
 	}

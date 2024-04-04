@@ -20,3 +20,13 @@ var (
 		http.MethodOptions,
 	}
 )
+
+func CheckOrigin(r *http.Request) bool {
+	origin := r.Header.Get("Origin")
+	for _, allowedOrigin := range ALLOWED_ORIGINS {
+		if origin == allowedOrigin {
+			return true
+		}
+	}
+	return false
+}

@@ -1,6 +1,7 @@
 package errors
 
 import (
+	"encoding/json"
 	"net/http"
 )
 
@@ -40,5 +41,10 @@ func ParseHTTPError(err error) (msg string, status int) {
 
 	msg = err.Error()
 
+	return
+}
+
+func MarshalError(err error) (data []byte, marshalErr error) {
+	data, marshalErr = json.Marshal(map[string]string{"error": err.Error()})
 	return
 }
