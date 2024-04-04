@@ -1,11 +1,12 @@
 package profile
 
 import (
+	"context"
 	"socio/domain"
 	"socio/pkg/validators"
 )
 
-func (p *Service) ValidateUserInput(userInput UpdateUserInput, oldUser *domain.User) (err error) {
+func (p *Service) ValidateUserInput(ctx context.Context, userInput UpdateUserInput, oldUser *domain.User) (err error) {
 	if len(userInput.Email) > 0 {
 		if err = validators.ValidateEmail(userInput.Email); err != nil {
 			return
@@ -19,7 +20,7 @@ func (p *Service) ValidateUserInput(userInput UpdateUserInput, oldUser *domain.U
 	}
 
 	if len(userInput.Email) > 0 && userInput.Email != oldUser.Email {
-		if err = validators.CheckDuplicatedEmail(userInput.Email, p.UserStorage); err != nil {
+		if err = validators.CheckDuplicatedEmail(ctx, userInput.Email, p.UserStorage); err != nil {
 			return
 		}
 	}

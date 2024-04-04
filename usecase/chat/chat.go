@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"context"
 	"fmt"
 	"socio/domain"
 	"socio/errors"
@@ -41,7 +42,7 @@ func NewChatService(pubSubRepo PubSubRepository, messagesRepo PersonalMessagesRe
 	}
 }
 
-func (s *Service) Register(userID uint) (c *Client, err error) {
+func (s *Service) Register(ctx context.Context, userID uint) (c *Client, err error) {
 	cData, ok := s.Clients.Load(userID)
 	if ok {
 		c = cData.(*Client)
@@ -53,7 +54,7 @@ func (s *Service) Register(userID uint) (c *Client, err error) {
 		return
 	}
 
-	go c.ReadPump()
+	go c.ReadPump(ctx)
 
 	s.Clients.Store(userID, c)
 	return
@@ -68,9 +69,9 @@ func (s *Service) Unregister(userID uint) (err error) {
 	return
 }
 
-func (s *Service) GetMessagesByDialog(userID, peerID, lastMessageID uint) (messages []*domain.PersonalMessage, err error) {
+func (s *Service) GetMessagesByDialog(ctx context.Context, userID, peerID, lastMessageID uint) (messages []*domain.PersonalMessage, err error) {
 	if lastMessageID == 0 {
-		lastMessageID, err = s.MessagesRepo.GetLastMessageID(userID, peerID)
+		lastMessageID, err = s.MessagesRepo.GetLastMessageID(ctx, userID, peerID)
 		if err != nil {
 			fmt.Println("here")
 			return
@@ -78,7 +79,7 @@ func (s *Service) GetMessagesByDialog(userID, peerID, lastMessageID uint) (messa
 		lastMessageID++
 	}
 
-	messages, err = s.MessagesRepo.GetMessagesByDialog(userID, peerID, lastMessageID)
+	messages, err = s.MessagesRepo.GetMessagesByDialog(ctx, userID, peerID, lastMessageID)
 	if err != nil {
 		return
 	}
@@ -86,8 +87,8 @@ func (s *Service) GetMessagesByDialog(userID, peerID, lastMessageID uint) (messa
 	return
 }
 
-func (s *Service) GetDialogsByUserID(userID uint) (dialogs []*Dialog, err error) {
-	dialogs, err = s.MessagesRepo.GetDialogsByUserID(userID)
+func (s *Service) GetDialogsByUserID(ctx context.Context, userID uint) (dialogs []*Dialog, err error) {
+	dialogs, err = s.MessagesRepo.GetDialogsByUserID(ctx, userID)
 	if err != nil {
 		return
 	}

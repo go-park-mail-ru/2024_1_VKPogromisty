@@ -2,7 +2,9 @@ package repository
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"socio/pkg/contextlogger"
 	"socio/usecase/chat"
 
 	"github.com/gomodule/redigo/redis"
@@ -18,7 +20,7 @@ func NewChatPubSub(pool *redis.Pool) (chatPubSub *ChatPubSub) {
 	}
 }
 
-func (c *ChatPubSub) ReadActions(userID uint, ch chan *chat.Action) (err error) {
+func (c *ChatPubSub) ReadActions(ctx context.Context, userID uint, ch chan *chat.Action) (err error) {
 	conn := c.pool.Get()
 	defer func() {
 		err = conn.Close()
@@ -28,6 +30,8 @@ func (c *ChatPubSub) ReadActions(userID uint, ch chan *chat.Action) (err error) 
 	}()
 
 	psc := redis.PubSubConn{Conn: conn}
+
+	contextlogger.LogRedisAction(ctx, "SUBSCRIBE", "userID", userID)
 
 	err = psc.Subscribe(userID)
 	if err != nil {
@@ -43,12 +47,14 @@ func (c *ChatPubSub) ReadActions(userID uint, ch chan *chat.Action) (err error) 
 				return
 			}
 
+			contextlogger.LogRedisAction(ctx, "RECEIVE", action.Receiver, action)
+
 			ch <- action
 		}
 	}
 }
 
-func (c *ChatPubSub) WriteAction(action *chat.Action) (err error) {
+func (c *ChatPubSub) WriteAction(ctx context.Context, action *chat.Action) (err error) {
 	conn := c.pool.Get()
 	defer func() {
 		err = conn.Close()
@@ -61,6 +67,8 @@ func (c *ChatPubSub) WriteAction(action *chat.Action) (err error) {
 	if err != nil {
 		return
 	}
+
+	contextlogger.LogRedisAction(ctx, "PUBLISH", action.Receiver, action)
 
 	_, err = conn.Do("PUBLISH", action.Receiver, data)
 	if err != nil {

@@ -5,6 +5,7 @@ import (
 	"mime/multipart"
 	"socio/domain"
 	"socio/errors"
+	"socio/pkg/contextlogger"
 	"socio/pkg/static"
 	customtime "socio/pkg/time"
 
@@ -145,11 +146,14 @@ func textArrayIntoStringSlice(arr pgtype.TextArray) (res []string) {
 	return
 }
 
-func (p *Posts) GetPostByID(postID uint) (post *domain.Post, err error) {
+func (p *Posts) GetPostByID(ctx context.Context, postID uint) (post *domain.Post, err error) {
 	post = new(domain.Post)
 
 	var attachments pgtype.TextArray
-	err = p.db.QueryRow(context.Background(), getPostByIDQuery, postID).Scan(
+
+	contextlogger.LogSQL(ctx, getPostByIDQuery, postID)
+
+	err = p.db.QueryRow(ctx, getPostByIDQuery, postID).Scan(
 		&post.ID,
 		&post.AuthorID,
 		&post.Content,
@@ -166,8 +170,10 @@ func (p *Posts) GetPostByID(postID uint) (post *domain.Post, err error) {
 	return
 }
 
-func (p *Posts) GetUserPosts(userID uint, lastPostID uint) (posts []*domain.Post, err error) {
-	rows, err := p.db.Query(context.Background(), getUserPostsQuery, userID, lastPostID, PostsByPage)
+func (p *Posts) GetUserPosts(ctx context.Context, userID uint, lastPostID uint) (posts []*domain.Post, err error) {
+	contextlogger.LogSQL(ctx, getUserPostsQuery, userID, lastPostID, PostsByPage)
+
+	rows, err := p.db.Query(ctx, getUserPostsQuery, userID, lastPostID, PostsByPage)
 	if err != nil {
 		return
 	}
@@ -196,8 +202,10 @@ func (p *Posts) GetUserPosts(userID uint, lastPostID uint) (posts []*domain.Post
 	return
 }
 
-func (p *Posts) GetUserFriendsPosts(userID uint, lastPostID uint) (posts []domain.PostWithAuthor, err error) {
-	rows, err := p.db.Query(context.Background(), getUserFriendsPostsQuery, userID, lastPostID, PostsByPage)
+func (p *Posts) GetUserFriendsPosts(ctx context.Context, userID uint, lastPostID uint) (posts []domain.PostWithAuthor, err error) {
+	contextlogger.LogSQL(ctx, getUserFriendsPostsQuery, userID, lastPostID, PostsByPage)
+
+	rows, err := p.db.Query(ctx, getUserFriendsPostsQuery, userID, lastPostID, PostsByPage)
 	if err != nil {
 		return
 	}
@@ -237,10 +245,10 @@ func (p *Posts) GetUserFriendsPosts(userID uint, lastPostID uint) (posts []domai
 	return
 }
 
-func (p *Posts) StorePost(post *domain.Post, attachments []*multipart.FileHeader) (newPost *domain.Post, err error) {
+func (p *Posts) StorePost(ctx context.Context, post *domain.Post, attachments []*multipart.FileHeader) (newPost *domain.Post, err error) {
 	newPost = new(domain.Post)
 
-	tx, err := p.db.BeginTx(context.Background(), pgx.TxOptions{})
+	tx, err := p.db.BeginTx(ctx, pgx.TxOptions{})
 
 	if err != nil {
 		return
@@ -250,14 +258,16 @@ func (p *Posts) StorePost(post *domain.Post, attachments []*multipart.FileHeader
 		if err != nil {
 			return
 		}
-		if err = tx.Rollback(context.Background()); err != nil && err != pgx.ErrTxClosed {
+		if err = tx.Rollback(ctx); err != nil && err != pgx.ErrTxClosed {
 			return
 		}
 
 		err = nil
 	}()
 
-	err = tx.QueryRow(context.Background(), storePostQuery, post.AuthorID, post.Content).Scan(
+	contextlogger.LogSQL(ctx, storePostQuery, post.AuthorID, post.Content)
+
+	err = tx.QueryRow(ctx, storePostQuery, post.AuthorID, post.Content).Scan(
 		&newPost.ID,
 		&newPost.AuthorID,
 		&newPost.Content,
@@ -275,7 +285,9 @@ func (p *Posts) StorePost(post *domain.Post, attachments []*multipart.FileHeader
 			return
 		}
 
-		err = tx.QueryRow(context.Background(), storeAttachmentQuery, newPost.ID, fileName).Scan(&fileName)
+		contextlogger.LogSQL(ctx, storeAttachmentQuery, newPost.ID, fileName)
+
+		err = tx.QueryRow(ctx, storeAttachmentQuery, newPost.ID, fileName).Scan(&fileName)
 		if err != nil {
 			return
 		}
@@ -283,7 +295,7 @@ func (p *Posts) StorePost(post *domain.Post, attachments []*multipart.FileHeader
 		newPost.Attachments = append(newPost.Attachments, fileName)
 	}
 
-	err = tx.Commit(context.Background())
+	err = tx.Commit(ctx)
 	if err != nil {
 		return
 	}
@@ -291,10 +303,12 @@ func (p *Posts) StorePost(post *domain.Post, attachments []*multipart.FileHeader
 	return
 }
 
-func (p *Posts) UpdatePost(post *domain.Post) (updatedPost *domain.Post, err error) {
+func (p *Posts) UpdatePost(ctx context.Context, post *domain.Post) (updatedPost *domain.Post, err error) {
 	updatedPost = new(domain.Post)
 
-	err = p.db.QueryRow(context.Background(), updatePostQuery, post.Content, post.ID).Scan(
+	contextlogger.LogSQL(ctx, updatePostQuery, post.Content, post.ID)
+
+	err = p.db.QueryRow(ctx, updatePostQuery, post.Content, post.ID).Scan(
 		&updatedPost.ID,
 		&updatedPost.AuthorID,
 		&updatedPost.Content,
@@ -308,7 +322,7 @@ func (p *Posts) UpdatePost(post *domain.Post) (updatedPost *domain.Post, err err
 	return
 }
 
-func (p *Posts) DeletePost(postID uint) (err error) {
+func (p *Posts) DeletePost(ctx context.Context, postID uint) (err error) {
 	tx, err := p.db.BeginTx(context.Background(), pgx.TxOptions{})
 	if err != nil {
 		return
@@ -318,7 +332,7 @@ func (p *Posts) DeletePost(postID uint) (err error) {
 		if err != nil {
 			return
 		}
-		if err = tx.Rollback(context.Background()); err != nil && err != pgx.ErrTxClosed {
+		if err = tx.Rollback(ctx); err != nil && err != pgx.ErrTxClosed {
 			return
 		}
 
@@ -326,7 +340,10 @@ func (p *Posts) DeletePost(postID uint) (err error) {
 	}()
 
 	var attachments pgtype.TextArray
-	err = tx.QueryRow(context.Background(), selectAttachmentsQuery, postID).Scan(&attachments)
+
+	contextlogger.LogSQL(ctx, selectAttachmentsQuery, postID)
+
+	err = tx.QueryRow(ctx, selectAttachmentsQuery, postID).Scan(&attachments)
 	if err != nil && err != pgx.ErrNoRows {
 		return
 	}
@@ -340,7 +357,9 @@ func (p *Posts) DeletePost(postID uint) (err error) {
 		}
 	}
 
-	result, err := tx.Exec(context.Background(), deletePostQuery, postID)
+	contextlogger.LogSQL(ctx, deletePostQuery, postID)
+
+	result, err := tx.Exec(ctx, deletePostQuery, postID)
 	if err != nil {
 		return
 	}
@@ -349,7 +368,7 @@ func (p *Posts) DeletePost(postID uint) (err error) {
 		return errors.ErrRowsAffected
 	}
 
-	err = tx.Commit(context.Background())
+	err = tx.Commit(ctx)
 	if err != nil {
 		return
 	}

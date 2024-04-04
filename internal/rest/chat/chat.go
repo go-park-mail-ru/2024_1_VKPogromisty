@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"context"
 	defJSON "encoding/json"
 	"fmt"
 	"net/http"
@@ -59,19 +60,19 @@ func NewChatServer(pubSubRepo chat.PubSubRepository, messagesRepo chat.PersonalM
 //	@Failure		500	{object}	errors.HTTPError
 //	@Router			/chat/dialogs/ [get]
 func (c *ChatServer) HandleGetDialogs(w http.ResponseWriter, r *http.Request) {
-	userID, err := requestcontext.GetUserID(r)
+	userID, err := requestcontext.GetUserID(r.Context())
 	if err != nil {
-		json.ServeJSONError(w, err)
+		json.ServeJSONError(r.Context(), w, err)
 		return
 	}
 
-	dialogs, err := c.Service.GetDialogsByUserID(userID)
+	dialogs, err := c.Service.GetDialogsByUserID(r.Context(), userID)
 	if err != nil {
-		json.ServeJSONError(w, err)
+		json.ServeJSONError(r.Context(), w, err)
 		return
 	}
 
-	json.ServeJSONBody(w, dialogs)
+	json.ServeJSONBody(r.Context(), w, dialogs)
 }
 
 // HandleGetMessagesByDialog godoc
@@ -94,21 +95,21 @@ func (c *ChatServer) HandleGetDialogs(w http.ResponseWriter, r *http.Request) {
 //	@Failure		500	{object}	errors.HTTPError
 //	@Router			/chat/messages/ [get]
 func (c *ChatServer) HandleGetMessagesByDialog(w http.ResponseWriter, r *http.Request) {
-	userID, err := requestcontext.GetUserID(r)
+	userID, err := requestcontext.GetUserID(r.Context())
 	if err != nil {
-		json.ServeJSONError(w, err)
+		json.ServeJSONError(r.Context(), w, err)
 		return
 	}
 
 	peerIDData := r.URL.Query().Get("peerId")
 	if peerIDData == "" {
-		json.ServeJSONError(w, errors.ErrInvalidData)
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
 		return
 	}
 
 	peerID, err := strconv.ParseUint(peerIDData, 0, 0)
 	if err != nil {
-		json.ServeJSONError(w, errors.ErrInvalidData)
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
 		return
 	}
 
@@ -119,19 +120,19 @@ func (c *ChatServer) HandleGetMessagesByDialog(w http.ResponseWriter, r *http.Re
 	} else {
 		lastMessageID, err = strconv.ParseUint(lastMessageIDData, 0, 0)
 		if err != nil {
-			json.ServeJSONError(w, errors.ErrInvalidData)
+			json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
 			return
 		}
 	}
 
-	messages, err := c.Service.GetMessagesByDialog(userID, uint(peerID), uint(lastMessageID))
+	messages, err := c.Service.GetMessagesByDialog(r.Context(), userID, uint(peerID), uint(lastMessageID))
 	if err != nil {
 		fmt.Println(err)
-		json.ServeJSONError(w, err)
+		json.ServeJSONError(r.Context(), w, err)
 		return
 	}
 
-	json.ServeJSONBody(w, messages)
+	json.ServeJSONBody(r.Context(), w, messages)
 
 }
 
@@ -180,29 +181,29 @@ func (c *ChatServer) HandleGetMessagesByDialog(w http.ResponseWriter, r *http.Re
 //	@Failure		500	{object}	errors.HTTPError
 //	@Router			/chat/ [get]
 func (c *ChatServer) ServeWS(w http.ResponseWriter, r *http.Request) {
-	userID, err := requestcontext.GetUserID(r)
+	userID, err := requestcontext.GetUserID(r.Context())
 	if err != nil {
-		json.ServeJSONError(w, err)
+		json.ServeJSONError(r.Context(), w, err)
 		return
 	}
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		json.ServeJSONError(w, err)
+		json.ServeJSONError(r.Context(), w, err)
 		return
 	}
 
-	client, err := c.Service.Register(userID)
+	client, err := c.Service.Register(r.Context(), userID)
 	if err != nil {
-		json.ServeJSONError(w, err)
+		json.ServeJSONError(r.Context(), w, err)
 		return
 	}
 
-	go c.listenWrite(conn, client)
-	go c.listenRead(conn, client)
+	go c.listenWrite(r.Context(), conn, client)
+	go c.listenRead(r.Context(), conn, client)
 }
 
-func (c *ChatServer) listenRead(conn *websocket.Conn, client *chat.Client) {
+func (c *ChatServer) listenRead(ctx context.Context, conn *websocket.Conn, client *chat.Client) {
 	defer func() {
 		err := conn.Close()
 		if err != nil {
@@ -233,11 +234,11 @@ func (c *ChatServer) listenRead(conn *websocket.Conn, client *chat.Client) {
 			return
 		}
 
-		client.HandleAction(action)
+		client.HandleAction(ctx, action)
 	}
 }
 
-func (c *ChatServer) listenWrite(conn *websocket.Conn, client *chat.Client) {
+func (c *ChatServer) listenWrite(ctx context.Context, conn *websocket.Conn, client *chat.Client) {
 	ticker := time.NewTicker(pingPeriod)
 
 	defer func() {

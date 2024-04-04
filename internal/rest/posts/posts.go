@@ -55,7 +55,7 @@ func (h *PostsHandler) HandleGetUserPosts(w http.ResponseWriter, r *http.Request
 
 	userID, err := strconv.Atoi(r.URL.Query().Get("userId"))
 	if err != nil {
-		json.ServeJSONError(w, errors.ErrInvalidData)
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
 		return
 	}
 
@@ -63,15 +63,15 @@ func (h *PostsHandler) HandleGetUserPosts(w http.ResponseWriter, r *http.Request
 
 	lastPostID, err := strconv.Atoi(r.URL.Query().Get("lastPostId"))
 	if err != nil {
-		json.ServeJSONError(w, errors.ErrInvalidData)
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
 		return
 	}
 
 	input.LastPostID = uint(lastPostID)
 
-	posts, author, err := h.Service.GetUserPosts(input.UserID, input.LastPostID)
+	posts, author, err := h.Service.GetUserPosts(r.Context(), input.UserID, input.LastPostID)
 	if err != nil {
-		json.ServeJSONError(w, err)
+		json.ServeJSONError(r.Context(), w, err)
 		return
 	}
 
@@ -79,7 +79,7 @@ func (h *PostsHandler) HandleGetUserPosts(w http.ResponseWriter, r *http.Request
 		Posts:  posts,
 		Author: author,
 	}
-	json.ServeJSONBody(w, response)
+	json.ServeJSONBody(r.Context(), w, response)
 }
 
 // HandleGetUserFriendsPosts godoc
@@ -107,25 +107,25 @@ func (h *PostsHandler) HandleGetUserFriendsPosts(w http.ResponseWriter, r *http.
 
 	lastPostID, err := strconv.Atoi(r.URL.Query().Get("lastPostId"))
 	if err != nil {
-		json.ServeJSONError(w, errors.ErrInvalidData)
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
 		return
 	}
 
 	input.LastPostID = uint(lastPostID)
 
-	userID, err := requestcontext.GetUserID(r)
+	userID, err := requestcontext.GetUserID(r.Context())
 	if err != nil {
-		json.ServeJSONError(w, err)
+		json.ServeJSONError(r.Context(), w, err)
 		return
 	}
 
-	postsWithAuthors, err := h.Service.GetUserFriendsPosts(userID, input.LastPostID)
+	postsWithAuthors, err := h.Service.GetUserFriendsPosts(r.Context(), userID, input.LastPostID)
 	if err != nil {
-		json.ServeJSONError(w, err)
+		json.ServeJSONError(r.Context(), w, err)
 		return
 	}
 
-	json.ServeJSONBody(w, postsWithAuthors)
+	json.ServeJSONBody(r.Context(), w, postsWithAuthors)
 }
 
 // HandleCreatePost godoc
@@ -150,15 +150,15 @@ func (h *PostsHandler) HandleGetUserFriendsPosts(w http.ResponseWriter, r *http.
 func (h *PostsHandler) HandleCreatePost(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseMultipartForm(1000 << 20)
 	if err != nil {
-		json.ServeJSONError(w, errors.ErrInvalidBody)
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidBody)
 		return
 	}
 
 	var postInput posts.PostInput
 
-	postInput.AuthorID, err = requestcontext.GetUserID(r)
+	postInput.AuthorID, err = requestcontext.GetUserID(r.Context())
 	if err != nil {
-		json.ServeJSONError(w, err)
+		json.ServeJSONError(r.Context(), w, err)
 		return
 	}
 
@@ -168,15 +168,15 @@ func (h *PostsHandler) HandleCreatePost(w http.ResponseWriter, r *http.Request) 
 		postInput.Attachments = append(postInput.Attachments, fileHeaders...)
 	}
 
-	postWithAuthor, err := h.Service.CreatePost(postInput)
+	postWithAuthor, err := h.Service.CreatePost(r.Context(), postInput)
 	if err != nil {
 		fmt.Println(err)
-		json.ServeJSONError(w, err)
+		json.ServeJSONError(r.Context(), w, err)
 		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	json.ServeJSONBody(w, postWithAuthor)
+	json.ServeJSONBody(r.Context(), w, postWithAuthor)
 }
 
 // HandleUpdatePost godoc
@@ -208,23 +208,23 @@ func (h *PostsHandler) HandleUpdatePost(w http.ResponseWriter, r *http.Request) 
 	decoder := defJSON.NewDecoder(r.Body)
 	err := decoder.Decode(&input)
 	if err != nil {
-		json.ServeJSONError(w, errors.ErrJSONUnmarshalling)
+		json.ServeJSONError(r.Context(), w, errors.ErrJSONUnmarshalling)
 		return
 	}
 
-	userID, err := requestcontext.GetUserID(r)
+	userID, err := requestcontext.GetUserID(r.Context())
 	if err != nil {
-		json.ServeJSONError(w, err)
+		json.ServeJSONError(r.Context(), w, err)
 		return
 	}
 
-	updatedPost, err := h.Service.UpdatePost(userID, input)
+	updatedPost, err := h.Service.UpdatePost(r.Context(), userID, input)
 	if err != nil {
-		json.ServeJSONError(w, err)
+		json.ServeJSONError(r.Context(), w, err)
 		return
 	}
 
-	json.ServeJSONBody(w, updatedPost)
+	json.ServeJSONBody(r.Context(), w, updatedPost)
 
 }
 
@@ -254,18 +254,18 @@ func (h *PostsHandler) HandleDeletePost(w http.ResponseWriter, r *http.Request) 
 	decoder := defJSON.NewDecoder(r.Body)
 	err := decoder.Decode(&input)
 	if err != nil {
-		json.ServeJSONError(w, errors.ErrJSONUnmarshalling)
+		json.ServeJSONError(r.Context(), w, errors.ErrJSONUnmarshalling)
 		return
 	}
 
 	if err != nil {
-		json.ServeJSONError(w, err)
+		json.ServeJSONError(r.Context(), w, err)
 		return
 	}
 
-	err = h.Service.DeletePost(input.PostID)
+	err = h.Service.DeletePost(r.Context(), input.PostID)
 	if err != nil {
-		json.ServeJSONError(w, err)
+		json.ServeJSONError(r.Context(), w, err)
 		return
 	}
 

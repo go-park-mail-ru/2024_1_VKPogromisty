@@ -1,6 +1,7 @@
 package validators
 
 import (
+	"context"
 	"fmt"
 	"net/mail"
 	"socio/domain"
@@ -10,7 +11,7 @@ import (
 )
 
 type UserStorage interface {
-	GetUserByEmail(email string) (user *domain.User, err error)
+	GetUserByEmail(ctx context.Context, email string) (user *domain.User, err error)
 }
 
 func ValidateEmail(email string) (err error) {
@@ -52,8 +53,8 @@ func ValidateDateOfBirth(date string) (err error) {
 	return
 }
 
-func CheckDuplicatedEmail(email string, userStorage UserStorage) (err error) {
-	if _, err = userStorage.GetUserByEmail(email); err != errors.ErrNotFound {
+func CheckDuplicatedEmail(ctx context.Context, email string, userStorage UserStorage) (err error) {
+	if _, err = userStorage.GetUserByEmail(ctx, email); err != errors.ErrNotFound {
 		fmt.Println("CheckDuplicatedEmail: ", err)
 		err = errors.ErrEmailsDuplicate
 		return

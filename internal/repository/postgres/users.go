@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"socio/domain"
 	"socio/errors"
+	"socio/pkg/contextlogger"
 	"socio/pkg/hash"
 
 	customtime "socio/pkg/time"
@@ -140,10 +141,12 @@ func NewUsers(db *pgxpool.Pool, tp customtime.TimeProvider) *Users {
 	}
 }
 
-func (s *Users) GetUserByID(userID uint) (user *domain.User, err error) {
+func (s *Users) GetUserByID(ctx context.Context, userID uint) (user *domain.User, err error) {
+	contextlogger.LogSQL(ctx, getUserByIDQuery, userID)
+
 	user = &domain.User{}
 
-	err = s.db.QueryRow(context.Background(), getUserByIDQuery, userID).Scan(
+	err = s.db.QueryRow(ctx, getUserByIDQuery, userID).Scan(
 		&user.ID,
 		&user.FirstName,
 		&user.LastName,
@@ -167,10 +170,12 @@ func (s *Users) GetUserByID(userID uint) (user *domain.User, err error) {
 	return
 }
 
-func (s *Users) GetUserByIDWithSubsInfo(userID, authorizedUserID uint) (user *domain.User, isSubscribedTo bool, isSubscriber bool, err error) {
+func (s *Users) GetUserByIDWithSubsInfo(ctx context.Context, userID, authorizedUserID uint) (user *domain.User, isSubscribedTo bool, isSubscriber bool, err error) {
+	contextlogger.LogSQL(ctx, getUserByIDWithSubsInfoQuery, userID, authorizedUserID)
+
 	user = &domain.User{}
 
-	err = s.db.QueryRow(context.Background(), getUserByIDWithSubsInfoQuery, userID, authorizedUserID).Scan(
+	err = s.db.QueryRow(ctx, getUserByIDWithSubsInfoQuery, userID, authorizedUserID).Scan(
 		&user.ID,
 		&user.FirstName,
 		&user.LastName,
@@ -197,10 +202,12 @@ func (s *Users) GetUserByIDWithSubsInfo(userID, authorizedUserID uint) (user *do
 	return
 }
 
-func (s *Users) GetUserByEmail(email string) (user *domain.User, err error) {
+func (s *Users) GetUserByEmail(ctx context.Context, email string) (user *domain.User, err error) {
+	contextlogger.LogSQL(ctx, getUserByEmailQuery, email)
+
 	user = &domain.User{}
 
-	err = s.db.QueryRow(context.Background(), getUserByEmailQuery, email).Scan(
+	err = s.db.QueryRow(ctx, getUserByEmailQuery, email).Scan(
 		&user.ID,
 		&user.FirstName,
 		&user.LastName,
@@ -224,12 +231,22 @@ func (s *Users) GetUserByEmail(email string) (user *domain.User, err error) {
 	return
 }
 
-func (s *Users) StoreUser(user *domain.User) (err error) {
+func (s *Users) StoreUser(ctx context.Context, user *domain.User) (err error) {
 	salt := uuid.NewString()
 	user.Password = hash.HashPassword(user.Password, []byte(salt))
 	user.Salt = salt
 
-	err = s.db.QueryRow(context.Background(), storeUserQuery,
+	contextlogger.LogSQL(ctx, storeUserQuery,
+		user.FirstName,
+		user.LastName,
+		user.Email,
+		user.Password,
+		user.Salt,
+		user.Avatar,
+		user.DateOfBirth.Time,
+	)
+
+	err = s.db.QueryRow(ctx, storeUserQuery,
 		user.FirstName,
 		user.LastName,
 		user.Email,
@@ -254,14 +271,25 @@ func (s *Users) StoreUser(user *domain.User) (err error) {
 	return
 }
 
-func (s *Users) UpdateUser(user *domain.User) (updatedUser *domain.User, err error) {
+func (s *Users) UpdateUser(ctx context.Context, user *domain.User) (updatedUser *domain.User, err error) {
 	updatedUser = &domain.User{}
 
 	salt := uuid.NewString()
 	user.Password = hash.HashPassword(user.Password, []byte(salt))
 	user.Salt = salt
 
-	err = s.db.QueryRow(context.Background(), updateUserQuery,
+	contextlogger.LogSQL(ctx, updateUserQuery,
+		user.ID,
+		user.FirstName,
+		user.LastName,
+		user.Email,
+		user.Password,
+		user.Salt,
+		user.Avatar,
+		user.DateOfBirth.Time,
+	)
+
+	err = s.db.QueryRow(ctx, updateUserQuery,
 		user.ID,
 		user.FirstName,
 		user.LastName,
@@ -287,12 +315,18 @@ func (s *Users) UpdateUser(user *domain.User) (updatedUser *domain.User, err err
 	return
 }
 
-func (s *Users) RefreshSaltAndRehashPassword(user *domain.User, password string) (err error) {
+func (s *Users) RefreshSaltAndRehashPassword(ctx context.Context, user *domain.User, password string) (err error) {
 	salt := uuid.NewString()
 	user.Password = hash.HashPassword(password, []byte(salt))
 	user.Salt = salt
 
-	result, err := s.db.Exec(context.Background(), refreshSaltAndRehashPasswordQuery,
+	contextlogger.LogSQL(ctx, refreshSaltAndRehashPasswordQuery,
+		user.Password,
+		user.Salt,
+		user.ID,
+	)
+
+	result, err := s.db.Exec(ctx, refreshSaltAndRehashPasswordQuery,
 		user.Password,
 		user.Salt,
 		user.ID,
@@ -308,8 +342,10 @@ func (s *Users) RefreshSaltAndRehashPassword(user *domain.User, password string)
 	return
 }
 
-func (s *Users) DeleteUser(userID uint) (err error) {
-	result, err := s.db.Exec(context.Background(), deleteUserQuery, userID)
+func (s *Users) DeleteUser(ctx context.Context, userID uint) (err error) {
+	contextlogger.LogSQL(ctx, deleteUserQuery, userID)
+
+	result, err := s.db.Exec(ctx, deleteUserQuery, userID)
 	if err != nil {
 		return
 	}

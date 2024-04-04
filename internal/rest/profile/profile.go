@@ -45,29 +45,29 @@ func (h *ProfileHandler) HandleGetProfile(w http.ResponseWriter, r *http.Request
 	var userID uint64
 	var err error
 
-	authorizedUserID, err := requestcontext.GetUserID(r)
+	authorizedUserID, err := requestcontext.GetUserID(r.Context())
 	if err != nil {
-		json.ServeJSONError(w, err)
+		json.ServeJSONError(r.Context(), w, err)
 		return
 	}
 
 	if len(userIDData) != 0 {
 		userID, err = strconv.ParseUint(userIDData, 10, 0)
 		if err != nil {
-			json.ServeJSONError(w, errors.ErrInvalidSlug)
+			json.ServeJSONError(r.Context(), w, errors.ErrInvalidSlug)
 			return
 		}
 	} else {
 		userID = uint64(authorizedUserID)
 	}
 
-	userWithInfo, err := h.Service.GetUserByIDWithSubsInfo(uint(userID), authorizedUserID)
+	userWithInfo, err := h.Service.GetUserByIDWithSubsInfo(r.Context(), uint(userID), authorizedUserID)
 	if err != nil {
-		json.ServeJSONError(w, err)
+		json.ServeJSONError(r.Context(), w, err)
 		return
 	}
 
-	json.ServeJSONBody(w, userWithInfo)
+	json.ServeJSONBody(r.Context(), w, userWithInfo)
 }
 
 // HandleUpdateProfile godoc
@@ -99,13 +99,13 @@ func (h *ProfileHandler) HandleGetProfile(w http.ResponseWriter, r *http.Request
 func (h *ProfileHandler) HandleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseMultipartForm(4 * 1024 * 1024)
 	if err != nil {
-		json.ServeJSONError(w, errors.ErrInvalidBody)
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidBody)
 		return
 	}
 
-	userID, err := requestcontext.GetUserID(r)
+	userID, err := requestcontext.GetUserID(r.Context())
 	if err != nil {
-		json.ServeJSONError(w, err)
+		json.ServeJSONError(r.Context(), w, err)
 		return
 	}
 
@@ -119,17 +119,17 @@ func (h *ProfileHandler) HandleUpdateProfile(w http.ResponseWriter, r *http.Requ
 	input.DateOfBirth = strings.Trim(r.PostFormValue("dateOfBirth"), " \n\r\t")
 	_, input.Avatar, err = r.FormFile("avatar")
 	if err != nil && err != http.ErrMissingFile {
-		json.ServeJSONError(w, err)
+		json.ServeJSONError(r.Context(), w, err)
 		return
 	}
 
-	updatedUser, err := h.Service.UpdateUser(input)
+	updatedUser, err := h.Service.UpdateUser(r.Context(), input)
 	if err != nil {
-		json.ServeJSONError(w, err)
+		json.ServeJSONError(r.Context(), w, err)
 		return
 	}
 
-	json.ServeJSONBody(w, updatedUser)
+	json.ServeJSONBody(r.Context(), w, updatedUser)
 }
 
 // HandleDeleteProfile godoc
@@ -149,21 +149,21 @@ func (h *ProfileHandler) HandleUpdateProfile(w http.ResponseWriter, r *http.Requ
 //	@Failure		500	{object}	errors.HTTPError
 //	@Router			/profile/ [delete]
 func (h *ProfileHandler) HandleDeleteProfile(w http.ResponseWriter, r *http.Request) {
-	userID, err := requestcontext.GetUserID(r)
+	userID, err := requestcontext.GetUserID(r.Context())
 	if err != nil {
-		json.ServeJSONError(w, err)
+		json.ServeJSONError(r.Context(), w, err)
 		return
 	}
 
-	sessionID, err := requestcontext.GetSessionID(r)
+	sessionID, err := requestcontext.GetSessionID(r.Context())
 	if err != nil {
-		json.ServeJSONError(w, err)
+		json.ServeJSONError(r.Context(), w, err)
 		return
 	}
 
-	err = h.Service.DeleteUser(userID, sessionID)
+	err = h.Service.DeleteUser(r.Context(), userID, sessionID)
 	if err != nil {
-		json.ServeJSONError(w, err)
+		json.ServeJSONError(r.Context(), w, err)
 		return
 	}
 
