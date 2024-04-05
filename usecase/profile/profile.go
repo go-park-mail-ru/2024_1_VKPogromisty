@@ -1,6 +1,7 @@
 package profile
 
 import (
+	"context"
 	"mime/multipart"
 	"socio/domain"
 	"socio/pkg/static"
@@ -9,15 +10,15 @@ import (
 )
 
 type UserStorage interface {
-	GetUserByID(userID uint) (user *domain.User, err error)
-	GetUserByEmail(email string) (user *domain.User, err error)
-	GetUserByIDWithSubsInfo(userID, authorizedUserID uint) (user *domain.User, isSubscribedTo bool, isSubscriber bool, err error)
-	UpdateUser(user *domain.User) (updatedUser *domain.User, err error)
-	DeleteUser(userID uint) (err error)
+	GetUserByID(ctx context.Context, userID uint) (user *domain.User, err error)
+	GetUserByEmail(ctx context.Context, email string) (user *domain.User, err error)
+	GetUserByIDWithSubsInfo(ctx context.Context, userID, authorizedUserID uint) (user *domain.User, isSubscribedTo bool, isSubscriber bool, err error)
+	UpdateUser(ctx context.Context, user *domain.User) (updatedUser *domain.User, err error)
+	DeleteUser(ctx context.Context, userID uint) (err error)
 }
 
 type SessionStorage interface {
-	DeleteSession(sessionID string) (err error)
+	DeleteSession(ctx context.Context, sessionID string) (err error)
 }
 
 type UserWithSubsInfo struct {
@@ -49,8 +50,8 @@ func NewProfileService(userStorage UserStorage, sessionStorage SessionStorage) (
 	}
 }
 
-func (p *Service) GetUserByIDWithSubsInfo(userID, authorizedUserID uint) (userWithInfo UserWithSubsInfo, err error) {
-	userWithInfo.User, userWithInfo.IsSubscribedTo, userWithInfo.IsSubscriber, err = p.UserStorage.GetUserByIDWithSubsInfo(userID, authorizedUserID)
+func (p *Service) GetUserByIDWithSubsInfo(ctx context.Context, userID, authorizedUserID uint) (userWithInfo UserWithSubsInfo, err error) {
+	userWithInfo.User, userWithInfo.IsSubscribedTo, userWithInfo.IsSubscriber, err = p.UserStorage.GetUserByIDWithSubsInfo(ctx, userID, authorizedUserID)
 	if err != nil {
 		return
 	}
@@ -58,15 +59,15 @@ func (p *Service) GetUserByIDWithSubsInfo(userID, authorizedUserID uint) (userWi
 	return
 }
 
-func (p *Service) UpdateUser(input UpdateUserInput) (updatedUser *domain.User, err error) {
-	oldUser, err := p.UserStorage.GetUserByID(input.ID)
+func (p *Service) UpdateUser(ctx context.Context, input UpdateUserInput) (updatedUser *domain.User, err error) {
+	oldUser, err := p.UserStorage.GetUserByID(ctx, input.ID)
 	if err != nil {
 		return
 	}
 
 	updatedUser = oldUser
 
-	if err = p.ValidateUserInput(input, oldUser); err != nil {
+	if err = p.ValidateUserInput(ctx, input, oldUser); err != nil {
 		return
 	}
 
@@ -105,7 +106,7 @@ func (p *Service) UpdateUser(input UpdateUserInput) (updatedUser *domain.User, e
 		updatedUser.Avatar = fileName
 	}
 
-	updatedUser, err = p.UserStorage.UpdateUser(updatedUser)
+	updatedUser, err = p.UserStorage.UpdateUser(ctx, updatedUser)
 	if err != nil {
 		return
 	}
@@ -113,13 +114,13 @@ func (p *Service) UpdateUser(input UpdateUserInput) (updatedUser *domain.User, e
 	return
 }
 
-func (p *Service) DeleteUser(userID uint, sessionID string) (err error) {
-	err = p.UserStorage.DeleteUser(userID)
+func (p *Service) DeleteUser(ctx context.Context, userID uint, sessionID string) (err error) {
+	err = p.UserStorage.DeleteUser(ctx, userID)
 	if err != nil {
 		return
 	}
 
-	err = p.SessionStorage.DeleteSession(sessionID)
+	err = p.SessionStorage.DeleteSession(ctx, sessionID)
 	if err != nil {
 		return
 	}

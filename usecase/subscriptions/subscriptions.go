@@ -1,21 +1,22 @@
 package subscriptions
 
 import (
+	"context"
 	"socio/domain"
 	"socio/errors"
 )
 
 type SubscriptionsStorage interface {
-	Store(sub *domain.Subscription) (subscription *domain.Subscription, err error)
-	Delete(subscriberID uint, subscibedToID uint) (err error)
-	GetBySubscriberAndSubscribedToID(subscriberID uint, subscribedToID uint) (subscription *domain.Subscription, err error)
-	GetSubscriptions(userID uint) (subscriptions []*domain.User, err error)
-	GetSubscribers(userID uint) (subscribers []*domain.User, err error)
-	GetFriends(userID uint) (friends []*domain.User, err error)
+	Store(ctx context.Context, sub *domain.Subscription) (subscription *domain.Subscription, err error)
+	Delete(ctx context.Context, subscriberID uint, subscibedToID uint) (err error)
+	GetBySubscriberAndSubscribedToID(ctx context.Context, subscriberID uint, subscribedToID uint) (subscription *domain.Subscription, err error)
+	GetSubscriptions(ctx context.Context, userID uint) (subscriptions []*domain.User, err error)
+	GetSubscribers(ctx context.Context, userID uint) (subscribers []*domain.User, err error)
+	GetFriends(ctx context.Context, userID uint) (friends []*domain.User, err error)
 }
 
 type UserStorage interface {
-	GetUserByID(userID uint) (user *domain.User, err error)
+	GetUserByID(ctx context.Context, userID uint) (user *domain.User, err error)
 }
 
 type Service struct {
@@ -43,25 +44,25 @@ func NewService(subStorage SubscriptionsStorage, userStorage UserStorage) (servi
 	return
 }
 
-func (s *Service) Subscribe(sub *domain.Subscription) (subscription *domain.Subscription, err error) {
+func (s *Service) Subscribe(ctx context.Context, sub *domain.Subscription) (subscription *domain.Subscription, err error) {
 	if sub.SubscriberID == sub.SubscribedToID {
 		err = errors.ErrInvalidBody
 		return
 	}
 
-	_, err = s.UserStorage.GetUserByID(sub.SubscriberID)
+	_, err = s.UserStorage.GetUserByID(ctx, sub.SubscriberID)
 	if err != nil {
 		err = errors.ErrInvalidBody
 		return
 	}
 
-	_, err = s.UserStorage.GetUserByID(sub.SubscribedToID)
+	_, err = s.UserStorage.GetUserByID(ctx, sub.SubscribedToID)
 	if err != nil {
 		err = errors.ErrInvalidBody
 		return
 	}
 
-	subscription, err = s.SubscriptionsStorage.Store(sub)
+	subscription, err = s.SubscriptionsStorage.Store(ctx, sub)
 	if err != nil {
 		return
 	}
@@ -69,20 +70,20 @@ func (s *Service) Subscribe(sub *domain.Subscription) (subscription *domain.Subs
 	return
 }
 
-func (s *Service) Unsubscribe(sub *domain.Subscription) (err error) {
-	_, err = s.UserStorage.GetUserByID(sub.SubscriberID)
+func (s *Service) Unsubscribe(ctx context.Context, sub *domain.Subscription) (err error) {
+	_, err = s.UserStorage.GetUserByID(ctx, sub.SubscriberID)
 	if err != nil {
 		err = errors.ErrInvalidBody
 		return
 	}
 
-	_, err = s.UserStorage.GetUserByID(sub.SubscribedToID)
+	_, err = s.UserStorage.GetUserByID(ctx, sub.SubscribedToID)
 	if err != nil {
 		err = errors.ErrInvalidBody
 		return
 	}
 
-	err = s.SubscriptionsStorage.Delete(sub.SubscriberID, sub.SubscribedToID)
+	err = s.SubscriptionsStorage.Delete(ctx, sub.SubscriberID, sub.SubscribedToID)
 	if err != nil {
 		return
 	}
@@ -90,14 +91,14 @@ func (s *Service) Unsubscribe(sub *domain.Subscription) (err error) {
 	return
 }
 
-func (s *Service) GetSubscriptions(userID uint) (subscriptions []*domain.User, err error) {
-	_, err = s.UserStorage.GetUserByID(userID)
+func (s *Service) GetSubscriptions(ctx context.Context, userID uint) (subscriptions []*domain.User, err error) {
+	_, err = s.UserStorage.GetUserByID(ctx, userID)
 	if err != nil {
 		err = errors.ErrNotFound
 		return
 	}
 
-	subscriptions, err = s.SubscriptionsStorage.GetSubscriptions(userID)
+	subscriptions, err = s.SubscriptionsStorage.GetSubscriptions(ctx, userID)
 	if err != nil {
 		return
 	}
@@ -105,14 +106,14 @@ func (s *Service) GetSubscriptions(userID uint) (subscriptions []*domain.User, e
 	return
 }
 
-func (s *Service) GetSubscribers(userID uint) (subscribers []*domain.User, err error) {
-	_, err = s.UserStorage.GetUserByID(userID)
+func (s *Service) GetSubscribers(ctx context.Context, userID uint) (subscribers []*domain.User, err error) {
+	_, err = s.UserStorage.GetUserByID(ctx, userID)
 	if err != nil {
 		err = errors.ErrNotFound
 		return
 	}
 
-	subscribers, err = s.SubscriptionsStorage.GetSubscribers(userID)
+	subscribers, err = s.SubscriptionsStorage.GetSubscribers(ctx, userID)
 	if err != nil {
 		return
 	}
@@ -120,14 +121,14 @@ func (s *Service) GetSubscribers(userID uint) (subscribers []*domain.User, err e
 	return
 }
 
-func (s *Service) GetFriends(userID uint) (friends []*domain.User, err error) {
-	_, err = s.UserStorage.GetUserByID(userID)
+func (s *Service) GetFriends(ctx context.Context, userID uint) (friends []*domain.User, err error) {
+	_, err = s.UserStorage.GetUserByID(ctx, userID)
 	if err != nil {
 		err = errors.ErrNotFound
 		return
 	}
 
-	friends, err = s.SubscriptionsStorage.GetFriends(userID)
+	friends, err = s.SubscriptionsStorage.GetFriends(ctx, userID)
 	if err != nil {
 		return
 	}

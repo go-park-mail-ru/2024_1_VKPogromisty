@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"socio/errors"
 	"socio/pkg/validators"
 )
@@ -13,7 +14,7 @@ func CheckEmptyFields(userInput RegistrationInput) (err error) {
 	return
 }
 
-func (a *Service) ValidateUserInput(userInput RegistrationInput) (err error) {
+func (a *Service) ValidateUserInput(ctx context.Context, userInput RegistrationInput) (err error) {
 	if err = CheckEmptyFields(userInput); err != nil {
 		return
 	}
@@ -26,7 +27,7 @@ func (a *Service) ValidateUserInput(userInput RegistrationInput) (err error) {
 		return
 	}
 
-	if err = validators.CheckDuplicatedEmail(userInput.Email, a.UserStorage); err != nil {
+	if err = validators.CheckDuplicatedEmail(ctx, userInput.Email, a.UserStorage); err != nil {
 		return
 	}
 

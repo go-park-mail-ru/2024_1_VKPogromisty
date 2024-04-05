@@ -13,14 +13,14 @@ func CreateCheckIsAuthorizedMiddleware(sessionStorage auth.SessionStorage) func(
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			session, err := r.Cookie("session_id")
 			if err == http.ErrNoCookie {
-				json.ServeJSONError(w, err)
+				json.ServeJSONError(r.Context(), w, err)
 				return
 			}
 
-			userID, err := sessionStorage.GetUserIDBySession(session.Value)
+			userID, err := sessionStorage.GetUserIDBySession(r.Context(), session.Value)
 
 			if err != nil {
-				json.ServeJSONError(w, err)
+				json.ServeJSONError(r.Context(), w, err)
 				return
 			}
 

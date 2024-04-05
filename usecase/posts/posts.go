@@ -1,6 +1,7 @@
 package posts
 
 import (
+	"context"
 	"mime/multipart"
 	"socio/domain"
 	"socio/errors"
@@ -31,16 +32,16 @@ type DeletePostInput struct {
 }
 
 type UserStorage interface {
-	GetUserByID(userID uint) (user *domain.User, err error)
+	GetUserByID(ctx context.Context, userID uint) (user *domain.User, err error)
 }
 
 type PostsStorage interface {
-	GetPostByID(postID uint) (post *domain.Post, err error)
-	GetUserPosts(userID uint, lastPostID uint) (posts []*domain.Post, err error)
-	GetUserFriendsPosts(userID uint, lastPostID uint) (posts []domain.PostWithAuthor, err error)
-	StorePost(post *domain.Post, attachments []*multipart.FileHeader) (newPost *domain.Post, err error)
-	UpdatePost(post *domain.Post) (updatedPost *domain.Post, err error)
-	DeletePost(postID uint) (err error)
+	GetPostByID(ctx context.Context, postID uint) (post *domain.Post, err error)
+	GetUserPosts(ctx context.Context, userID uint, lastPostID uint) (posts []*domain.Post, err error)
+	GetUserFriendsPosts(ctx context.Context, userID uint, lastPostID uint) (posts []domain.PostWithAuthor, err error)
+	StorePost(ctx context.Context, post *domain.Post, attachments []*multipart.FileHeader) (newPost *domain.Post, err error)
+	UpdatePost(ctx context.Context, post *domain.Post) (updatedPost *domain.Post, err error)
+	DeletePost(ctx context.Context, postID uint) (err error)
 }
 
 type Service struct {
@@ -61,33 +62,33 @@ func NewPostsService(postsStorage PostsStorage, userStorage UserStorage) (postsS
 	return
 }
 
-func (s *Service) GetUserPosts(userID uint, lastPostID uint) (posts []*domain.Post, author *domain.User, err error) {
-	author, err = s.UserStorage.GetUserByID(userID)
+func (s *Service) GetUserPosts(ctx context.Context, userID uint, lastPostID uint) (posts []*domain.Post, author *domain.User, err error) {
+	author, err = s.UserStorage.GetUserByID(ctx, userID)
 	if err != nil {
 		return
 	}
 
-	posts, err = s.PostsStorage.GetUserPosts(userID, lastPostID)
+	posts, err = s.PostsStorage.GetUserPosts(ctx, userID, lastPostID)
 	return
 }
 
-func (s *Service) GetUserFriendsPosts(userID uint, lastPostID uint) (posts []domain.PostWithAuthor, err error) {
-	posts, err = s.PostsStorage.GetUserFriendsPosts(userID, lastPostID)
+func (s *Service) GetUserFriendsPosts(ctx context.Context, userID uint, lastPostID uint) (posts []domain.PostWithAuthor, err error) {
+	posts, err = s.PostsStorage.GetUserFriendsPosts(ctx, userID, lastPostID)
 	return
 }
 
-func (s *Service) CreatePost(input PostInput) (postWithAuthor domain.PostWithAuthor, err error) {
+func (s *Service) CreatePost(ctx context.Context, input PostInput) (postWithAuthor domain.PostWithAuthor, err error) {
 	if len(input.Content) == 0 && len(input.Attachments) == 0 {
 		err = errors.ErrInvalidBody
 		return
 	}
 
-	author, err := s.UserStorage.GetUserByID(input.AuthorID)
+	author, err := s.UserStorage.GetUserByID(ctx, input.AuthorID)
 	if err != nil {
 		return
 	}
 
-	newPost, err := s.PostsStorage.StorePost(&domain.Post{AuthorID: input.AuthorID, Content: input.Content}, input.Attachments)
+	newPost, err := s.PostsStorage.StorePost(ctx, &domain.Post{AuthorID: input.AuthorID, Content: input.Content}, input.Attachments)
 	if err != nil {
 		return
 	}
@@ -100,8 +101,8 @@ func (s *Service) CreatePost(input PostInput) (postWithAuthor domain.PostWithAut
 	return
 }
 
-func (s *Service) UpdatePost(userID uint, input PostUpdateInput) (post *domain.Post, err error) {
-	oldPost, err := s.PostsStorage.GetPostByID(input.PostID)
+func (s *Service) UpdatePost(ctx context.Context, userID uint, input PostUpdateInput) (post *domain.Post, err error) {
+	oldPost, err := s.PostsStorage.GetPostByID(ctx, input.PostID)
 	if err != nil {
 		return
 	}
@@ -118,7 +119,7 @@ func (s *Service) UpdatePost(userID uint, input PostUpdateInput) (post *domain.P
 
 	oldPost.Content = input.Content
 
-	post, err = s.PostsStorage.UpdatePost(oldPost)
+	post, err = s.PostsStorage.UpdatePost(ctx, oldPost)
 	if err != nil {
 		return
 	}
@@ -126,7 +127,7 @@ func (s *Service) UpdatePost(userID uint, input PostUpdateInput) (post *domain.P
 	return
 }
 
-func (s *Service) DeletePost(postID uint) (err error) {
-	err = s.PostsStorage.DeletePost(postID)
+func (s *Service) DeletePost(ctx context.Context, postID uint) (err error) {
+	err = s.PostsStorage.DeletePost(ctx, postID)
 	return
 }

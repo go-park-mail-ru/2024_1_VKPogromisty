@@ -3,12 +3,15 @@ package errors
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/jackc/pgx/v4"
 )
 
 var HTTPErrors = map[error]int{
 	ErrUnauthorized:         http.StatusUnauthorized,
 	ErrInvalidLoginData:     http.StatusUnauthorized,
 	http.ErrNoCookie:        http.StatusUnauthorized,
+	pgx.ErrNoRows:           http.StatusNotFound,
 	ErrMissingFields:        http.StatusBadRequest,
 	ErrInvalidData:          http.StatusBadRequest,
 	ErrInvalidEmail:         http.StatusBadRequest,

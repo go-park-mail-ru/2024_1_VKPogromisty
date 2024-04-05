@@ -1,7 +1,9 @@
 package repository
 
 import (
+	"context"
 	"socio/errors"
+	"socio/pkg/contextlogger"
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/google/uuid"
@@ -17,11 +19,14 @@ func NewSession(pool *redis.Pool) (s *Session) {
 	}
 }
 
-func (s *Session) CreateSession(userID uint) (sessionID string, err error) {
+func (s *Session) CreateSession(ctx context.Context, userID uint) (sessionID string, err error) {
 	c := s.pool.Get()
 	defer c.Close()
 
 	sessionID = uuid.NewString()
+
+	contextlogger.LogRedisAction(ctx, "SET", "SESSION_ID", userID)
+
 	_, err = c.Do("SET", sessionID, userID)
 	if err != nil {
 		return
@@ -30,9 +35,11 @@ func (s *Session) CreateSession(userID uint) (sessionID string, err error) {
 	return
 }
 
-func (s *Session) DeleteSession(sessionID string) (err error) {
+func (s *Session) DeleteSession(ctx context.Context, sessionID string) (err error) {
 	c := s.pool.Get()
 	defer c.Close()
+
+	contextlogger.LogRedisAction(ctx, "DEL", "SESSION_ID", nil)
 
 	_, err = c.Do("DEL", sessionID)
 	if err != nil {
@@ -42,9 +49,11 @@ func (s *Session) DeleteSession(sessionID string) (err error) {
 	return
 }
 
-func (s *Session) GetUserIDBySession(sessionID string) (userID uint, err error) {
+func (s *Session) GetUserIDBySession(ctx context.Context, sessionID string) (userID uint, err error) {
 	c := s.pool.Get()
 	defer c.Close()
+
+	contextlogger.LogRedisAction(ctx, "GET", "SESSION_ID", nil)
 
 	result, err := c.Do("GET", sessionID)
 	if err != nil {

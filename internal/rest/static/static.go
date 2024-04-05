@@ -17,7 +17,7 @@ type StaticHandler struct {
 func (s *StaticHandler) HandleServeStatic(w http.ResponseWriter, r *http.Request) {
 	fileName := mux.Vars(r)["fileName"]
 	if len(fileName) == 0 {
-		json.ServeJSONError(w, errors.ErrInvalidFileName)
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidFileName)
 		return
 	}
 
@@ -25,7 +25,7 @@ func (s *StaticHandler) HandleServeStatic(w http.ResponseWriter, r *http.Request
 
 	file, err := os.Open(filePath)
 	if err != nil {
-		json.ServeJSONError(w, errors.ErrNotFound)
+		json.ServeJSONError(r.Context(), w, errors.ErrNotFound)
 		return
 	}
 	defer file.Close()

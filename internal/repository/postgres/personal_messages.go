@@ -4,6 +4,7 @@ import (
 	"context"
 	"socio/domain"
 	"socio/errors"
+	"socio/pkg/contextlogger"
 	customtime "socio/pkg/time"
 	"socio/usecase/chat"
 
@@ -131,8 +132,11 @@ func NewPersonalMessages(db *pgxpool.Pool, tp customtime.TimeProvider) *Personal
 	}
 }
 
-func (pm *PersonalMessages) GetLastMessageID(senderID, receiverID uint) (lastMessageID uint, err error) {
+func (pm *PersonalMessages) GetLastMessageID(ctx context.Context, senderID, receiverID uint) (lastMessageID uint, err error) {
+	contextlogger.LogSQL(ctx, getLastMessageIDQuery, senderID, receiverID)
+
 	err = pm.db.QueryRow(context.Background(), getLastMessageIDQuery, senderID, receiverID).Scan(&lastMessageID)
+
 	if err != nil {
 		return
 	}
@@ -140,7 +144,9 @@ func (pm *PersonalMessages) GetLastMessageID(senderID, receiverID uint) (lastMes
 	return
 }
 
-func (pm *PersonalMessages) GetMessagesByDialog(senderID, receiverID, lastMessageID uint) (messages []*domain.PersonalMessage, err error) {
+func (pm *PersonalMessages) GetMessagesByDialog(ctx context.Context, senderID, receiverID, lastMessageID uint) (messages []*domain.PersonalMessage, err error) {
+	contextlogger.LogSQL(ctx, getMessagesByDialogQuery, senderID, receiverID, lastMessageID, messagesLimit)
+
 	rows, err := pm.db.Query(context.Background(), getMessagesByDialogQuery, senderID, receiverID, lastMessageID, messagesLimit)
 	if err != nil {
 		return
@@ -168,7 +174,9 @@ func (pm *PersonalMessages) GetMessagesByDialog(senderID, receiverID, lastMessag
 	return
 }
 
-func (pm *PersonalMessages) GetDialogsByUserID(userID uint) (dialogs []*chat.Dialog, err error) {
+func (pm *PersonalMessages) GetDialogsByUserID(ctx context.Context, userID uint) (dialogs []*chat.Dialog, err error) {
+	contextlogger.LogSQL(ctx, getDialogsByUserIDQuery, userID)
+
 	rows, err := pm.db.Query(context.Background(), getDialogsByUserIDQuery, userID)
 	if err != nil {
 		return
@@ -221,7 +229,9 @@ func (pm *PersonalMessages) GetDialogsByUserID(userID uint) (dialogs []*chat.Dia
 	return
 }
 
-func (pm *PersonalMessages) StoreMessage(msg *domain.PersonalMessage) (newMsg *domain.PersonalMessage, err error) {
+func (pm *PersonalMessages) StoreMessage(ctx context.Context, msg *domain.PersonalMessage) (newMsg *domain.PersonalMessage, err error) {
+	contextlogger.LogSQL(ctx, storePersonalMessageQuery, msg.SenderID, msg.ReceiverID, msg.Content)
+
 	newMsg = new(domain.PersonalMessage)
 	err = pm.db.QueryRow(context.Background(), storePersonalMessageQuery,
 		msg.SenderID,
@@ -242,7 +252,9 @@ func (pm *PersonalMessages) StoreMessage(msg *domain.PersonalMessage) (newMsg *d
 	return
 }
 
-func (pm *PersonalMessages) UpdateMessage(msg *domain.PersonalMessage) (updatedMsg *domain.PersonalMessage, err error) {
+func (pm *PersonalMessages) UpdateMessage(ctx context.Context, msg *domain.PersonalMessage) (updatedMsg *domain.PersonalMessage, err error) {
+	contextlogger.LogSQL(ctx, updatePersonalMessageQuery, msg.Content, msg.ID)
+
 	updatedMsg = new(domain.PersonalMessage)
 	err = pm.db.QueryRow(context.Background(), updatePersonalMessageQuery, msg.Content, msg.ID).Scan(
 		&updatedMsg.ID,
@@ -259,7 +271,9 @@ func (pm *PersonalMessages) UpdateMessage(msg *domain.PersonalMessage) (updatedM
 	return
 }
 
-func (pm *PersonalMessages) DeleteMessage(msgID uint) (err error) {
+func (pm *PersonalMessages) DeleteMessage(ctx context.Context, msgID uint) (err error) {
+	contextlogger.LogSQL(ctx, deletePersonalMessageQuery, msgID)
+
 	result, err := pm.db.Exec(context.Background(), deletePersonalMessageQuery, msgID)
 	if err != nil {
 		return

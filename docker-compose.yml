@@ -47,6 +47,7 @@ services:
     volumes:
       - .:/app
       - ./static/:/static/
+      - ./volumes/logs/:/var/log/socio/
     depends_on:
       - postgresdb
       - redis

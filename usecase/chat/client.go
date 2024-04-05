@@ -2,6 +2,7 @@ package chat
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"socio/domain"
 	"socio/errors"
@@ -25,17 +26,17 @@ type Action struct {
 }
 
 type PersonalMessagesRepository interface {
-	GetLastMessageID(senderID, receiverID uint) (lastMessageID uint, err error)
-	GetMessagesByDialog(senderID, receiverID, lastMessageID uint) (messages []*domain.PersonalMessage, err error)
-	GetDialogsByUserID(userID uint) (dialogs []*Dialog, err error)
-	StoreMessage(message *domain.PersonalMessage) (newMessage *domain.PersonalMessage, err error)
-	UpdateMessage(message *domain.PersonalMessage) (updatedMessage *domain.PersonalMessage, err error)
-	DeleteMessage(messageID uint) (err error)
+	GetLastMessageID(ctx context.Context, senderID, receiverID uint) (lastMessageID uint, err error)
+	GetMessagesByDialog(ctx context.Context, senderID, receiverID, lastMessageID uint) (messages []*domain.PersonalMessage, err error)
+	GetDialogsByUserID(ctx context.Context, userID uint) (dialogs []*Dialog, err error)
+	StoreMessage(ctx context.Context, message *domain.PersonalMessage) (newMessage *domain.PersonalMessage, err error)
+	UpdateMessage(ctx context.Context, message *domain.PersonalMessage) (updatedMessage *domain.PersonalMessage, err error)
+	DeleteMessage(ctx context.Context, messageID uint) (err error)
 }
 
 type PubSubRepository interface {
-	ReadActions(userID uint, ch chan *Action) (err error)
-	WriteAction(action *Action) (err error)
+	ReadActions(ctx context.Context, userID uint, ch chan *Action) (err error)
+	WriteAction(ctx context.Context, action *Action) (err error)
 }
 
 // Client will: read Actions from redis and write Actions into Send, subscribe to corresponding redis channel
@@ -61,14 +62,14 @@ func NewClient(userID uint, pubSubRepo PubSubRepository, messagesRepo PersonalMe
 	return
 }
 
-func (c *Client) ReadPump() {
+func (c *Client) ReadPump(ctx context.Context) {
 	actionsCh := make(chan *Action)
 	defer close(actionsCh)
 
-	go c.PubSubRepository.ReadActions(c.UserID, c.Send)
+	go c.PubSubRepository.ReadActions(ctx, c.UserID, c.Send)
 }
 
-func (c *Client) HandleAction(action *Action) {
+func (c *Client) HandleAction(ctx context.Context, action *Action) {
 	switch action.Type {
 	case SendMessageAction:
 		payload := new(SendMessagePayload)
@@ -76,35 +77,35 @@ func (c *Client) HandleAction(action *Action) {
 		if err != nil {
 			return
 		}
-		c.handleSendMessageAction(action, payload)
+		c.handleSendMessageAction(ctx, action, payload)
 
 	case UpdateMessageAction:
 		payload := new(UpdateMessagePayload)
 		json.NewDecoder(bytes.NewReader(action.Payload)).Decode(payload)
-		c.handleUpdateMessageAction(action, payload)
+		c.handleUpdateMessageAction(ctx, action, payload)
 
 	case DeleteMessageAction:
 		payload := new(DeleteMessagePayload)
 		json.NewDecoder(bytes.NewReader(action.Payload)).Decode(payload)
-		c.handleDeleteMessageAction(action, payload.MessageID)
+		c.handleDeleteMessageAction(ctx, action, payload.MessageID)
 	}
 }
 
-func (c *Client) handleSendMessageAction(action *Action, message *SendMessagePayload) {
+func (c *Client) handleSendMessageAction(ctx context.Context, action *Action, message *SendMessagePayload) {
 	msg := &domain.PersonalMessage{
 		Content:    message.Content,
 		SenderID:   c.UserID,
 		ReceiverID: action.Receiver,
 	}
 
-	newMessage, err := c.PersonalMessagesRepo.StoreMessage(msg)
+	newMessage, err := c.PersonalMessagesRepo.StoreMessage(ctx, msg)
 	if err != nil {
 		action.Payload, err = errors.MarshalError(err)
 		if err != nil {
 			return
 		}
 
-		c.PubSubRepository.WriteAction(action)
+		c.PubSubRepository.WriteAction(ctx, action)
 		return
 	}
 
@@ -115,27 +116,27 @@ func (c *Client) handleSendMessageAction(action *Action, message *SendMessagePay
 			return
 		}
 
-		c.PubSubRepository.WriteAction(action)
+		c.PubSubRepository.WriteAction(ctx, action)
 		return
 	}
 
-	c.PubSubRepository.WriteAction(action)
+	c.PubSubRepository.WriteAction(ctx, action)
 }
 
-func (c *Client) handleUpdateMessageAction(action *Action, message *UpdateMessagePayload) {
+func (c *Client) handleUpdateMessageAction(ctx context.Context, action *Action, message *UpdateMessagePayload) {
 	msg := &domain.PersonalMessage{
 		ID:      message.MessageID,
 		Content: message.Content,
 	}
 
-	newMessage, err := c.PersonalMessagesRepo.UpdateMessage(msg)
+	newMessage, err := c.PersonalMessagesRepo.UpdateMessage(ctx, msg)
 	if err != nil {
 		action.Payload, err = errors.MarshalError(err)
 		if err != nil {
 			return
 		}
 
-		c.PubSubRepository.WriteAction(action)
+		c.PubSubRepository.WriteAction(ctx, action)
 		return
 	}
 
@@ -146,24 +147,24 @@ func (c *Client) handleUpdateMessageAction(action *Action, message *UpdateMessag
 			return
 		}
 
-		c.PubSubRepository.WriteAction(action)
+		c.PubSubRepository.WriteAction(ctx, action)
 		return
 	}
 
-	c.PubSubRepository.WriteAction(action)
+	c.PubSubRepository.WriteAction(ctx, action)
 }
 
-func (c *Client) handleDeleteMessageAction(action *Action, messageID uint) {
-	err := c.PersonalMessagesRepo.DeleteMessage(messageID)
+func (c *Client) handleDeleteMessageAction(ctx context.Context, action *Action, messageID uint) {
+	err := c.PersonalMessagesRepo.DeleteMessage(ctx, messageID)
 	if err != nil {
 		action.Payload, err = errors.MarshalError(err)
 		if err != nil {
 			return
 		}
 
-		c.PubSubRepository.WriteAction(action)
+		c.PubSubRepository.WriteAction(ctx, action)
 		return
 	}
 
-	c.PubSubRepository.WriteAction(action)
+	c.PubSubRepository.WriteAction(ctx, action)
 }

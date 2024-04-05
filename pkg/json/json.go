@@ -1,9 +1,11 @@
 package json
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"socio/errors"
+	"socio/pkg/contextlogger"
 )
 
 type JSONResponse struct {
@@ -24,21 +26,25 @@ func MarshalResponseError(errMsg string) (data []byte) {
 	return
 }
 
-func ServeJSONError(w http.ResponseWriter, err error) {
-	msg, status := errors.ParseHTTPError(err)
+func ServeJSONBody(ctx context.Context, w http.ResponseWriter, value any) {
+	contextlogger.LogInfo(ctx)
 
-	w.Header().Set("Content-Type", "application/json;")
-	w.WriteHeader(status)
-	w.Write(MarshalResponseError(msg))
-}
-
-func ServeJSONBody(w http.ResponseWriter, value any) {
 	data, err := MarshalResponseBody(value)
 	if err != nil {
-		ServeJSONError(w, err)
+		ServeJSONError(ctx, w, err)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json;")
 	w.Write(data)
+}
+
+func ServeJSONError(ctx context.Context, w http.ResponseWriter, err error) {
+	contextlogger.LogErr(ctx, err)
+
+	msg, status := errors.ParseHTTPError(err)
+
+	w.Header().Set("Content-Type", "application/json;")
+	w.WriteHeader(status)
+	w.Write(MarshalResponseError(msg))
 }

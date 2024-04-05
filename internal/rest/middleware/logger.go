@@ -14,6 +14,26 @@ type Logger struct {
 	logger *zap.SugaredLogger
 }
 
+func NewZapLogger() (sugar *zap.SugaredLogger, err error) {
+	cfg := zap.NewProductionConfig()
+
+	cfg.Sampling = nil
+
+	cfg.OutputPaths = []string{
+		"/var/log/socio/socio.log",
+		"stderr",
+	}
+
+	logger, err := cfg.Build()
+	if err != nil {
+		return
+	}
+
+	sugar = logger.Sugar()
+
+	return
+}
+
 func NewLogger(logger *zap.SugaredLogger) *Logger {
 	return &Logger{
 		logger: logger,
@@ -25,15 +45,19 @@ func (l *Logger) LoggerMiddleware(h http.Handler) http.Handler {
 		start := time.Now()
 		requestID := uuid.New().String()
 
-		ctx := context.WithValue(r.Context(), requestcontext.RequestIDKey, requestID)
-
-		h.ServeHTTP(w, r.WithContext(ctx))
-
-		l.logger.Info(r.URL.Path,
-			zap.String("request_id", requestID),
+		currLogger := l.logger.With(
+			"requestID", requestID,
 			zap.String("method", r.Method),
 			zap.String("remote_addr", r.RemoteAddr),
 			zap.String("url", r.URL.Path),
+		)
+
+		ctx := context.WithValue(r.Context(), requestcontext.LoggerKey, currLogger)
+
+		h.ServeHTTP(w, r.WithContext(ctx))
+
+		currLogger.Info(
+			"Working time: ",
 			zap.Duration("work_time", time.Since(start)),
 		)
 	})

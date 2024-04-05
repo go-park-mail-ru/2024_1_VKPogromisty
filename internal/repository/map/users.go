@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"socio/domain"
 	"socio/errors"
 	"socio/pkg/hash"
@@ -69,7 +70,7 @@ func NewUsers(tp customtime.TimeProvider, users *sync.Map) (s *Users) {
 	return
 }
 
-func (s *Users) GetUserByEmail(email string) (user *domain.User, err error) {
+func (s *Users) GetUserByEmail(ctx context.Context, email string) (user *domain.User, err error) {
 	s.Users.Range(func(key, value interface{}) bool {
 		currUser := value.(*domain.User)
 		if currUser.Email == email {
@@ -87,7 +88,7 @@ func (s *Users) GetUserByEmail(email string) (user *domain.User, err error) {
 	return
 }
 
-func (s *Users) StoreUser(user *domain.User) (err error) {
+func (s *Users) StoreUser(ctx context.Context, user *domain.User) (err error) {
 	salt := uuid.NewString()
 	user.ID = s.NextUserId
 	user.Password = hash.HashPassword(user.Password, []byte(salt))
@@ -105,7 +106,7 @@ func (s *Users) StoreUser(user *domain.User) (err error) {
 	return
 }
 
-func (s *Users) RefreshSaltAndRehashPassword(user *domain.User, password string) (err error) {
+func (s *Users) RefreshSaltAndRehashPassword(ctx context.Context, user *domain.User, password string) (err error) {
 	salt := uuid.NewString()
 	user.Password = hash.HashPassword(password, []byte(salt))
 	user.Salt = salt
@@ -115,7 +116,7 @@ func (s *Users) RefreshSaltAndRehashPassword(user *domain.User, password string)
 	return
 }
 
-func (s *Users) GetUserByID(userID uint) (user *domain.User, err error) {
+func (s *Users) GetUserByID(ctx context.Context, userID uint) (user *domain.User, err error) {
 	userData, ok := s.Users.Load(userID)
 	if !ok {
 		err = errors.ErrNotFound

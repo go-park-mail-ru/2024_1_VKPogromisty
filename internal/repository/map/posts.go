@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"socio/domain"
 	customtime "socio/pkg/time"
 	"sync"
@@ -68,7 +69,7 @@ func NewPosts(tp customtime.TimeProvider, posts *sync.Map) (postsStorage *Posts)
 	return
 }
 
-func (s *Posts) GetAll() (posts []*domain.Post, err error) {
+func (s *Posts) GetAll() (ctx context.Context, posts []*domain.Post, err error) {
 	s.Posts.Range(func(key, value interface{}) bool {
 		posts = append(posts, value.(*domain.Post))
 		return true

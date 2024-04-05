@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"mime/multipart"
 	"net/http"
 	"socio/domain"
@@ -27,15 +28,15 @@ type LoginInput struct {
 }
 
 type UserStorage interface {
-	StoreUser(user *domain.User) (err error)
-	GetUserByEmail(email string) (user *domain.User, err error)
-	RefreshSaltAndRehashPassword(user *domain.User, password string) (err error)
+	StoreUser(ctx context.Context, user *domain.User) (err error)
+	GetUserByEmail(ctx context.Context, email string) (user *domain.User, err error)
+	RefreshSaltAndRehashPassword(ctx context.Context, user *domain.User, password string) (err error)
 }
 
 type SessionStorage interface {
-	CreateSession(userID uint) (sessionID string, err error)
-	DeleteSession(sessionID string) (err error)
-	GetUserIDBySession(sessionID string) (userID uint, err error)
+	CreateSession(ctx context.Context, userID uint) (sessionID string, err error)
+	DeleteSession(ctx context.Context, sessionID string) (err error)
+	GetUserIDBySession(ctx context.Context, sessionID string) (userID uint, err error)
 }
 
 type Service struct {
@@ -58,8 +59,8 @@ func NewService(userStorage UserStorage, sessionStorage SessionStorage) (a *Serv
 	}
 }
 
-func (a *Service) newSession(userID uint) (session *http.Cookie, err error) {
-	sessionID, err := a.SessionStorage.CreateSession(userID)
+func (a *Service) newSession(ctx context.Context, userID uint) (session *http.Cookie, err error) {
+	sessionID, err := a.SessionStorage.CreateSession(ctx, userID)
 
 	if err != nil {
 		return
@@ -77,8 +78,8 @@ func (a *Service) newSession(userID uint) (session *http.Cookie, err error) {
 	return
 }
 
-func (a *Service) RegistrateUser(userInput RegistrationInput) (user *domain.User, session *http.Cookie, err error) {
-	if err = a.ValidateUserInput(userInput); err != nil {
+func (a *Service) RegistrateUser(ctx context.Context, userInput RegistrationInput) (user *domain.User, session *http.Cookie, err error) {
+	if err = a.ValidateUserInput(ctx, userInput); err != nil {
 		return
 	}
 
@@ -104,9 +105,9 @@ func (a *Service) RegistrateUser(userInput RegistrationInput) (user *domain.User
 		},
 	}
 
-	a.UserStorage.StoreUser(user)
+	a.UserStorage.StoreUser(ctx, user)
 
-	session, err = a.newSession(user.ID)
+	session, err = a.newSession(ctx, user.ID)
 	if err != nil {
 		return
 	}
@@ -114,8 +115,8 @@ func (a *Service) RegistrateUser(userInput RegistrationInput) (user *domain.User
 	return
 }
 
-func (a *Service) Login(loginInput LoginInput) (user *domain.User, session *http.Cookie, err error) {
-	user, err = a.UserStorage.GetUserByEmail(loginInput.Email)
+func (a *Service) Login(ctx context.Context, loginInput LoginInput) (user *domain.User, session *http.Cookie, err error) {
+	user, err = a.UserStorage.GetUserByEmail(ctx, loginInput.Email)
 	if err != nil {
 		err = errors.ErrInvalidLoginData
 		return
@@ -126,9 +127,9 @@ func (a *Service) Login(loginInput LoginInput) (user *domain.User, session *http
 		return
 	}
 
-	a.UserStorage.RefreshSaltAndRehashPassword(user, loginInput.Password)
+	a.UserStorage.RefreshSaltAndRehashPassword(ctx, user, loginInput.Password)
 
-	session, err = a.newSession(user.ID)
+	session, err = a.newSession(ctx, user.ID)
 	if err != nil {
 		return
 	}
@@ -136,8 +137,8 @@ func (a *Service) Login(loginInput LoginInput) (user *domain.User, session *http
 	return
 }
 
-func (a *Service) Logout(session *http.Cookie) (err error) {
-	if err = a.SessionStorage.DeleteSession(session.Value); err != nil {
+func (a *Service) Logout(ctx context.Context, session *http.Cookie) (err error) {
+	if err = a.SessionStorage.DeleteSession(ctx, session.Value); err != nil {
 		err = errors.ErrUnauthorized
 		return
 	}
@@ -152,8 +153,8 @@ func (a *Service) Logout(session *http.Cookie) (err error) {
 	return
 }
 
-func (a *Service) IsAuthorized(session *http.Cookie) (userID uint, err error) {
-	userID, err = a.SessionStorage.GetUserIDBySession(session.Value)
+func (a *Service) IsAuthorized(ctx context.Context, session *http.Cookie) (userID uint, err error) {
+	userID, err = a.SessionStorage.GetUserIDBySession(ctx, session.Value)
 	if err != nil {
 		err = errors.ErrUnauthorized
 		return
