@@ -57,7 +57,7 @@ func MountRootRouter() (err error) {
 
 	rootRouter.Use(middleware.DisableCache)
 	rootRouter.Use(logger.LoggerMiddleware)
-	rootRouter.Use(middleware.Recovery)
+	//rootRouter.Use(middleware.Recovery)
 
 	handler := cors.New(cors.Options{
 		AllowedOrigins:   middleware.ALLOWED_ORIGINS,

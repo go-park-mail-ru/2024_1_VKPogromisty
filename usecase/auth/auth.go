@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"fmt"
 	"mime/multipart"
 	"net/http"
 	"socio/domain"
@@ -118,11 +119,13 @@ func (a *Service) RegistrateUser(ctx context.Context, userInput RegistrationInpu
 func (a *Service) Login(ctx context.Context, loginInput LoginInput) (user *domain.User, session *http.Cookie, err error) {
 	user, err = a.UserStorage.GetUserByEmail(ctx, loginInput.Email)
 	if err != nil {
+		fmt.Println(err)
 		err = errors.ErrInvalidLoginData
 		return
 	}
 
 	if !hash.MatchPasswords(user.Password, loginInput.Password, []byte(user.Salt)) {
+		fmt.Println(err)
 		err = errors.ErrInvalidLoginData
 		return
 	}
@@ -131,6 +134,7 @@ func (a *Service) Login(ctx context.Context, loginInput LoginInput) (user *domai
 
 	session, err = a.newSession(ctx, user.ID)
 	if err != nil {
+		fmt.Println(err)
 		return
 	}
 
