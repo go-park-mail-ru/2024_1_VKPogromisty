@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"socio/pkg/contextlogger"
+	"socio/pkg/requestcontext"
 	"socio/usecase/chat"
 
 	"github.com/gomodule/redigo/redis"
@@ -71,6 +72,18 @@ func (c *ChatPubSub) WriteAction(ctx context.Context, action *chat.Action) (err 
 	contextlogger.LogRedisAction(ctx, "PUBLISH", action.Receiver, action)
 
 	_, err = conn.Do("PUBLISH", action.Receiver, data)
+	if err != nil {
+		return
+	}
+
+	senderID, err := requestcontext.GetUserID(ctx)
+	if err != nil {
+		return
+	}
+
+	contextlogger.LogRedisAction(ctx, "PUBLISH", senderID, action)
+
+	_, err = conn.Do("PUBLISH", senderID, data)
 	if err != nil {
 		return
 	}
