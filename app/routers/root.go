@@ -46,7 +46,11 @@ func MountRootRouter() (err error) {
 	MountSubscriptionsRouter(rootRouter, subStorage, userStorage, sessionStorage)
 	MountStaticRouter(rootRouter)
 
-	sugar := middleware.NewZapLogger()
+	sugar, err := middleware.NewZapLogger()
+	if err != nil {
+		return
+	}
+
 	defer sugar.Sync()
 
 	logger := middleware.NewLogger(sugar)

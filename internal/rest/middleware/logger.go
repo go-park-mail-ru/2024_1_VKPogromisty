@@ -14,8 +14,17 @@ type Logger struct {
 	logger *zap.SugaredLogger
 }
 
-func NewZapLogger() (sugar *zap.SugaredLogger) {
-	logger, _ := zap.NewDevelopment()
+func NewZapLogger() (sugar *zap.SugaredLogger, err error) {
+	cfg := zap.NewProductionConfig()
+
+	cfg.Sampling = nil
+
+	cfg.OutputPaths = []string{
+		"/var/log/socio/socio.log",
+		"stderr",
+	}
+
+	logger, err := cfg.Build()
 
 	sugar = logger.Sugar()
 
