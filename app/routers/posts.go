@@ -24,4 +24,5 @@ func MountPostsRouter(rootRouter *mux.Router, postStorage posts.PostsStorage, us
 	r.HandleFunc("/", h.HandleUpdatePost).Methods("PUT", "OPTIONS")
 	r.HandleFunc("/", h.HandleDeletePost).Methods("DELETE", "OPTIONS")
 	r.Use(middleware.CreateCheckIsAuthorizedMiddleware(sessionStorage))
+	r.Use(middleware.CSRFMiddleware)
 }

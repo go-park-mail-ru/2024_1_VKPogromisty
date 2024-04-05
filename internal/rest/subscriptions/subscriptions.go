@@ -36,6 +36,7 @@ func NewSubscriptionsHandler(subStorage subscriptions.SubscriptionsStorage, user
 //
 //	@Param			subscribedTo	body	int		true	"Subscribed to ID"
 //	@Param			Cookie			header	string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
 //
 //	@Produce		json
 //	@Success		201	{object}	json.JSONResponse{body=domain.Subscription}
@@ -79,6 +80,7 @@ func (api *SubscriptionsHandler) HandleSubscription(w http.ResponseWriter, r *ht
 //
 //	@Param			subscribedTo	body	int		true	"User to unsubscribe from"
 //	@Param			Cookie			header	string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
 //
 //	@Produce		json
 //	@Success		204
@@ -124,6 +126,7 @@ func (api *SubscriptionsHandler) HandleUnsubscription(w http.ResponseWriter, r *
 //	@Accept			json
 //
 //	@Param			Cookie	header	string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
 //
 //	@Produce		json
 //	@Success		200	{object}	json.JSONResponse{body=subscriptions.GetSubscriptionsResponse}
@@ -160,6 +163,7 @@ func (api *SubscriptionsHandler) HandleGetSubscriptions(w http.ResponseWriter, r
 //	@Accept			json
 //
 //	@Param			Cookie	header	string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
 //
 //	@Produce		json
 //	@Success		200	{object}	json.JSONResponse{body=subscriptions.GetSubscribersResponse}
@@ -196,6 +200,7 @@ func (api *SubscriptionsHandler) HandleGetSubscribers(w http.ResponseWriter, r *
 //	@Accept			json
 //
 //	@Param			Cookie	header	string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
 //
 //	@Produce		json
 //	@Success		200	{object}	json.JSONResponse{body=subscriptions.GetFriendsResponse}

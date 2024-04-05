@@ -18,6 +18,7 @@ var (
 	ErrInvalidDate          = errors.New("invalid date provided")
 	ErrJSONUnmarshalling    = errors.New("unable to unmarshal json")
 	ErrJSONMarshalling      = errors.New("unable to return json reponse")
+	ErrInvalidJWT           = errors.New("invalid JWT provided")
 	ErrInvalidFilePathGen   = errors.New("unable to open file with generated filepath")
 	ErrInvalidBody          = errors.New("invalid request body provided")
 	ErrForbidden            = errors.New("forbidden")

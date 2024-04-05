@@ -33,6 +33,7 @@ func NewProfileHandler(userStorage profile.UserStorage, sessionStorage profile.S
 //	@Accept			json
 //
 //	@Param			Cookie	header	string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
 //	@Param			userID	path	string	false	"User ID, if empty - get authorized user profile"
 //
 //	@Produce		json
@@ -81,6 +82,7 @@ func (h *ProfileHandler) HandleGetProfile(w http.ResponseWriter, r *http.Request
 //	@Accept			mpfd
 //
 //	@Param			Cookie			header		string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
 //
 //	@Param			firstName		formData	string	false	"First name"
 //	@Param			lastName		formData	string	false	"Last name"
@@ -143,6 +145,7 @@ func (h *ProfileHandler) HandleUpdateProfile(w http.ResponseWriter, r *http.Requ
 //	@Accept			json
 //
 //	@Param			Cookie	header	string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
 //
 //	@Success		204
 //	@Failure		401	{object}	errors.HTTPError
