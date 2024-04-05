@@ -153,7 +153,7 @@ func (p *Posts) GetPostByID(ctx context.Context, postID uint) (post *domain.Post
 
 	contextlogger.LogSQL(ctx, getPostByIDQuery, postID)
 
-	err = p.db.QueryRow(ctx, getPostByIDQuery, postID).Scan(
+	err = p.db.QueryRow(context.Background(), getPostByIDQuery, postID).Scan(
 		&post.ID,
 		&post.AuthorID,
 		&post.Content,
@@ -173,7 +173,7 @@ func (p *Posts) GetPostByID(ctx context.Context, postID uint) (post *domain.Post
 func (p *Posts) GetUserPosts(ctx context.Context, userID uint, lastPostID uint) (posts []*domain.Post, err error) {
 	contextlogger.LogSQL(ctx, getUserPostsQuery, userID, lastPostID, PostsByPage)
 
-	rows, err := p.db.Query(ctx, getUserPostsQuery, userID, lastPostID, PostsByPage)
+	rows, err := p.db.Query(context.Background(), getUserPostsQuery, userID, lastPostID, PostsByPage)
 	if err != nil {
 		return
 	}
@@ -205,7 +205,7 @@ func (p *Posts) GetUserPosts(ctx context.Context, userID uint, lastPostID uint) 
 func (p *Posts) GetUserFriendsPosts(ctx context.Context, userID uint, lastPostID uint) (posts []domain.PostWithAuthor, err error) {
 	contextlogger.LogSQL(ctx, getUserFriendsPostsQuery, userID, lastPostID, PostsByPage)
 
-	rows, err := p.db.Query(ctx, getUserFriendsPostsQuery, userID, lastPostID, PostsByPage)
+	rows, err := p.db.Query(context.Background(), getUserFriendsPostsQuery, userID, lastPostID, PostsByPage)
 	if err != nil {
 		return
 	}
@@ -248,7 +248,7 @@ func (p *Posts) GetUserFriendsPosts(ctx context.Context, userID uint, lastPostID
 func (p *Posts) StorePost(ctx context.Context, post *domain.Post, attachments []*multipart.FileHeader) (newPost *domain.Post, err error) {
 	newPost = new(domain.Post)
 
-	tx, err := p.db.BeginTx(ctx, pgx.TxOptions{})
+	tx, err := p.db.BeginTx(context.Background(), pgx.TxOptions{})
 
 	if err != nil {
 		return
@@ -258,7 +258,7 @@ func (p *Posts) StorePost(ctx context.Context, post *domain.Post, attachments []
 		if err != nil {
 			return
 		}
-		if err = tx.Rollback(ctx); err != nil && err != pgx.ErrTxClosed {
+		if err = tx.Rollback(context.Background()); err != nil && err != pgx.ErrTxClosed {
 			return
 		}
 
@@ -267,7 +267,7 @@ func (p *Posts) StorePost(ctx context.Context, post *domain.Post, attachments []
 
 	contextlogger.LogSQL(ctx, storePostQuery, post.AuthorID, post.Content)
 
-	err = tx.QueryRow(ctx, storePostQuery, post.AuthorID, post.Content).Scan(
+	err = tx.QueryRow(context.Background(), storePostQuery, post.AuthorID, post.Content).Scan(
 		&newPost.ID,
 		&newPost.AuthorID,
 		&newPost.Content,
@@ -287,7 +287,7 @@ func (p *Posts) StorePost(ctx context.Context, post *domain.Post, attachments []
 
 		contextlogger.LogSQL(ctx, storeAttachmentQuery, newPost.ID, fileName)
 
-		err = tx.QueryRow(ctx, storeAttachmentQuery, newPost.ID, fileName).Scan(&fileName)
+		err = tx.QueryRow(context.Background(), storeAttachmentQuery, newPost.ID, fileName).Scan(&fileName)
 		if err != nil {
 			return
 		}
@@ -295,7 +295,7 @@ func (p *Posts) StorePost(ctx context.Context, post *domain.Post, attachments []
 		newPost.Attachments = append(newPost.Attachments, fileName)
 	}
 
-	err = tx.Commit(ctx)
+	err = tx.Commit(context.Background())
 	if err != nil {
 		return
 	}
@@ -308,7 +308,7 @@ func (p *Posts) UpdatePost(ctx context.Context, post *domain.Post) (updatedPost 
 
 	contextlogger.LogSQL(ctx, updatePostQuery, post.Content, post.ID)
 
-	err = p.db.QueryRow(ctx, updatePostQuery, post.Content, post.ID).Scan(
+	err = p.db.QueryRow(context.Background(), updatePostQuery, post.Content, post.ID).Scan(
 		&updatedPost.ID,
 		&updatedPost.AuthorID,
 		&updatedPost.Content,
@@ -332,7 +332,7 @@ func (p *Posts) DeletePost(ctx context.Context, postID uint) (err error) {
 		if err != nil {
 			return
 		}
-		if err = tx.Rollback(ctx); err != nil && err != pgx.ErrTxClosed {
+		if err = tx.Rollback(context.Background()); err != nil && err != pgx.ErrTxClosed {
 			return
 		}
 
@@ -343,7 +343,7 @@ func (p *Posts) DeletePost(ctx context.Context, postID uint) (err error) {
 
 	contextlogger.LogSQL(ctx, selectAttachmentsQuery, postID)
 
-	err = tx.QueryRow(ctx, selectAttachmentsQuery, postID).Scan(&attachments)
+	err = tx.QueryRow(context.Background(), selectAttachmentsQuery, postID).Scan(&attachments)
 	if err != nil && err != pgx.ErrNoRows {
 		return
 	}
@@ -359,7 +359,7 @@ func (p *Posts) DeletePost(ctx context.Context, postID uint) (err error) {
 
 	contextlogger.LogSQL(ctx, deletePostQuery, postID)
 
-	result, err := tx.Exec(ctx, deletePostQuery, postID)
+	result, err := tx.Exec(context.Background(), deletePostQuery, postID)
 	if err != nil {
 		return
 	}
@@ -368,7 +368,7 @@ func (p *Posts) DeletePost(ctx context.Context, postID uint) (err error) {
 		return errors.ErrRowsAffected
 	}
 
-	err = tx.Commit(ctx)
+	err = tx.Commit(context.Background())
 	if err != nil {
 		return
 	}

@@ -135,7 +135,7 @@ func NewPersonalMessages(db *pgxpool.Pool, tp customtime.TimeProvider) *Personal
 func (pm *PersonalMessages) GetLastMessageID(ctx context.Context, senderID, receiverID uint) (lastMessageID uint, err error) {
 	contextlogger.LogSQL(ctx, getLastMessageIDQuery, senderID, receiverID)
 
-	err = pm.db.QueryRow(ctx, getLastMessageIDQuery, senderID, receiverID).Scan(&lastMessageID)
+	err = pm.db.QueryRow(context.Background(), getLastMessageIDQuery, senderID, receiverID).Scan(&lastMessageID)
 
 	if err != nil {
 		return
@@ -147,7 +147,7 @@ func (pm *PersonalMessages) GetLastMessageID(ctx context.Context, senderID, rece
 func (pm *PersonalMessages) GetMessagesByDialog(ctx context.Context, senderID, receiverID, lastMessageID uint) (messages []*domain.PersonalMessage, err error) {
 	contextlogger.LogSQL(ctx, getMessagesByDialogQuery, senderID, receiverID, lastMessageID, messagesLimit)
 
-	rows, err := pm.db.Query(ctx, getMessagesByDialogQuery, senderID, receiverID, lastMessageID, messagesLimit)
+	rows, err := pm.db.Query(context.Background(), getMessagesByDialogQuery, senderID, receiverID, lastMessageID, messagesLimit)
 	if err != nil {
 		return
 	}
@@ -177,7 +177,7 @@ func (pm *PersonalMessages) GetMessagesByDialog(ctx context.Context, senderID, r
 func (pm *PersonalMessages) GetDialogsByUserID(ctx context.Context, userID uint) (dialogs []*chat.Dialog, err error) {
 	contextlogger.LogSQL(ctx, getDialogsByUserIDQuery, userID)
 
-	rows, err := pm.db.Query(ctx, getDialogsByUserIDQuery, userID)
+	rows, err := pm.db.Query(context.Background(), getDialogsByUserIDQuery, userID)
 	if err != nil {
 		return
 	}
@@ -233,7 +233,7 @@ func (pm *PersonalMessages) StoreMessage(ctx context.Context, msg *domain.Person
 	contextlogger.LogSQL(ctx, storePersonalMessageQuery, msg.SenderID, msg.ReceiverID, msg.Content)
 
 	newMsg = new(domain.PersonalMessage)
-	err = pm.db.QueryRow(ctx, storePersonalMessageQuery,
+	err = pm.db.QueryRow(context.Background(), storePersonalMessageQuery,
 		msg.SenderID,
 		msg.ReceiverID,
 		msg.Content,
@@ -256,7 +256,7 @@ func (pm *PersonalMessages) UpdateMessage(ctx context.Context, msg *domain.Perso
 	contextlogger.LogSQL(ctx, updatePersonalMessageQuery, msg.Content, msg.ID)
 
 	updatedMsg = new(domain.PersonalMessage)
-	err = pm.db.QueryRow(ctx, updatePersonalMessageQuery, msg.Content, msg.ID).Scan(
+	err = pm.db.QueryRow(context.Background(), updatePersonalMessageQuery, msg.Content, msg.ID).Scan(
 		&updatedMsg.ID,
 		&updatedMsg.SenderID,
 		&updatedMsg.ReceiverID,
@@ -274,7 +274,7 @@ func (pm *PersonalMessages) UpdateMessage(ctx context.Context, msg *domain.Perso
 func (pm *PersonalMessages) DeleteMessage(ctx context.Context, msgID uint) (err error) {
 	contextlogger.LogSQL(ctx, deletePersonalMessageQuery, msgID)
 
-	result, err := pm.db.Exec(ctx, deletePersonalMessageQuery, msgID)
+	result, err := pm.db.Exec(context.Background(), deletePersonalMessageQuery, msgID)
 	if err != nil {
 		return
 	}

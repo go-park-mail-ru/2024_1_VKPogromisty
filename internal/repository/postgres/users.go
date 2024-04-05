@@ -146,7 +146,7 @@ func (s *Users) GetUserByID(ctx context.Context, userID uint) (user *domain.User
 
 	user = &domain.User{}
 
-	err = s.db.QueryRow(ctx, getUserByIDQuery, userID).Scan(
+	err = s.db.QueryRow(context.Background(), getUserByIDQuery, userID).Scan(
 		&user.ID,
 		&user.FirstName,
 		&user.LastName,
@@ -175,7 +175,7 @@ func (s *Users) GetUserByIDWithSubsInfo(ctx context.Context, userID, authorizedU
 
 	user = &domain.User{}
 
-	err = s.db.QueryRow(ctx, getUserByIDWithSubsInfoQuery, userID, authorizedUserID).Scan(
+	err = s.db.QueryRow(context.Background(), getUserByIDWithSubsInfoQuery, userID, authorizedUserID).Scan(
 		&user.ID,
 		&user.FirstName,
 		&user.LastName,
@@ -207,7 +207,7 @@ func (s *Users) GetUserByEmail(ctx context.Context, email string) (user *domain.
 
 	user = &domain.User{}
 
-	err = s.db.QueryRow(ctx, getUserByEmailQuery, email).Scan(
+	err = s.db.QueryRow(context.Background(), getUserByEmailQuery, email).Scan(
 		&user.ID,
 		&user.FirstName,
 		&user.LastName,
@@ -244,7 +244,7 @@ func (s *Users) StoreUser(ctx context.Context, user *domain.User) (err error) {
 		user.DateOfBirth.Time,
 	)
 
-	err = s.db.QueryRow(ctx, storeUserQuery,
+	err = s.db.QueryRow(context.Background(), storeUserQuery,
 		user.FirstName,
 		user.LastName,
 		user.Email,
@@ -285,7 +285,7 @@ func (s *Users) UpdateUser(ctx context.Context, user *domain.User) (updatedUser 
 		user.DateOfBirth.Time,
 	)
 
-	err = s.db.QueryRow(ctx, updateUserQuery,
+	err = s.db.QueryRow(context.Background(), updateUserQuery,
 		user.ID,
 		user.FirstName,
 		user.LastName,
@@ -320,7 +320,7 @@ func (s *Users) RefreshSaltAndRehashPassword(ctx context.Context, user *domain.U
 		user.ID,
 	)
 
-	result, err := s.db.Exec(ctx, refreshSaltAndRehashPasswordQuery,
+	result, err := s.db.Exec(context.Background(), refreshSaltAndRehashPasswordQuery,
 		user.Password,
 		user.Salt,
 		user.ID,
@@ -339,7 +339,7 @@ func (s *Users) RefreshSaltAndRehashPassword(ctx context.Context, user *domain.U
 func (s *Users) DeleteUser(ctx context.Context, userID uint) (err error) {
 	contextlogger.LogSQL(ctx, deleteUserQuery, userID)
 
-	result, err := s.db.Exec(ctx, deleteUserQuery, userID)
+	result, err := s.db.Exec(context.Background(), deleteUserQuery, userID)
 	if err != nil {
 		return
 	}

@@ -135,7 +135,7 @@ func (s *Subscriptions) serializeIntoUsers(rows pgx.Rows) (users []*domain.User,
 func (s *Subscriptions) GetSubscriptions(ctx context.Context, userID uint) (subscriptions []*domain.User, err error) {
 	contextlogger.LogSQL(ctx, getSubscriptionsQuery, userID)
 
-	rows, err := s.db.Query(ctx, getSubscriptionsQuery, userID)
+	rows, err := s.db.Query(context.Background(), getSubscriptionsQuery, userID)
 
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -162,7 +162,7 @@ func (s *Subscriptions) GetSubscriptions(ctx context.Context, userID uint) (subs
 func (s *Subscriptions) GetFriends(ctx context.Context, userID uint) (friends []*domain.User, err error) {
 	contextlogger.LogSQL(ctx, getFriendsQuery, userID)
 
-	rows, err := s.db.Query(ctx, getFriendsQuery, userID)
+	rows, err := s.db.Query(context.Background(), getFriendsQuery, userID)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, nil
@@ -188,7 +188,7 @@ func (s *Subscriptions) GetFriends(ctx context.Context, userID uint) (friends []
 func (s *Subscriptions) GetSubscribers(ctx context.Context, userID uint) (subscribers []*domain.User, err error) {
 	contextlogger.LogSQL(ctx, getSubscribersQuery, userID)
 
-	rows, err := s.db.Query(ctx, getSubscribersQuery, userID)
+	rows, err := s.db.Query(context.Background(), getSubscribersQuery, userID)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, nil
@@ -216,7 +216,7 @@ func (s *Subscriptions) Store(ctx context.Context, sub *domain.Subscription) (su
 
 	contextlogger.LogSQL(ctx, storeSubscriptionQuery, sub.SubscriberID, sub.SubscribedToID)
 
-	err = s.db.QueryRow(ctx, storeSubscriptionQuery,
+	err = s.db.QueryRow(context.Background(), storeSubscriptionQuery,
 		sub.SubscriberID,
 		sub.SubscribedToID,
 	).Scan(
@@ -241,7 +241,7 @@ func (s *Subscriptions) Store(ctx context.Context, sub *domain.Subscription) (su
 func (s *Subscriptions) Delete(ctx context.Context, subsciberID uint, subscribedToID uint) (err error) {
 	contextlogger.LogSQL(ctx, deleteSubscriptionQuery, subsciberID, subscribedToID)
 
-	result, err := s.db.Exec(ctx, deleteSubscriptionQuery, subsciberID, subscribedToID)
+	result, err := s.db.Exec(context.Background(), deleteSubscriptionQuery, subsciberID, subscribedToID)
 	if err != nil {
 		return
 	}
@@ -263,7 +263,7 @@ func (s *Subscriptions) GetBySubscriberAndSubscribedToID(ctx context.Context, su
 
 	contextlogger.LogSQL(ctx, getSubscriptionBySubscriberAndSubscribedToIDQuery, subscriberID, subscribedToID)
 
-	err = s.db.QueryRow(ctx, getSubscriptionBySubscriberAndSubscribedToIDQuery,
+	err = s.db.QueryRow(context.Background(), getSubscriptionBySubscriberAndSubscribedToIDQuery,
 		subscriberID,
 		subscribedToID,
 	).Scan(
