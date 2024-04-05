@@ -7,6 +7,7 @@ import (
 	"socio/domain"
 	"socio/errors"
 	"socio/pkg/hash"
+	"socio/pkg/sanitizer"
 	"socio/pkg/static"
 	customtime "socio/pkg/time"
 	"time"
@@ -42,6 +43,7 @@ type SessionStorage interface {
 type Service struct {
 	UserStorage    UserStorage
 	SessionStorage SessionStorage
+	Sanitizer      *sanitizer.Sanitizer
 }
 
 type LoginResponse struct {
@@ -52,10 +54,11 @@ type IsAuthorizedResponse struct {
 	IsAuthorized bool `json:"isAuthorized"`
 }
 
-func NewService(userStorage UserStorage, sessionStorage SessionStorage) (a *Service) {
+func NewService(userStorage UserStorage, sessionStorage SessionStorage, sanitizer *sanitizer.Sanitizer) (a *Service) {
 	return &Service{
 		UserStorage:    userStorage,
 		SessionStorage: sessionStorage,
+		Sanitizer:      sanitizer,
 	}
 }
 
@@ -105,7 +108,12 @@ func (a *Service) RegistrateUser(ctx context.Context, userInput RegistrationInpu
 		},
 	}
 
-	a.UserStorage.StoreUser(ctx, user)
+	a.Sanitizer.SanitizeUser(user)
+
+	err = a.UserStorage.StoreUser(ctx, user)
+	if err != nil {
+		return
+	}
 
 	session, err = a.newSession(ctx, user.ID)
 	if err != nil {
@@ -121,6 +129,8 @@ func (a *Service) Login(ctx context.Context, loginInput LoginInput) (user *domai
 		err = errors.ErrInvalidLoginData
 		return
 	}
+
+	a.Sanitizer.SanitizeUser(user)
 
 	if !hash.MatchPasswords(user.Password, loginInput.Password, []byte(user.Salt)) {
 		err = errors.ErrInvalidLoginData

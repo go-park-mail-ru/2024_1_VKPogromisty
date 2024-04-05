@@ -5,6 +5,7 @@ import (
 	"socio/errors"
 	"socio/pkg/json"
 	"socio/pkg/requestcontext"
+	"socio/pkg/sanitizer"
 	"socio/usecase/profile"
 	"strconv"
 	"strings"
@@ -16,9 +17,9 @@ type ProfileHandler struct {
 	Service *profile.Service
 }
 
-func NewProfileHandler(userStorage profile.UserStorage, sessionStorage profile.SessionStorage) (h *ProfileHandler) {
+func NewProfileHandler(userStorage profile.UserStorage, sessionStorage profile.SessionStorage, sanitizer *sanitizer.Sanitizer) (h *ProfileHandler) {
 	return &ProfileHandler{
-		Service: profile.NewProfileService(userStorage, sessionStorage),
+		Service: profile.NewProfileService(userStorage, sessionStorage, sanitizer),
 	}
 }
 

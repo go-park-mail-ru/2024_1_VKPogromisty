@@ -3,15 +3,20 @@ package routers
 import (
 	"socio/internal/rest/middleware"
 	rest "socio/internal/rest/profile"
+	"socio/pkg/sanitizer"
 	"socio/usecase/auth"
 	"socio/usecase/profile"
 
 	"github.com/gorilla/mux"
+	"github.com/microcosm-cc/bluemonday"
 )
 
 func MountProfileRouter(rootRouter *mux.Router, userStorage profile.UserStorage, sessionStorage auth.SessionStorage) {
 	r := rootRouter.PathPrefix("/profile").Subrouter()
-	h := rest.NewProfileHandler(userStorage, sessionStorage)
+
+	sanitizer := sanitizer.NewSanitizer(bluemonday.UGCPolicy())
+
+	h := rest.NewProfileHandler(userStorage, sessionStorage, sanitizer)
 
 	r.HandleFunc("/{userID}", h.HandleGetProfile).Methods("GET", "OPTIONS")
 	r.HandleFunc("/", h.HandleGetProfile).Methods("GET", "OPTIONS")

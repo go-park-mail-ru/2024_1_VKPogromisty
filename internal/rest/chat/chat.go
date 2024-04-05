@@ -5,12 +5,13 @@ import (
 	defJSON "encoding/json"
 	"fmt"
 	"net/http"
+	"socio/domain"
 	"socio/errors"
 	"socio/internal/rest/middleware"
 	"socio/pkg/json"
 	"socio/pkg/requestcontext"
+	"socio/pkg/sanitizer"
 	"socio/usecase/chat"
-	"socio/domain"
 	"strconv"
 	"time"
 
@@ -37,9 +38,9 @@ var upgrader = &websocket.Upgrader{
 	CheckOrigin:     middleware.CheckOrigin,
 }
 
-func NewChatServer(pubSubRepo chat.PubSubRepository, messagesRepo chat.PersonalMessagesRepository) (chatServer *ChatServer) {
+func NewChatServer(pubSubRepo chat.PubSubRepository, messagesRepo chat.PersonalMessagesRepository, sanitizer *sanitizer.Sanitizer) (chatServer *ChatServer) {
 	return &ChatServer{
-		Service: chat.NewChatService(pubSubRepo, messagesRepo),
+		Service: chat.NewChatService(pubSubRepo, messagesRepo, sanitizer),
 	}
 }
 

@@ -6,6 +6,7 @@ import (
 	"socio/domain"
 	"socio/errors"
 	"socio/pkg/json"
+	"socio/pkg/sanitizer"
 	customtime "socio/pkg/time"
 	"socio/usecase/auth"
 	"strings"
@@ -16,9 +17,9 @@ type AuthHandler struct {
 	TimeProvider customtime.TimeProvider
 }
 
-func NewAuthHandler(userStorage auth.UserStorage, sessionStorage auth.SessionStorage) (handler *AuthHandler) {
+func NewAuthHandler(userStorage auth.UserStorage, sessionStorage auth.SessionStorage, sanitizer *sanitizer.Sanitizer) (handler *AuthHandler) {
 	handler = &AuthHandler{
-		Service: auth.NewService(userStorage, sessionStorage),
+		Service: auth.NewService(userStorage, sessionStorage, sanitizer),
 	}
 	return
 }

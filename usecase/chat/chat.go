@@ -4,6 +4,7 @@ import (
 	"context"
 	"socio/domain"
 	"socio/errors"
+	"socio/pkg/sanitizer"
 	"sync"
 )
 
@@ -12,6 +13,7 @@ type Service struct {
 	Clients          *sync.Map
 	PubSubRepository PubSubRepository
 	MessagesRepo     PersonalMessagesRepository
+	Sanitizer        *sanitizer.Sanitizer
 }
 
 type SendMessagePayload struct {
@@ -27,17 +29,12 @@ type DeleteMessagePayload struct {
 	MessageID uint `json:"messageId"`
 }
 
-type Dialog struct {
-	User1       *domain.User            `json:"user1"`
-	User2       *domain.User            `json:"user2"`
-	LastMessage *domain.PersonalMessage `json:"lastMessage"`
-}
-
-func NewChatService(pubSubRepo PubSubRepository, messagesRepo PersonalMessagesRepository) (chatService *Service) {
+func NewChatService(pubSubRepo PubSubRepository, messagesRepo PersonalMessagesRepository, sanitizer *sanitizer.Sanitizer) (chatService *Service) {
 	return &Service{
 		Clients:          &sync.Map{},
 		PubSubRepository: pubSubRepo,
 		MessagesRepo:     messagesRepo,
+		Sanitizer:        sanitizer,
 	}
 }
 
@@ -48,7 +45,7 @@ func (s *Service) Register(ctx context.Context, userID uint) (c *Client, err err
 		return
 	}
 
-	c, err = NewClient(userID, s.PubSubRepository, s.MessagesRepo)
+	c, err = NewClient(userID, s.PubSubRepository, s.MessagesRepo, s.Sanitizer)
 	if err != nil {
 		return
 	}
@@ -82,13 +79,21 @@ func (s *Service) GetMessagesByDialog(ctx context.Context, userID, peerID, lastM
 		return
 	}
 
+	for _, message := range messages {
+		s.Sanitizer.SanitizePersonalMessage(message)
+	}
+
 	return
 }
 
-func (s *Service) GetDialogsByUserID(ctx context.Context, userID uint) (dialogs []*Dialog, err error) {
+func (s *Service) GetDialogsByUserID(ctx context.Context, userID uint) (dialogs []*domain.Dialog, err error) {
 	dialogs, err = s.MessagesRepo.GetDialogsByUserID(ctx, userID)
 	if err != nil {
 		return
+	}
+
+	for _, dialog := range dialogs {
+		s.Sanitizer.SanitizeDialog(dialog)
 	}
 
 	return

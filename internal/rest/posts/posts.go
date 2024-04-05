@@ -8,6 +8,7 @@ import (
 	"socio/errors"
 	"socio/pkg/json"
 	"socio/pkg/requestcontext"
+	"socio/pkg/sanitizer"
 	"socio/usecase/posts"
 	"strconv"
 	"strings"
@@ -22,9 +23,9 @@ type PostsHandler struct {
 	Service *posts.Service
 }
 
-func NewPostsHandler(postsStorage posts.PostsStorage, usersStorage posts.UserStorage) (handler *PostsHandler) {
+func NewPostsHandler(postsStorage posts.PostsStorage, usersStorage posts.UserStorage, sanitizer *sanitizer.Sanitizer) (handler *PostsHandler) {
 	handler = &PostsHandler{
-		Service: posts.NewPostsService(postsStorage, usersStorage),
+		Service: posts.NewPostsService(postsStorage, usersStorage, sanitizer),
 	}
 	return
 }

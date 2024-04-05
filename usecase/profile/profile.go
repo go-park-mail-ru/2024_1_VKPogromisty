@@ -4,6 +4,7 @@ import (
 	"context"
 	"mime/multipart"
 	"socio/domain"
+	"socio/pkg/sanitizer"
 	"socio/pkg/static"
 	customtime "socio/pkg/time"
 	"time"
@@ -41,9 +42,10 @@ type UpdateUserInput struct {
 type Service struct {
 	UserStorage    UserStorage
 	SessionStorage SessionStorage
+	Sanitizer      *sanitizer.Sanitizer
 }
 
-func NewProfileService(userStorage UserStorage, sessionStorage SessionStorage) (p *Service) {
+func NewProfileService(userStorage UserStorage, sessionStorage SessionStorage, sanitizer *sanitizer.Sanitizer) (p *Service) {
 	return &Service{
 		UserStorage:    userStorage,
 		SessionStorage: sessionStorage,
@@ -55,6 +57,8 @@ func (p *Service) GetUserByIDWithSubsInfo(ctx context.Context, userID, authorize
 	if err != nil {
 		return
 	}
+
+	p.Sanitizer.SanitizeUser(userWithInfo.User)
 
 	return
 }
@@ -110,6 +114,8 @@ func (p *Service) UpdateUser(ctx context.Context, input UpdateUserInput) (update
 	if err != nil {
 		return
 	}
+
+	p.Sanitizer.SanitizeUser(updatedUser)
 
 	return
 }

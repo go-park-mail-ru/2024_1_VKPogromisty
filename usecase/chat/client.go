@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"socio/domain"
 	"socio/errors"
+	"socio/pkg/sanitizer"
 )
 
 const (
@@ -28,7 +29,7 @@ type Action struct {
 type PersonalMessagesRepository interface {
 	GetLastMessageID(ctx context.Context, senderID, receiverID uint) (lastMessageID uint, err error)
 	GetMessagesByDialog(ctx context.Context, senderID, receiverID, lastMessageID uint) (messages []*domain.PersonalMessage, err error)
-	GetDialogsByUserID(ctx context.Context, userID uint) (dialogs []*Dialog, err error)
+	GetDialogsByUserID(ctx context.Context, userID uint) (dialogs []*domain.Dialog, err error)
 	StoreMessage(ctx context.Context, message *domain.PersonalMessage) (newMessage *domain.PersonalMessage, err error)
 	UpdateMessage(ctx context.Context, message *domain.PersonalMessage) (updatedMessage *domain.PersonalMessage, err error)
 	DeleteMessage(ctx context.Context, messageID uint) (err error)
@@ -45,9 +46,10 @@ type Client struct {
 	Send                 chan *Action
 	PersonalMessagesRepo PersonalMessagesRepository
 	PubSubRepository     PubSubRepository
+	Sanitizer            *sanitizer.Sanitizer
 }
 
-func NewClient(userID uint, pubSubRepo PubSubRepository, messagesRepo PersonalMessagesRepository) (client *Client, err error) {
+func NewClient(userID uint, pubSubRepo PubSubRepository, messagesRepo PersonalMessagesRepository, sanitizer *sanitizer.Sanitizer) (client *Client, err error) {
 	if err != nil {
 		return
 	}
@@ -57,6 +59,7 @@ func NewClient(userID uint, pubSubRepo PubSubRepository, messagesRepo PersonalMe
 		Send:                 make(chan *Action, sendChanSize),
 		PubSubRepository:     pubSubRepo,
 		PersonalMessagesRepo: messagesRepo,
+		Sanitizer:            sanitizer,
 	}
 
 	return
@@ -109,6 +112,8 @@ func (c *Client) handleSendMessageAction(ctx context.Context, action *Action, me
 		return
 	}
 
+	c.Sanitizer.SanitizePersonalMessage(newMessage)
+
 	action.Payload, err = json.Marshal(newMessage)
 	if err != nil {
 		action.Payload, err = errors.MarshalError(err)
@@ -139,6 +144,8 @@ func (c *Client) handleUpdateMessageAction(ctx context.Context, action *Action, 
 		c.PubSubRepository.WriteAction(ctx, action)
 		return
 	}
+
+	c.Sanitizer.SanitizePersonalMessage(newMessage)
 
 	action.Payload, err = json.Marshal(newMessage)
 	if err != nil {
