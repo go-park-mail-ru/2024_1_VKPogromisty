@@ -151,8 +151,6 @@ func (s *Users) GetUserByID(ctx context.Context, userID uint) (user *domain.User
 		&user.FirstName,
 		&user.LastName,
 		&user.Email,
-		&user.Password,
-		&user.Salt,
 		&user.Avatar,
 		&user.DateOfBirth.Time,
 		&user.CreatedAt.Time,
@@ -180,8 +178,6 @@ func (s *Users) GetUserByIDWithSubsInfo(ctx context.Context, userID, authorizedU
 		&user.FirstName,
 		&user.LastName,
 		&user.Email,
-		&user.Password,
-		&user.Salt,
 		&user.Avatar,
 		&user.DateOfBirth.Time,
 		&user.CreatedAt.Time,
@@ -212,8 +208,6 @@ func (s *Users) GetUserByEmail(ctx context.Context, email string) (user *domain.
 		&user.FirstName,
 		&user.LastName,
 		&user.Email,
-		&user.Password,
-		&user.Salt,
 		&user.Avatar,
 		&user.DateOfBirth.Time,
 		&user.CreatedAt.Time,
@@ -240,8 +234,6 @@ func (s *Users) StoreUser(ctx context.Context, user *domain.User) (err error) {
 		user.FirstName,
 		user.LastName,
 		user.Email,
-		user.Password,
-		user.Salt,
 		user.Avatar,
 		user.DateOfBirth.Time,
 	)
@@ -283,8 +275,6 @@ func (s *Users) UpdateUser(ctx context.Context, user *domain.User) (updatedUser 
 		user.FirstName,
 		user.LastName,
 		user.Email,
-		user.Password,
-		user.Salt,
 		user.Avatar,
 		user.DateOfBirth.Time,
 	)
@@ -321,8 +311,6 @@ func (s *Users) RefreshSaltAndRehashPassword(ctx context.Context, user *domain.U
 	user.Salt = salt
 
 	contextlogger.LogSQL(ctx, refreshSaltAndRehashPasswordQuery,
-		user.Password,
-		user.Salt,
 		user.ID,
 	)
 

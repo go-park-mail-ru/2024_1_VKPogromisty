@@ -2,7 +2,6 @@ package chat
 
 import (
 	"context"
-	"fmt"
 	"socio/domain"
 	"socio/errors"
 	"sync"
@@ -73,7 +72,6 @@ func (s *Service) GetMessagesByDialog(ctx context.Context, userID, peerID, lastM
 	if lastMessageID == 0 {
 		lastMessageID, err = s.MessagesRepo.GetLastMessageID(ctx, userID, peerID)
 		if err != nil {
-			fmt.Println("here")
 			return
 		}
 		lastMessageID++

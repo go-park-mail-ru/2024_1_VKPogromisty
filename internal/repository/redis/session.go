@@ -25,7 +25,7 @@ func (s *Session) CreateSession(ctx context.Context, userID uint) (sessionID str
 
 	sessionID = uuid.NewString()
 
-	contextlogger.LogRedisAction(ctx, "SET", sessionID, userID)
+	contextlogger.LogRedisAction(ctx, "SET", "SESSION_ID", userID)
 
 	_, err = c.Do("SET", sessionID, userID)
 	if err != nil {
@@ -39,7 +39,7 @@ func (s *Session) DeleteSession(ctx context.Context, sessionID string) (err erro
 	c := s.pool.Get()
 	defer c.Close()
 
-	contextlogger.LogRedisAction(ctx, "DEL", sessionID, nil)
+	contextlogger.LogRedisAction(ctx, "DEL", "SESSION_ID", nil)
 
 	_, err = c.Do("DEL", sessionID)
 	if err != nil {
@@ -53,7 +53,7 @@ func (s *Session) GetUserIDBySession(ctx context.Context, sessionID string) (use
 	c := s.pool.Get()
 	defer c.Close()
 
-	contextlogger.LogRedisAction(ctx, "GET", sessionID, nil)
+	contextlogger.LogRedisAction(ctx, "GET", "SESSION_ID", nil)
 
 	result, err := c.Do("GET", sessionID)
 	if err != nil {
