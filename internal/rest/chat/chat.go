@@ -5,12 +5,12 @@ import (
 	defJSON "encoding/json"
 	"fmt"
 	"net/http"
+	"socio/domain"
 	"socio/errors"
 	"socio/internal/rest/middleware"
 	"socio/pkg/json"
 	"socio/pkg/requestcontext"
 	"socio/usecase/chat"
-	"socio/domain"
 	"strconv"
 	"time"
 
@@ -20,7 +20,7 @@ import (
 const (
 	pongWait        = 60 * time.Second
 	writeWait       = 10 * time.Second
-	pingPeriod      = writeWait / 2
+	pingPeriod      = 1 * time.Second
 	maxMessageSize  = 10000
 	readBufferSize  = 4096
 	writeBufferSize = 4096
