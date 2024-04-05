@@ -25,6 +25,9 @@ func NewZapLogger() (sugar *zap.SugaredLogger, err error) {
 	}
 
 	logger, err := cfg.Build()
+	if err != nil {
+		return
+	}
 
 	sugar = logger.Sugar()
 
