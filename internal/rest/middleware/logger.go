@@ -44,7 +44,6 @@ func (l *Logger) LoggerMiddleware(h http.Handler) http.Handler {
 
 		currLogger := l.logger.With(
 			"requestID", requestID,
-			zap.Duration("work_time", time.Since(start)),
 			zap.String("method", r.Method),
 			zap.String("remote_addr", r.RemoteAddr),
 			zap.String("url", r.URL.Path),
@@ -53,5 +52,10 @@ func (l *Logger) LoggerMiddleware(h http.Handler) http.Handler {
 		ctx := context.WithValue(r.Context(), requestcontext.LoggerKey, currLogger)
 
 		h.ServeHTTP(w, r.WithContext(ctx))
+
+		currLogger.Info(
+			"Working time: ",
+			zap.Duration("work_time", time.Since(start)),
+		)
 	})
 }
