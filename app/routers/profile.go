@@ -23,4 +23,5 @@ func MountProfileRouter(rootRouter *mux.Router, userStorage profile.UserStorage,
 	r.HandleFunc("/", h.HandleUpdateProfile).Methods("PUT", "OPTIONS")
 	r.HandleFunc("/", h.HandleDeleteProfile).Methods("DELETE", "OPTIONS")
 	r.Use(middleware.CreateCheckIsAuthorizedMiddleware(sessionStorage))
+	r.Use(middleware.CSRFMiddleware)
 }

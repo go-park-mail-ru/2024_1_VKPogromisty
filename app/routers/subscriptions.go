@@ -19,4 +19,5 @@ func MountSubscriptionsRouter(rootRouter *mux.Router, subStorage subscriptions.S
 	r.HandleFunc("/subscriptions", h.HandleGetSubscriptions).Methods("GET", "OPTIONS")
 	r.HandleFunc("/friends", h.HandleGetFriends).Methods("GET", "OPTIONS")
 	r.Use(middleware.CreateCheckIsAuthorizedMiddleware(sessionStorage))
+	r.Use(middleware.CSRFMiddleware)
 }

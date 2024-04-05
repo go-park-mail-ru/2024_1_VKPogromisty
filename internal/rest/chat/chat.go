@@ -3,7 +3,6 @@ package rest
 import (
 	"context"
 	defJSON "encoding/json"
-	"fmt"
 	"net/http"
 	"socio/domain"
 	"socio/errors"
@@ -54,9 +53,10 @@ func NewChatServer(pubSubRepo chat.PubSubRepository, messagesRepo chat.PersonalM
 //	@Accept			json
 //
 //	@Param			Cookie	header	string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
 //
 //	@Produce		json
-//	@Success		200	{object}	json.JSONResponse{body=[]chat.Dialog}
+//	@Success		200	{object}	json.JSONResponse{body=[]domain.Dialog}
 //	@Failure		400	{object}	errors.HTTPError
 //	@Failure		401	{object}	errors.HTTPError
 //	@Failure		500	{object}	errors.HTTPError
@@ -87,6 +87,7 @@ func (c *ChatServer) HandleGetDialogs(w http.ResponseWriter, r *http.Request) {
 //	@Accept			json
 //
 //	@Param			Cookie			header	string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
 //	@Param			peerId			query	uint	true	"ID of the peer"
 //	@Param			lastMessageId	query	uint	false	"ID of the last message, if last messages needed, should be set to 0"
 //
@@ -129,7 +130,6 @@ func (c *ChatServer) HandleGetMessagesByDialog(w http.ResponseWriter, r *http.Re
 
 	messages, err := c.Service.GetMessagesByDialog(r.Context(), userID, uint(peerID), uint(lastMessageID))
 	if err != nil {
-		fmt.Println(err)
 		json.ServeJSONError(r.Context(), w, err)
 		return
 	}
@@ -148,9 +148,9 @@ func (c *ChatServer) HandleGetMessagesByDialog(w http.ResponseWriter, r *http.Re
 //	@Description	Serve websocket connection. You can send actions to connection following simple structure:
 //	@Description
 //	@Description	{
-//	@Description		"type": ActionType,
-//	@Description		"receiver": uint,
-//	@Description		"payload": interface{}
+//	@Description	"type": ActionType,
+//	@Description	"receiver": uint,
+//	@Description	"payload": interface{}
 //	@Description	}
 //	@Description
 //	@Description	ActionType is a string with one of following values: "SEND_MESSAGE", "UPDATE_MESSAGE", "DELETE_MESSAGE"
@@ -161,9 +161,9 @@ func (c *ChatServer) HandleGetMessagesByDialog(w http.ResponseWriter, r *http.Re
 //	@Description
 //	@Description	In response clients, subscribed to corresponding channel, will get same structure back:
 //	@Description	{
-//	@Description		"type": ActionType,
-//	@Description		"receiver": uint,
-//	@Description		"payload": interface{}
+//	@Description	"type": ActionType,
+//	@Description	"receiver": uint,
+//	@Description	"payload": interface{}
 //	@Description	}
 //	@Description
 //	@Description	"payload" can be:
@@ -179,6 +179,7 @@ func (c *ChatServer) HandleGetMessagesByDialog(w http.ResponseWriter, r *http.Re
 //	@Accept			json
 //
 //	@Param			Cookie	header	string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
 //
 //	@Produce		json
 //	@Success		200

@@ -40,6 +40,7 @@ func MountRootRouter() (err error) {
 	chatPubSubRepository := redisRepo.NewChatPubSub(redisPool)
 
 	MountAuthRouter(rootRouter, userStorage, sessionStorage)
+	MountCSRFRouter(rootRouter, sessionStorage)
 	MountChatRouter(rootRouter, chatPubSubRepository, personalMessageStorage, sessionStorage)
 	MountProfileRouter(rootRouter, userStorage, sessionStorage)
 	MountPostsRouter(rootRouter, postStorage, userStorage, sessionStorage)

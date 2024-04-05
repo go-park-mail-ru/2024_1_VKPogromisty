@@ -2,7 +2,6 @@ package rest
 
 import (
 	defJSON "encoding/json"
-	"fmt"
 	"net/http"
 	"socio/domain"
 	"socio/errors"
@@ -39,9 +38,10 @@ func NewPostsHandler(postsStorage posts.PostsStorage, usersStorage posts.UserSto
 //	@ID				posts/get_user_posts
 //	@Accept			json
 //
-//	@Param			Cookie			header	string	true	"session_id=some_session"
-//	@Param			userId			query	uint	true	"ID of the user"
-//	@Param			lastPostId		query	uint	false	"ID of the last post, if 0 - get first posts"
+//	@Param			Cookie		header	string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
+//	@Param			userId		query	uint	true	"ID of the user"
+//	@Param			lastPostId	query	uint	false	"ID of the last post, if 0 - get first posts"
 //
 //	@Produce		json
 //	@Success		200	{object}	ListUserPostsResponse
@@ -92,8 +92,9 @@ func (h *PostsHandler) HandleGetUserPosts(w http.ResponseWriter, r *http.Request
 //	@ID				posts/get_user_friends_posts
 //	@Accept			json
 //
-//	@Param			Cookie			header	string	true	"session_id=some_session"
-//	@Param			lastPostId		query	uint	false	"ID of the last post"
+//	@Param			Cookie		header	string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
+//	@Param			lastPostId	query	uint	false	"ID of the last post"
 //
 //	@Produce		json
 //	@Success		200	{object}	json.JSONResponse{body=[]domain.PostWithAuthor}
@@ -139,6 +140,7 @@ func (h *PostsHandler) HandleGetUserFriendsPosts(w http.ResponseWriter, r *http.
 //	@Accept			mpfd
 //
 //	@Param			Cookie		header		string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
 //	@Param			content		formData	string	true	"Content of the post"
 //	@Param			attachments	formData	file	false	"Attachments of the post"
 //
@@ -171,7 +173,6 @@ func (h *PostsHandler) HandleCreatePost(w http.ResponseWriter, r *http.Request) 
 
 	postWithAuthor, err := h.Service.CreatePost(r.Context(), postInput)
 	if err != nil {
-		fmt.Println(err)
 		json.ServeJSONError(r.Context(), w, err)
 		return
 	}
@@ -190,6 +191,7 @@ func (h *PostsHandler) HandleCreatePost(w http.ResponseWriter, r *http.Request) 
 //	@Accept			json
 //
 //	@Param			Cookie	header	string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
 //	@Param			post_id	body	uint	true	"ID of the post"
 //	@Param			content	body	string	true	"Content of the post"
 //
@@ -239,6 +241,7 @@ func (h *PostsHandler) HandleUpdatePost(w http.ResponseWriter, r *http.Request) 
 //	@Accept			json
 //
 //	@Param			Cookie	header	string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
 //	@Param			post_id	body	uint	true	"ID of the post"
 //
 //	@Produce		json
