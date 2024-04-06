@@ -11,7 +11,6 @@ import (
 
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
 	_ "github.com/lib/pq"
 )
 
@@ -125,11 +124,11 @@ const (
 )
 
 type Posts struct {
-	db *pgxpool.Pool
+	db DBPool
 	TP customtime.TimeProvider
 }
 
-func NewPosts(db *pgxpool.Pool, tp customtime.TimeProvider) *Posts {
+func NewPosts(db DBPool, tp customtime.TimeProvider) *Posts {
 	return &Posts{
 		db: db,
 		TP: tp,

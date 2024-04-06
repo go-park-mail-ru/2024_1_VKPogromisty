@@ -8,7 +8,6 @@ import (
 	customtime "socio/pkg/time"
 
 	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
 	_ "github.com/lib/pq"
 )
 
@@ -97,11 +96,11 @@ const (
 )
 
 type Subscriptions struct {
-	db *pgxpool.Pool
+	db DBPool
 	TP customtime.TimeProvider
 }
 
-func NewSubscriptions(db *pgxpool.Pool, tp customtime.TimeProvider) *Subscriptions {
+func NewSubscriptions(db DBPool, tp customtime.TimeProvider) *Subscriptions {
 	return &Subscriptions{
 		db: db,
 		TP: tp,
