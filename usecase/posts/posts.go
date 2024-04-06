@@ -5,6 +5,7 @@ import (
 	"mime/multipart"
 	"socio/domain"
 	"socio/errors"
+	"socio/pkg/sanitizer"
 )
 
 type PostInput struct {
@@ -47,16 +48,18 @@ type PostsStorage interface {
 type Service struct {
 	PostsStorage PostsStorage
 	UserStorage  UserStorage
+	Sanitizer    *sanitizer.Sanitizer
 }
 
 type ListPostsResponse struct {
 	Posts []domain.PostWithAuthor `json:"posts"`
 }
 
-func NewPostsService(postsStorage PostsStorage, userStorage UserStorage) (postsService *Service) {
+func NewPostsService(postsStorage PostsStorage, userStorage UserStorage, sanitizer *sanitizer.Sanitizer) (postsService *Service) {
 	postsService = &Service{
 		PostsStorage: postsStorage,
 		UserStorage:  userStorage,
+		Sanitizer:    sanitizer,
 	}
 
 	return
@@ -69,11 +72,27 @@ func (s *Service) GetUserPosts(ctx context.Context, userID uint, lastPostID uint
 	}
 
 	posts, err = s.PostsStorage.GetUserPosts(ctx, userID, lastPostID)
+	if err != nil {
+		return
+	}
+
+	for _, post := range posts {
+		s.Sanitizer.SanitizePost(post)
+	}
+
 	return
 }
 
 func (s *Service) GetUserFriendsPosts(ctx context.Context, userID uint, lastPostID uint) (posts []domain.PostWithAuthor, err error) {
 	posts, err = s.PostsStorage.GetUserFriendsPosts(ctx, userID, lastPostID)
+	if err != nil {
+		return
+	}
+
+	for _, post := range posts {
+		s.Sanitizer.SanitizePostWithAuthor(&post)
+	}
+
 	return
 }
 
@@ -97,6 +116,8 @@ func (s *Service) CreatePost(ctx context.Context, input PostInput) (postWithAuth
 		Post:   newPost,
 		Author: author,
 	}
+
+	s.Sanitizer.SanitizePostWithAuthor(&postWithAuthor)
 
 	return
 }
@@ -123,6 +144,8 @@ func (s *Service) UpdatePost(ctx context.Context, userID uint, input PostUpdateI
 	if err != nil {
 		return
 	}
+
+	s.Sanitizer.SanitizePost(post)
 
 	return
 }

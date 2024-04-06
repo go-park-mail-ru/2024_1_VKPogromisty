@@ -16,6 +16,7 @@ var HTTPErrors = map[error]int{
 	ErrInvalidData:          http.StatusBadRequest,
 	ErrInvalidEmail:         http.StatusBadRequest,
 	ErrInvalidSlug:          http.StatusBadRequest,
+	ErrInvalidJWT:           http.StatusBadRequest,
 	ErrNotMatchingPasswords: http.StatusBadRequest,
 	ErrPasswordMinLength:    http.StatusBadRequest,
 	ErrEmailsDuplicate:      http.StatusBadRequest,

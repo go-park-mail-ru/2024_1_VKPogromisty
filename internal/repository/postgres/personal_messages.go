@@ -6,7 +6,6 @@ import (
 	"socio/errors"
 	"socio/pkg/contextlogger"
 	customtime "socio/pkg/time"
-	"socio/usecase/chat"
 
 	"github.com/jackc/pgx/v4/pgxpool"
 )
@@ -174,7 +173,7 @@ func (pm *PersonalMessages) GetMessagesByDialog(ctx context.Context, senderID, r
 	return
 }
 
-func (pm *PersonalMessages) GetDialogsByUserID(ctx context.Context, userID uint) (dialogs []*chat.Dialog, err error) {
+func (pm *PersonalMessages) GetDialogsByUserID(ctx context.Context, userID uint) (dialogs []*domain.Dialog, err error) {
 	contextlogger.LogSQL(ctx, getDialogsByUserIDQuery, userID)
 
 	rows, err := pm.db.Query(context.Background(), getDialogsByUserIDQuery, userID)
@@ -183,10 +182,10 @@ func (pm *PersonalMessages) GetDialogsByUserID(ctx context.Context, userID uint)
 	}
 	defer rows.Close()
 
-	dialogs = make([]*chat.Dialog, 0)
+	dialogs = make([]*domain.Dialog, 0)
 
 	for rows.Next() {
-		dialog := new(chat.Dialog)
+		dialog := new(domain.Dialog)
 		user1 := new(domain.User)
 		user2 := new(domain.User)
 		lastMessage := new(domain.PersonalMessage)

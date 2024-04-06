@@ -329,6 +329,13 @@ const docTemplate = `{
                         "name": "Cookie",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "CSRF token",
+                        "name": "X-CSRF-Token",
+                        "in": "header",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -377,6 +384,13 @@ const docTemplate = `{
                         "name": "Cookie",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "CSRF token",
+                        "name": "X-CSRF-Token",
+                        "in": "header",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -393,7 +407,7 @@ const docTemplate = `{
                                         "body": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/chat.Dialog"
+                                                "$ref": "#/definitions/domain.Dialog"
                                             }
                                         }
                                     }
@@ -441,6 +455,13 @@ const docTemplate = `{
                         "type": "string",
                         "description": "session_id=some_session",
                         "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "CSRF token",
+                        "name": "X-CSRF-Token",
                         "in": "header",
                         "required": true
                     },
@@ -501,6 +522,60 @@ const docTemplate = `{
                 }
             }
         },
+        "/csrf/": {
+            "get": {
+                "description": "Get CSRF token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "csrf"
+                ],
+                "summary": "Get CSRF token",
+                "operationId": "csrf/get_csrf_token",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/json.JSONResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/rest.CSRFTokenResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/posts/": {
             "get": {
                 "description": "get user posts",
@@ -520,6 +595,13 @@ const docTemplate = `{
                         "type": "string",
                         "description": "session_id=some_session",
                         "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "CSRF token",
+                        "name": "X-CSRF-Token",
                         "in": "header",
                         "required": true
                     },
@@ -582,6 +664,13 @@ const docTemplate = `{
                         "type": "string",
                         "description": "session_id=some_session",
                         "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "CSRF token",
+                        "name": "X-CSRF-Token",
                         "in": "header",
                         "required": true
                     },
@@ -678,6 +767,13 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "description": "CSRF token",
+                        "name": "X-CSRF-Token",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
                         "description": "Content of the post",
                         "name": "content",
                         "in": "formData",
@@ -751,6 +847,13 @@ const docTemplate = `{
                         "required": true
                     },
                     {
+                        "type": "string",
+                        "description": "CSRF token",
+                        "name": "X-CSRF-Token",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
                         "description": "ID of the post",
                         "name": "post_id",
                         "in": "body",
@@ -807,6 +910,13 @@ const docTemplate = `{
                         "type": "string",
                         "description": "session_id=some_session",
                         "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "CSRF token",
+                        "name": "X-CSRF-Token",
                         "in": "header",
                         "required": true
                     },
@@ -879,6 +989,13 @@ const docTemplate = `{
                         "type": "string",
                         "description": "session_id=some_session",
                         "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "CSRF token",
+                        "name": "X-CSRF-Token",
                         "in": "header",
                         "required": true
                     },
@@ -987,6 +1104,13 @@ const docTemplate = `{
                         "name": "Cookie",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "CSRF token",
+                        "name": "X-CSRF-Token",
+                        "in": "header",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -1033,6 +1157,13 @@ const docTemplate = `{
                         "type": "string",
                         "description": "session_id=some_session",
                         "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "CSRF token",
+                        "name": "X-CSRF-Token",
                         "in": "header",
                         "required": true
                     },
@@ -1113,6 +1244,13 @@ const docTemplate = `{
                         "name": "Cookie",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "CSRF token",
+                        "name": "X-CSRF-Token",
+                        "in": "header",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -1183,6 +1321,13 @@ const docTemplate = `{
                         "name": "Cookie",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "CSRF token",
+                        "name": "X-CSRF-Token",
+                        "in": "header",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -1235,6 +1380,13 @@ const docTemplate = `{
                         "type": "string",
                         "description": "session_id=some_session",
                         "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "CSRF token",
+                        "name": "X-CSRF-Token",
                         "in": "header",
                         "required": true
                     }
@@ -1294,6 +1446,13 @@ const docTemplate = `{
                         "name": "Cookie",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "CSRF token",
+                        "name": "X-CSRF-Token",
+                        "in": "header",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -1351,6 +1510,13 @@ const docTemplate = `{
                         "name": "Cookie",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "CSRF token",
+                        "name": "X-CSRF-Token",
+                        "in": "header",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -1405,7 +1571,7 @@ const docTemplate = `{
                 }
             }
         },
-        "chat.Dialog": {
+        "domain.Dialog": {
             "type": "object",
             "properties": {
                 "lastMessage": {
@@ -1572,6 +1738,14 @@ const docTemplate = `{
                 },
                 "user": {
                     "$ref": "#/definitions/domain.User"
+                }
+            }
+        },
+        "rest.CSRFTokenResponse": {
+            "type": "object",
+            "properties": {
+                "csrfToken": {
+                    "type": "string"
                 }
             }
         },
