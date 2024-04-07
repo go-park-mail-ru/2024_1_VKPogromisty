@@ -18,7 +18,7 @@ coverage:
 	go tool cover -func cover.out
 
 docker-build:
-	docker-compose build
+	docker-compose build --no-cache
 
 docker-run:
 	docker-compose up -d

@@ -13,6 +13,7 @@ var (
 		"http://127.0.0.1:3000",
 		"http://socio-project.ru:8079",
 		"https://socio-project.ru",
+		"https://94.139.246.134",
 	}
 	ALLOWED_METHODS = []string{
 		http.MethodGet,

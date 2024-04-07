@@ -32,7 +32,12 @@ const (
 		p.created_at,
 		p.updated_at;
 	`
-	GetUserPostsQuery = `
+	getLastUserPostIDQuery = `
+	SELECT COALESCE(MAX(id), 0) AS last_post_id
+	FROM public.post
+	WHERE author_id = $1;
+	`
+	getUserPostsQuery = `
 	SELECT p.id,
 		p.author_id,
 		p.content,
@@ -50,6 +55,12 @@ const (
 		p.updated_at
 	ORDER BY p.created_at DESC
 	LIMIT $3;
+	`
+	getLastUserFriendsPostIDQuery = `
+	SELECT COALESCE(MAX(p.id), 0) AS last_post_id
+	FROM public.post AS p
+		INNER JOIN public.subscription AS s ON p.author_id = s.subscribed_to_id
+	WHERE s.subscriber_id = $1;
 	`
 	GetUserFriendsPostsQuery = `
 	SELECT p.id,
@@ -170,9 +181,18 @@ func (p *Posts) GetPostByID(ctx context.Context, postID uint) (post *domain.Post
 }
 
 func (p *Posts) GetUserPosts(ctx context.Context, userID uint, lastPostID uint) (posts []*domain.Post, err error) {
-	contextlogger.LogSQL(ctx, GetUserPostsQuery, userID, lastPostID, PostsByPage)
+	if lastPostID == 0 {
+		contextlogger.LogSQL(ctx, getLastUserPostIDQuery, userID)
 
-	rows, err := p.db.Query(context.Background(), GetUserPostsQuery, userID, lastPostID, PostsByPage)
+		err = p.db.QueryRow(context.Background(), getLastUserPostIDQuery, userID).Scan(&lastPostID)
+		if err != nil {
+			return
+		}
+	}
+
+	contextlogger.LogSQL(ctx, getUserPostsQuery, userID, lastPostID, PostsByPage)
+
+	rows, err := p.db.Query(context.Background(), getUserPostsQuery, userID, lastPostID, PostsByPage)
 	if err != nil {
 		return
 	}
@@ -202,6 +222,16 @@ func (p *Posts) GetUserPosts(ctx context.Context, userID uint, lastPostID uint) 
 }
 
 func (p *Posts) GetUserFriendsPosts(ctx context.Context, userID uint, lastPostID uint) (posts []domain.PostWithAuthor, err error) {
+	contextlogger.LogSQL(ctx, GetUserFriendsPostsQuery, userID, lastPostID, PostsByPage)
+	if lastPostID == 0 {
+		contextlogger.LogSQL(ctx, getLastUserFriendsPostIDQuery, userID)
+
+		err = p.db.QueryRow(context.Background(), getLastUserFriendsPostIDQuery, userID).Scan(&lastPostID)
+		if err != nil {
+			return
+		}
+	}
+
 	contextlogger.LogSQL(ctx, GetUserFriendsPostsQuery, userID, lastPostID, PostsByPage)
 
 	rows, err := p.db.Query(context.Background(), GetUserFriendsPostsQuery, userID, lastPostID, PostsByPage)
