@@ -13,11 +13,12 @@ WORKDIR /app
 COPY . .
 COPY .env .
 
-# # Download all the dependencies
-# RUN go get -d -v ./...
+# Download all the dependencies
+RUN go get -d -v ./...
 
-# # Install the package
-# RUN go install -v ./...
+RUN go install github.com/golang/mock/mockgen@v1.6.0
+
+RUN make mocks
 
 RUN make test
 

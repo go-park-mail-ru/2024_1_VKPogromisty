@@ -86,11 +86,7 @@ func (a *Service) RegistrateUser(ctx context.Context, userInput RegistrationInpu
 		return
 	}
 
-	dateOfBirth, err := time.Parse(customtime.DateFormat, userInput.DateOfBirth)
-	if err != nil {
-		err = errors.ErrInvalidDate
-		return
-	}
+	dateOfBirth, _ := time.Parse(customtime.DateFormat, userInput.DateOfBirth)
 
 	fileName, err := static.SaveImage(userInput.Avatar)
 	if err != nil {

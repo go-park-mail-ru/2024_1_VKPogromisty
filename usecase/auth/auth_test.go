@@ -1,205 +1,484 @@
 package auth_test
 
-// import (
-// 	"net/http"
-// 	"socio/domain"
-// 	"socio/errors"
-// 	repository "socio/internal/repository/map"
-// 	customtime "socio/pkg/time"
-// 	"socio/usecase/auth"
-// 	"sync"
-// 	"testing"
-// 	"time"
-// )
+import (
+	"context"
+	"net/http"
+	"reflect"
+	"socio/domain"
+	"socio/errors"
+	mock_auth "socio/mocks/usecase/auth"
+	"socio/pkg/hash"
+	"socio/pkg/sanitizer"
+	customtime "socio/pkg/time"
+	"socio/usecase/auth"
+	"testing"
 
-// func TestRegistrateUser(t *testing.T) {
-// 	userStorage := repository.NewUsers(customtime.MockTimeProvider{}, &sync.Map{})
-// 	sessionStorage, _ := repository.NewSessions(&sync.Map{})
-// 	authService := auth.NewService(userStorage, sessionStorage)
+	"github.com/golang/mock/gomock"
+	"github.com/microcosm-cc/bluemonday"
+)
 
-// 	tests := []struct {
-// 		name    string
-// 		input   auth.RegistrationInput
-// 		wantErr error
-// 	}{
-// 		{
-// 			name: "Valid registration data",
-// 			input: auth.RegistrationInput{
-// 				FirstName:      "John",
-// 				LastName:       "Doe",
-// 				Email:          "john@example.com",
-// 				Password:       "password",
-// 				RepeatPassword: "password",
-// 				DateOfBirth:    "1990-01-01",
-// 				Avatar:         nil,
-// 			},
-// 			wantErr: nil,
-// 		},
-// 		{
-// 			name: "Invalid email",
-// 			input: auth.RegistrationInput{
-// 				FirstName:      "John",
-// 				LastName:       "Doe",
-// 				Email:          "invalid",
-// 				Password:       "password",
-// 				RepeatPassword: "password",
-// 				DateOfBirth:    "1990-01-01",
-// 				Avatar:         nil,
-// 			},
-// 			wantErr: errors.ErrInvalidEmail,
-// 		},
-// 		{
-// 			name: "Invalid date of birth",
-// 			input: auth.RegistrationInput{
-// 				FirstName:      "John",
-// 				LastName:       "Doe",
-// 				Email:          "john1@example.com",
-// 				Password:       "password",
-// 				RepeatPassword: "password",
-// 				DateOfBirth:    "invalid",
-// 				Avatar:         nil,
-// 			},
-// 			wantErr: errors.ErrInvalidDate,
-// 		},
-// 	}
+func TestService_RegistrateUser(t *testing.T) {
+	timeProv := customtime.MockTimeProvider{}
 
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			_, _, err := authService.RegistrateUser(tt.input)
-// 			if err != tt.wantErr {
-// 				t.Errorf("RegistrateUser() error = %v, wantErr %v", err, tt.wantErr)
-// 			}
-// 		})
-// 	}
-// }
+	sanitizer := sanitizer.NewSanitizer(bluemonday.StripTagsPolicy())
 
-// func TestLogin(t *testing.T) {
-// 	userStorage := repository.NewUsers(customtime.MockTimeProvider{}, &sync.Map{})
-// 	sessionStorage, _ := repository.NewSessions(&sync.Map{})
-// 	authService := auth.NewService(userStorage, sessionStorage)
+	type fields struct {
+		UserStorage    *mock_auth.MockUserStorage
+		SessionStorage *mock_auth.MockSessionStorage
+	}
 
-// 	tests := []struct {
-// 		name    string
-// 		input   auth.LoginInput
-// 		wantErr error
-// 	}{
-// 		{
-// 			name: "Valid login data",
-// 			input: auth.LoginInput{
-// 				Email:    "test@example.com",
-// 				Password: "password",
-// 			},
-// 			wantErr: nil,
-// 		},
-// 		{
-// 			name: "Invalid email",
-// 			input: auth.LoginInput{
-// 				Email:    "invalid@example.com",
-// 				Password: "password",
-// 			},
-// 			wantErr: errors.ErrInvalidLoginData,
-// 		},
-// 		{
-// 			name: "Invalid password",
-// 			input: auth.LoginInput{
-// 				Email:    "test@example.com",
-// 				Password: "wrongpassword",
-// 			},
-// 			wantErr: errors.ErrInvalidLoginData,
-// 		},
-// 	}
+	type args struct {
+		ctx       context.Context
+		userInput auth.RegistrationInput
+	}
 
-// 	authService.UserStorage.StoreUser(&domain.User{
-// 		Email:    "test@example.com",
-// 		Password: "password",
-// 	})
+	tests := []struct {
+		name        string
+		prepareMock func(*fields)
+		args        args
+		wantUser    *domain.User
+		wantSession *http.Cookie
+		wantErr     bool
+	}{
+		{
+			name: "success",
+			args: args{
+				ctx: context.Background(),
+				userInput: auth.RegistrationInput{
+					FirstName:      "John",
+					LastName:       "Doe",
+					Password:       "password",
+					RepeatPassword: "password",
+					Email:          "john@mail.ru",
+					Avatar:         nil,
+					DateOfBirth:    "2021-01-01",
+				},
+			},
+			wantUser: &domain.User{
+				FirstName: "John",
+				LastName:  "Doe",
+				Email:     "john@mail.ru",
+				Password:  "password",
+				Avatar:    "default_avatar.png",
+				DateOfBirth: customtime.CustomTime{
+					Time: timeProv.Now(),
+				},
+			},
+			wantSession: &http.Cookie{
+				Name:     "session_id",
+				Value:    "session_id",
+				MaxAge:   10 * 60 * 60,
+				HttpOnly: true,
+				Secure:   true,
+				Path:     "/",
+				SameSite: http.SameSiteNoneMode,
+			},
+			wantErr: false,
+			prepareMock: func(f *fields) {
+				f.UserStorage.EXPECT().GetUserByEmail(gomock.Any(), gomock.Any()).Return(nil, errors.ErrNotFound)
+				f.UserStorage.EXPECT().StoreUser(gomock.Any(), gomock.Any()).Return(nil)
+				f.SessionStorage.EXPECT().CreateSession(gomock.Any(), gomock.Any()).Return("session_id", nil)
+			},
+		},
+		{
+			name: "invalid passwords",
+			args: args{
+				ctx: context.Background(),
+				userInput: auth.RegistrationInput{
+					FirstName:      "John",
+					LastName:       "Doe",
+					Password:       "password",
+					RepeatPassword: "tyazhelo",
+					Email:          "john@mail.ru",
+					Avatar:         nil,
+					DateOfBirth:    "2021-01-01",
+				},
+			},
+			wantUser:    nil,
+			wantSession: nil,
+			wantErr:     true,
+			prepareMock: func(f *fields) {
+			},
+		},
+		{
+			name: "invalid date",
+			args: args{
+				ctx: context.Background(),
+				userInput: auth.RegistrationInput{
+					FirstName:      "John",
+					LastName:       "Doe",
+					Password:       "password",
+					RepeatPassword: "tyazhelo",
+					Email:          "john@mail.ru",
+					Avatar:         nil,
+					DateOfBirth:    "",
+				},
+			},
+			wantUser:    nil,
+			wantSession: nil,
+			wantErr:     true,
+			prepareMock: func(f *fields) {
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			f := fields{
+				UserStorage:    mock_auth.NewMockUserStorage(ctrl),
+				SessionStorage: mock_auth.NewMockSessionStorage(ctrl),
+			}
 
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			_, _, err := authService.Login(tt.input)
-// 			if err != tt.wantErr {
-// 				t.Errorf("Login() error = %v, wantErr %v", err, tt.wantErr)
-// 			}
-// 		})
-// 	}
-// }
+			if tt.prepareMock != nil {
+				tt.prepareMock(&f)
+			}
 
-// func TestLogout(t *testing.T) {
-// 	userStorage := repository.NewUsers(customtime.MockTimeProvider{}, &sync.Map{})
-// 	sessionStorage, _ := repository.NewSessions(&sync.Map{})
-// 	authService := auth.NewService(userStorage, sessionStorage)
+			s := auth.NewService(f.UserStorage, f.SessionStorage, sanitizer)
 
-// 	sessionID, _ := authService.SessionStorage.CreateSession(0)
+			gotUser, gotSession, err := s.RegistrateUser(tt.args.ctx, tt.args.userInput)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Service.RegistrateUser() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(gotUser, tt.wantUser) {
+				t.Errorf("Service.RegistrateUser() gotUser = %v, want %v", gotUser, tt.wantUser)
+			}
+			if !reflect.DeepEqual(gotSession, tt.wantSession) {
+				t.Errorf("Service.RegistrateUser() gotSession = %v, want %v", gotSession, tt.wantSession)
+			}
+		})
+	}
+}
 
-// 	tests := []struct {
-// 		name    string
-// 		session *http.Cookie
-// 		wantErr error
-// 	}{
-// 		{
-// 			name:    "Valid session",
-// 			session: &http.Cookie{Name: "session", Value: sessionID},
-// 			wantErr: nil,
-// 		},
-// 		{
-// 			name:    "Invalid session",
-// 			session: &http.Cookie{Name: "session", Value: "invalidSessionValue"},
-// 			wantErr: errors.ErrUnauthorized,
-// 		},
-// 	}
+func TestService_Login(t *testing.T) {
+	timeProv := customtime.MockTimeProvider{}
 
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			err := authService.Logout(tt.session)
-// 			if err != tt.wantErr {
-// 				t.Errorf("Logout() error = %v, wantErr %v", err, tt.wantErr)
-// 			}
+	sanitizer := sanitizer.NewSanitizer(bluemonday.StripTagsPolicy())
 
-// 			if tt.wantErr == nil {
-// 				if _, err := authService.SessionStorage.GetUserIDBySession(tt.session.Value); err == nil {
-// 					t.Errorf("Logout() did not delete session")
-// 				}
-// 			}
+	type fields struct {
+		UserStorage    *mock_auth.MockUserStorage
+		SessionStorage *mock_auth.MockSessionStorage
+	}
 
-// 			if tt.wantErr == errors.ErrUnauthorized {
-// 				if tt.session.Expires.After(time.Now()) {
-// 					t.Errorf("Logout() did not set cookie expiry to a past date")
-// 				}
-// 			}
-// 		})
-// 	}
-// }
+	type args struct {
+		ctx        context.Context
+		loginInput auth.LoginInput
+	}
 
-// func TestIsAuthorized(t *testing.T) {
-// 	userStorage := repository.NewUsers(customtime.MockTimeProvider{}, &sync.Map{})
-// 	sessionStorage, _ := repository.NewSessions(&sync.Map{})
-// 	authService := auth.NewService(userStorage, sessionStorage)
+	tests := []struct {
+		name        string
+		args        args
+		prepareMock func(*fields)
+		wantUser    *domain.User
+		wantSession *http.Cookie
+		wantErr     bool
+	}{
+		{
+			name: "success",
+			args: args{
+				ctx: context.Background(),
+				loginInput: auth.LoginInput{
+					Email:    "john@mail.ru",
+					Password: "password",
+				},
+			},
+			wantUser: &domain.User{
+				FirstName: "John",
+				LastName:  "Doe",
+				Email:     "john@mail.ru",
+				Password:  hash.HashPassword("password", []byte("salt")),
+				Salt:      "salt",
+				Avatar:    "default_avatar.png",
+				DateOfBirth: customtime.CustomTime{
+					Time: timeProv.Now(),
+				},
+			},
+			wantSession: &http.Cookie{
+				Name:     "session_id",
+				Value:    "session_id",
+				MaxAge:   10 * 60 * 60,
+				HttpOnly: true,
+				Secure:   true,
+				Path:     "/",
+				SameSite: http.SameSiteNoneMode,
+			},
+			wantErr: false,
+			prepareMock: func(f *fields) {
+				f.UserStorage.EXPECT().GetUserByEmail(gomock.Any(), gomock.Any()).Return(&domain.User{
+					FirstName: "John",
+					LastName:  "Doe",
+					Email:     "john@mail.ru",
+					Password:  hash.HashPassword("password", []byte("salt")),
+					Salt:      "salt",
+					Avatar:    "default_avatar.png",
+					DateOfBirth: customtime.CustomTime{
+						Time: timeProv.Now(),
+					},
+				}, nil)
+				f.SessionStorage.EXPECT().CreateSession(gomock.Any(), gomock.Any()).Return("session_id", nil)
+				f.UserStorage.EXPECT().RefreshSaltAndRehashPassword(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			},
+		},
+		{
+			name: "failed to get user by email",
+			args: args{
+				ctx: context.Background(),
+				loginInput: auth.LoginInput{
+					Email:    "john@mail.ru",
+					Password: "password",
+				},
+			},
+			wantUser:    nil,
+			wantSession: nil,
+			wantErr:     true,
+			prepareMock: func(f *fields) {
+				f.UserStorage.EXPECT().GetUserByEmail(gomock.Any(), gomock.Any()).Return(nil, errors.ErrNotFound)
+			},
+		},
+		{
+			name: "invalid password",
+			args: args{
+				ctx: context.Background(),
+				loginInput: auth.LoginInput{
+					Email:    "john@mail.ru",
+					Password: "",
+				},
+			},
+			wantUser: &domain.User{
+				FirstName: "John",
+				LastName:  "Doe",
+				Email:     "john@mail.ru",
+				Password:  hash.HashPassword("password", []byte("salt")),
+				Salt:      "salt",
+				Avatar:    "default_avatar.png",
+				DateOfBirth: customtime.CustomTime{
+					Time: timeProv.Now(),
+				},
+			},
+			wantSession: nil,
+			wantErr:     true,
+			prepareMock: func(f *fields) {
+				f.UserStorage.EXPECT().GetUserByEmail(gomock.Any(), gomock.Any()).Return(&domain.User{
+					FirstName: "John",
+					LastName:  "Doe",
+					Email:     "john@mail.ru",
+					Password:  hash.HashPassword("password", []byte("salt")),
+					Salt:      "salt",
+					Avatar:    "default_avatar.png",
+					DateOfBirth: customtime.CustomTime{
+						Time: timeProv.Now(),
+					},
+				}, nil)
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			f := fields{
+				UserStorage:    mock_auth.NewMockUserStorage(ctrl),
+				SessionStorage: mock_auth.NewMockSessionStorage(ctrl),
+			}
 
-// 	sessionID, _ := authService.SessionStorage.CreateSession(0)
+			if tt.prepareMock != nil {
+				tt.prepareMock(&f)
+			}
 
-// 	tests := []struct {
-// 		name    string
-// 		session *http.Cookie
-// 		wantErr error
-// 	}{
-// 		{
-// 			name:    "Valid session",
-// 			session: &http.Cookie{Name: "session", Value: sessionID},
-// 			wantErr: nil,
-// 		},
-// 		{
-// 			name:    "Invalid session",
-// 			session: &http.Cookie{Name: "session", Value: "invalidSessionValue"},
-// 			wantErr: errors.ErrUnauthorized,
-// 		},
-// 	}
+			s := auth.NewService(f.UserStorage, f.SessionStorage, sanitizer)
 
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			_, err := authService.IsAuthorized(tt.session)
-// 			if err != tt.wantErr {
-// 				t.Errorf("IsAuthorized() error = %v, wantErr %v", err, tt.wantErr)
-// 			}
-// 		})
-// 	}
-// }
+			gotUser, gotSession, err := s.Login(tt.args.ctx, tt.args.loginInput)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Service.Login() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(gotUser, tt.wantUser) {
+				t.Errorf("Service.Login() gotUser = %v, want %v", gotUser, tt.wantUser)
+			}
+			if !reflect.DeepEqual(gotSession, tt.wantSession) {
+				t.Errorf("Service.Login() gotSession = %v, want %v", gotSession, tt.wantSession)
+			}
+		})
+	}
+}
+
+func TestService_Logout(t *testing.T) {
+	type fields struct {
+		SessionStorage *mock_auth.MockSessionStorage
+	}
+
+	type args struct {
+		ctx     context.Context
+		session *http.Cookie
+	}
+
+	tests := []struct {
+		name        string
+		args        args
+		prepareMock func(*fields)
+		wantErr     bool
+	}{
+		{
+			name: "success",
+			args: args{
+				ctx: context.Background(),
+				session: &http.Cookie{
+					Name:     "session_id",
+					Value:    "session_id",
+					MaxAge:   10 * 60 * 60,
+					HttpOnly: true,
+					Secure:   true,
+					Path:     "/",
+					SameSite: http.SameSiteNoneMode,
+				},
+			},
+			wantErr: false,
+			prepareMock: func(f *fields) {
+				f.SessionStorage.EXPECT().DeleteSession(gomock.Any(), gomock.Any()).Return(nil)
+			},
+		},
+		{
+			name: "failed to delete session",
+			args: args{
+				ctx: context.Background(),
+				session: &http.Cookie{
+					Name:     "session_id",
+					Value:    "session_id",
+					MaxAge:   10 * 60 * 60,
+					HttpOnly: true,
+					Secure:   true,
+					Path:     "/",
+					SameSite: http.SameSiteNoneMode,
+				},
+			},
+			wantErr: true,
+			prepareMock: func(f *fields) {
+				f.SessionStorage.EXPECT().DeleteSession(gomock.Any(), gomock.Any()).Return(errors.ErrNotFound)
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			f := fields{
+				SessionStorage: mock_auth.NewMockSessionStorage(ctrl),
+			}
+
+			if tt.prepareMock != nil {
+				tt.prepareMock(&f)
+			}
+
+			s := auth.NewService(nil, f.SessionStorage, nil)
+
+			if err := s.Logout(tt.args.ctx, tt.args.session); (err != nil) != tt.wantErr {
+				t.Errorf("Service.Logout() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestService_IsAuthorized(t *testing.T) {
+	type fields struct {
+		SessionStorage *mock_auth.MockSessionStorage
+	}
+
+	type args struct {
+		ctx     context.Context
+		session *http.Cookie
+	}
+
+	tests := []struct {
+		name        string
+		args        args
+		prepareMock func(*fields)
+		want        uint
+		wantErr     bool
+	}{
+		{
+			name: "success",
+			args: args{
+				ctx: context.Background(),
+				session: &http.Cookie{
+					Name:     "session_id",
+					Value:    "session_id",
+					MaxAge:   10 * 60 * 60,
+					HttpOnly: true,
+					Secure:   true,
+					Path:     "/",
+					SameSite: http.SameSiteNoneMode,
+				},
+			},
+			want:    1,
+			wantErr: false,
+			prepareMock: func(f *fields) {
+				f.SessionStorage.EXPECT().GetUserIDBySession(gomock.Any(), gomock.Any()).Return(uint(1), nil)
+			},
+		},
+		{
+			name: "failed to get user id by session",
+			args: args{
+				ctx: context.Background(),
+				session: &http.Cookie{
+					Name:     "session_id",
+					Value:    "session_id",
+					MaxAge:   10 * 60 * 60,
+					HttpOnly: true,
+					Secure:   true,
+					Path:     "/",
+					SameSite: http.SameSiteNoneMode,
+				},
+			},
+			want:    0,
+			wantErr: true,
+			prepareMock: func(f *fields) {
+				f.SessionStorage.EXPECT().GetUserIDBySession(gomock.Any(), gomock.Any()).Return(uint(0), errors.ErrNotFound)
+			},
+		},
+		{
+			name: "invalid session",
+			args: args{
+				ctx: context.Background(),
+				session: &http.Cookie{
+					Name:     "",
+					Value:    "",
+					MaxAge:   0,
+					HttpOnly: true,
+					Secure:   true,
+					Path:     "/",
+					SameSite: http.SameSiteNoneMode,
+				},
+			},
+			want:    0,
+			wantErr: true,
+			prepareMock: func(f *fields) {
+				f.SessionStorage.EXPECT().GetUserIDBySession(gomock.Any(), gomock.Any()).Return(uint(0), nil)
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			f := fields{
+				SessionStorage: mock_auth.NewMockSessionStorage(ctrl),
+			}
+
+			if tt.prepareMock != nil {
+				tt.prepareMock(&f)
+			}
+
+			s := auth.NewService(nil, f.SessionStorage, nil)
+
+			got, err := s.IsAuthorized(tt.args.ctx, tt.args.session)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Service.IsAuthorized() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("Service.IsAuthorized() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

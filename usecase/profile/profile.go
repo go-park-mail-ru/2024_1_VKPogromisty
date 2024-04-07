@@ -49,6 +49,7 @@ func NewProfileService(userStorage UserStorage, sessionStorage SessionStorage, s
 	return &Service{
 		UserStorage:    userStorage,
 		SessionStorage: sessionStorage,
+		Sanitizer:      sanitizer,
 	}
 }
 

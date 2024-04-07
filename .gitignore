@@ -15,3 +15,4 @@ privkey.pem
 socio.conf
 /static
 /volumes
+/mocks
