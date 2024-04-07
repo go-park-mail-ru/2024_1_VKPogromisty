@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	"socio/domain"
 	"socio/errors"
 	"socio/pkg/contextlogger"
@@ -189,7 +188,6 @@ func (s *Users) GetUserByIDWithSubsInfo(ctx context.Context, userID, authorizedU
 		&isSubscriber,
 	)
 	if err != nil {
-		fmt.Println(err)
 		if err == pgx.ErrNoRows {
 			err = errors.ErrNotFound
 			return

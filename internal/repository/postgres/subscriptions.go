@@ -250,6 +250,7 @@ func (s *Subscriptions) Delete(ctx context.Context, subsciberID uint, subscribed
 	if rowsAffected == 0 {
 		return errors.ErrInvalidBody
 	}
+
 	if rowsAffected != 1 {
 		return errors.ErrRowsAffected
 	}
