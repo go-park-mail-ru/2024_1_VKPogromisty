@@ -39,3 +39,20 @@ func TestCustomTimeUnmarshalJSON(t *testing.T) {
 		})
 	}
 }
+
+func TestMockTimeProvider_Now(t *testing.T) {
+	m := customtime.MockTimeProvider{}
+	want := time.Date(2021, time.January, 1, 0, 0, 0, 0, time.UTC)
+	got := m.Now()
+	if !got.Equal(want) {
+		t.Errorf("MockTimeProvider.Now() = %v, want %v", got, want)
+	}
+}
+
+func TestRealTimeProvider_Now(t *testing.T) {
+	m := customtime.RealTimeProvider{}
+	got := m.Now()
+	if time.Since(got) > time.Second {
+		t.Errorf("RealTimeProvider.Now() = %v, want current time", got)
+	}
+}
