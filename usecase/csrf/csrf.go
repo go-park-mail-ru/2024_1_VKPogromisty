@@ -3,7 +3,7 @@ package csrf
 import (
 	"os"
 	"socio/errors"
-	"time"
+	customtime "socio/pkg/time"
 
 	jwt "github.com/dgrijalva/jwt-go"
 )
@@ -14,11 +14,13 @@ const (
 
 type CSRFService struct {
 	secret []byte
+	TP     customtime.TimeProvider
 }
 
-func NewCSRFService() (service *CSRFService) {
+func NewCSRFService(tp customtime.TimeProvider) (service *CSRFService) {
 	return &CSRFService{
 		secret: []byte(os.Getenv("CSRF_SECRET")),
+		TP:     tp,
 	}
 }
 
@@ -34,7 +36,7 @@ func (c *CSRFService) Create(sessionID string, userID uint, tokenExpTime int64) 
 		UserID:    userID,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: tokenExpTime,
-			IssuedAt:  time.Now().Unix(),
+			IssuedAt:  c.TP.Now().Unix(),
 		},
 	}
 

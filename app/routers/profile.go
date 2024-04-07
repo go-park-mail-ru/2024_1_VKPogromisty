@@ -4,7 +4,9 @@ import (
 	"socio/internal/rest/middleware"
 	rest "socio/internal/rest/profile"
 	"socio/pkg/sanitizer"
+	customtime "socio/pkg/time"
 	"socio/usecase/auth"
+	"socio/usecase/csrf"
 	"socio/usecase/profile"
 
 	"github.com/gorilla/mux"
@@ -23,5 +25,5 @@ func MountProfileRouter(rootRouter *mux.Router, userStorage profile.UserStorage,
 	r.HandleFunc("/", h.HandleUpdateProfile).Methods("PUT", "OPTIONS")
 	r.HandleFunc("/", h.HandleDeleteProfile).Methods("DELETE", "OPTIONS")
 	r.Use(middleware.CreateCheckIsAuthorizedMiddleware(sessionStorage))
-	r.Use(middleware.CSRFMiddleware)
+	r.Use(middleware.CreateCSRFMiddleware(csrf.NewCSRFService(customtime.RealTimeProvider{})))
 }

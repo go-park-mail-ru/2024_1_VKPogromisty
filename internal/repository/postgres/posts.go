@@ -42,7 +42,7 @@ const (
 	FROM public.post AS p
 		LEFT JOIN public.post_attachment AS pa ON p.id = pa.post_id
 	WHERE p.author_id = $1
-		AND p.id > $2
+		AND p.id < $2
 	GROUP BY p.id,
 		p.author_id,
 		p.content,
@@ -71,7 +71,7 @@ const (
 		INNER JOIN public.user AS u ON p.author_id = u.id
 		INNER JOIN public.subscription AS s ON u.id = s.subscribed_to_id
 	WHERE s.subscriber_id = $1
-		AND p.id > $2
+		AND p.id < $2
 	GROUP BY p.id,
 		p.author_id,
 		p.content,

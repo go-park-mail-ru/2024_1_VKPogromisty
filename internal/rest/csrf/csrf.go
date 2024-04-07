@@ -20,12 +20,13 @@ type CSRFTokenResponse struct {
 
 func NewCSRFHandler(timeProvider customtime.TimeProvider) *CSRFHandler {
 	return &CSRFHandler{
-		CSRFService:  csrf.NewCSRFService(),
+		CSRFService:  csrf.NewCSRFService(customtime.RealTimeProvider{}),
 		TimeProvider: timeProvider,
 	}
 }
 
 // GetCSRFToken godoc
+//
 //	@Summary		Get CSRF token
 //	@Description	Get CSRF token
 //	@Tags			csrf

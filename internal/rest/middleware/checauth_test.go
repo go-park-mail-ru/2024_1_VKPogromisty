@@ -1,59 +1,84 @@
-package middleware_test
+package middleware
 
-// import (
-// 	"net/http"
-// 	"net/http/httptest"
-// 	repository "socio/internal/repository/map"
-// 	"socio/internal/rest/middleware"
-// 	"sync"
-// 	"testing"
-// )
+import (
+	"net/http"
+	"net/http/httptest"
+	"socio/errors"
+	mock_auth "socio/mocks/usecase/auth"
+	"socio/pkg/requestcontext"
+	"testing"
 
-// func TestCheckIsAuthorizedMiddleware(t *testing.T) {
-// 	var sessionStorage, _ = repository.NewSessions(&sync.Map{})
+	"github.com/golang/mock/gomock"
+)
 
-// 	sessionID, _ := sessionStorage.CreateSession(0)
+func TestCreateCheckIsAuthorizedMiddleware(t *testing.T) {
+	testCases := []struct {
+		name           string
+		cookie         *http.Cookie
+		userID         uint
+		expectedStatus int
+		prepareMocks   func(sessStorage *mock_auth.MockSessionStorage)
+	}{
+		{
+			name:           "valid session",
+			cookie:         &http.Cookie{Name: "session_id", Value: "testSessionID"},
+			userID:         1,
+			expectedStatus: http.StatusOK,
+			prepareMocks: func(sessStorage *mock_auth.MockSessionStorage) {
+				sessStorage.EXPECT().GetUserIDBySession(gomock.Any(), gomock.Any()).Return(uint(1), nil)
+			},
+		},
+		{
+			name:           "no cookie",
+			cookie:         &http.Cookie{Value: ""},
+			userID:         0,
+			expectedStatus: http.StatusUnauthorized,
+			prepareMocks:   func(sessStorage *mock_auth.MockSessionStorage) {},
+		},
+		{
+			name:           "error getting user ID",
+			cookie:         &http.Cookie{Name: "session_id", Value: "testSessionID"},
+			userID:         0,
+			expectedStatus: http.StatusUnauthorized,
+			prepareMocks: func(sessStorage *mock_auth.MockSessionStorage) {
+				sessStorage.EXPECT().GetUserIDBySession(gomock.Any(), gomock.Any()).Return(uint(0), errors.ErrUnauthorized)
+			},
+		},
+	}
 
-// 	CheckIsAuthorizedMiddleware := middleware.CreateCheckIsAuthorizedMiddleware(sessionStorage)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-// 	tests := []struct {
-// 		name     string
-// 		cookie   *http.Cookie
-// 		wantCode int
-// 	}{
-// 		{
-// 			name:     "Valid session",
-// 			cookie:   &http.Cookie{Name: "session_id", Value: sessionID},
-// 			wantCode: http.StatusOK,
-// 		},
-// 		{
-// 			name:     "Invalid session",
-// 			cookie:   &http.Cookie{Name: "session_id", Value: "invalidSessionValue"},
-// 			wantCode: http.StatusUnauthorized,
-// 		},
-// 		{
-// 			name:     "No session",
-// 			cookie:   nil,
-// 			wantCode: http.StatusUnauthorized,
-// 		},
-// 	}
+			mockSessionStorage := mock_auth.NewMockSessionStorage(ctrl)
 
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			req, _ := http.NewRequest("GET", "/", nil)
-// 			if tt.cookie != nil {
-// 				req.AddCookie(tt.cookie)
-// 			}
+			tc.prepareMocks(mockSessionStorage)
 
-// 			rr := httptest.NewRecorder()
+			handler := CreateCheckIsAuthorizedMiddleware(mockSessionStorage)
 
-// 			handler := CheckIsAuthorizedMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+			req, err := http.NewRequest("GET", "/", nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			req.AddCookie(tc.cookie)
 
-// 			handler.ServeHTTP(rr, req)
+			rr := httptest.NewRecorder()
+			handlerFunc := handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				ctx := r.Context()
+				if ctx.Value(requestcontext.UserIDKey) != tc.userID {
+					t.Errorf("context does not contain correct user ID: got %v want %v", ctx.Value(requestcontext.UserIDKey), tc.userID)
+				}
+				if ctx.Value(requestcontext.SessionIDKey) != tc.cookie.Value {
+					t.Errorf("context does not contain correct session ID: got %v want %v", ctx.Value(requestcontext.SessionIDKey), tc.cookie.Value)
+				}
+			}))
 
-// 			if status := rr.Code; status != tt.wantCode {
-// 				t.Errorf("handler returned wrong status code: got %v want %v", status, tt.wantCode)
-// 			}
-// 		})
-// 	}
-// }
+			handlerFunc.ServeHTTP(rr, req)
+
+			if status := rr.Code; status != tc.expectedStatus {
+				t.Errorf("handler returned wrong status code: got %v want %v", status, tc.expectedStatus)
+			}
+		})
+	}
+}

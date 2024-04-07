@@ -4,6 +4,8 @@ import (
 	"socio/usecase/csrf"
 	"testing"
 	"time"
+
+	customtime "socio/pkg/time"
 )
 
 func TestCSRFService_Create(t *testing.T) {
@@ -21,7 +23,7 @@ func TestCSRFService_Create(t *testing.T) {
 	}{
 		{
 			name: "Test 1",
-			c:    csrf.NewCSRFService(),
+			c:    csrf.NewCSRFService(customtime.MockTimeProvider{}),
 			args: args{
 				sessionID:    "sessionID",
 				userID:       1,
@@ -46,7 +48,7 @@ func TestCSRFService_Create(t *testing.T) {
 }
 
 func TestCSRFService_Check(t *testing.T) {
-	validToken, _ := csrf.NewCSRFService().Create("sessionID", 1, time.Now().Add(time.Hour).Unix())
+	validToken, _ := csrf.NewCSRFService(customtime.MockTimeProvider{}).Create("sessionID", 1, time.Now().Add(time.Hour).Unix())
 
 	type args struct {
 		sessionID  string
@@ -61,7 +63,7 @@ func TestCSRFService_Check(t *testing.T) {
 	}{
 		{
 			name: "unhashed token",
-			c:    csrf.NewCSRFService(),
+			c:    csrf.NewCSRFService(customtime.MockTimeProvider{}),
 			args: args{
 				sessionID:  "sessionID",
 				userID:     1,
@@ -71,7 +73,7 @@ func TestCSRFService_Check(t *testing.T) {
 		},
 		{
 			name: "invalid sessionID",
-			c:    csrf.NewCSRFService(),
+			c:    csrf.NewCSRFService(customtime.MockTimeProvider{}),
 			args: args{
 				sessionID:  "session",
 				userID:     1,
@@ -81,7 +83,7 @@ func TestCSRFService_Check(t *testing.T) {
 		},
 		{
 			name: "Test 2",
-			c:    csrf.NewCSRFService(),
+			c:    csrf.NewCSRFService(customtime.MockTimeProvider{}),
 			args: args{
 				sessionID:  "sessionID",
 				userID:     1,
