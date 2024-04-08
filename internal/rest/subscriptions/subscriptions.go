@@ -2,6 +2,7 @@ package rest
 
 import (
 	defJSON "encoding/json"
+	"fmt"
 	"net/http"
 	"socio/domain"
 	"socio/errors"
@@ -62,6 +63,7 @@ func (api *SubscriptionsHandler) HandleSubscription(w http.ResponseWriter, r *ht
 
 	subscription, err := api.Service.Subscribe(r.Context(), &domain.Subscription{SubscriberID: userID, SubscribedToID: input.SubscribedToID})
 	if err != nil {
+		fmt.Println(err)
 		json.ServeJSONError(r.Context(), w, err)
 		return
 	}
