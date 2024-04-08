@@ -14,15 +14,17 @@ import (
 )
 
 func MountChatRouter(rootRouter *mux.Router, pubSubRepo chat.PubSubRepository, messagesRepo chat.PersonalMessagesRepository, sessionStorage auth.SessionStorage) {
-	r := rootRouter.PathPrefix("/chat").Subrouter()
-
 	sanitizer := sanitizer.NewSanitizer(bluemonday.UGCPolicy())
-
 	h := rest.NewChatServer(pubSubRepo, messagesRepo, sanitizer)
 
-	r.HandleFunc("/", h.ServeWS).Methods("GET", "OPTIONS")
-	r.HandleFunc("/dialogs", h.HandleGetDialogs).Methods("GET", "OPTIONS")
-	r.HandleFunc("/messages", h.HandleGetMessagesByDialog).Methods("GET", "OPTIONS")
-	r.Use(middleware.CreateCheckIsAuthorizedMiddleware(sessionStorage))
-	r.Use(middleware.CreateCSRFMiddleware(csrf.NewCSRFService(customtime.RealTimeProvider{})))
+	csrfFreeRouter := rootRouter.PathPrefix("/chat/ws").Subrouter()
+	csrfFreeRouter.HandleFunc("/", h.ServeWS).Methods("GET", "OPTIONS")
+	csrfFreeRouter.Use(middleware.CreateCheckIsAuthorizedMiddleware(sessionStorage))
+
+	csrfRequiredRouter := rootRouter.PathPrefix("/chat").Subrouter()
+	csrfRequiredRouter.Use(middleware.CreateCSRFMiddleware(csrf.NewCSRFService(customtime.RealTimeProvider{})))
+	csrfRequiredRouter.Use(middleware.CreateCheckIsAuthorizedMiddleware(sessionStorage))
+
+	csrfRequiredRouter.HandleFunc("/dialogs", h.HandleGetDialogs).Methods("GET", "OPTIONS")
+	csrfRequiredRouter.HandleFunc("/messages", h.HandleGetMessagesByDialog).Methods("GET", "OPTIONS")
 }

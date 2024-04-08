@@ -21,9 +21,10 @@ const (
 type ChatAction string
 
 type Action struct {
-	Type     ChatAction      `json:"type"`
-	Receiver uint            `json:"receiver"`
-	Payload  json.RawMessage `json:"payload"`
+	Type      ChatAction      `json:"type"`
+	Receiver  uint            `json:"receiver"`
+	CSRFToken string          `json:"csrfToken"`
+	Payload   json.RawMessage `json:"payload"`
 }
 
 type PersonalMessagesRepository interface {
