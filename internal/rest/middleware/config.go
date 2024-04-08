@@ -3,7 +3,12 @@ package middleware
 import "net/http"
 
 var (
-	ALLOWED_HEADERS = []string{"Accept", "Accept-Language", "Content-Type"}
+	ALLOWED_HEADERS = []string{
+		"Accept",
+		"Accept-Language",
+		"Content-Type",
+		"X-CSRF-Token",
+	}
 	ALLOWED_ORIGINS = []string{
 		"http://localhost",
 		"http://localhost:3000",

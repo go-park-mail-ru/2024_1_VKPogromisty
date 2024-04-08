@@ -188,6 +188,8 @@ func (p *Posts) GetUserPosts(ctx context.Context, userID uint, lastPostID uint) 
 		if err != nil {
 			return
 		}
+
+		lastPostID += 1
 	}
 
 	contextlogger.LogSQL(ctx, getUserPostsQuery, userID, lastPostID, PostsByPage)
@@ -230,6 +232,8 @@ func (p *Posts) GetUserFriendsPosts(ctx context.Context, userID uint, lastPostID
 		if err != nil {
 			return
 		}
+
+		lastPostID += 1
 	}
 
 	contextlogger.LogSQL(ctx, GetUserFriendsPostsQuery, userID, lastPostID, PostsByPage)
