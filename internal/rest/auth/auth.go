@@ -99,6 +99,11 @@ func (api *AuthHandler) HandleRegistration(w http.ResponseWriter, r *http.Reques
 //
 //	@Router			/auth/login/ [post]
 func (api *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
+	if r.Body == nil {
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidBody)
+		return
+	}
+
 	defer r.Body.Close()
 
 	decoder := defJSON.NewDecoder(r.Body)
@@ -153,36 +158,4 @@ func (api *AuthHandler) HandleLogout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.SetCookie(w, session)
-}
-
-// CheckIsAuthorized godoc
-//
-//	@Summary		check if user is authorized
-//	@Tags			auth
-//	@license.name	Apache 2.0
-//	@ID				auth/is-authorized
-//	@Accept			json
-//
-//	@Param			Cookie	header	string	true	"session_id=some_session"
-//
-//	@Produce		json
-//	@Success		200 {object}	json.JSONResponse{body=auth.IsAuthorizedResponse}
-//	@Failure		500
-//
-//	@Header			200	{string}	Set-Cookie	"session_id=some_session_id; Path=/; HttpOnly; Expires=Thu, 01 Jan 1970 00:00:00 GMT;"
-//
-//	@Router			/auth/is-authorized [get]
-func (api *AuthHandler) CheckIsAuthorized(w http.ResponseWriter, r *http.Request) {
-	session, err := r.Cookie("session_id")
-	if err == http.ErrNoCookie {
-		json.ServeJSONBody(r.Context(), w, map[string]bool{"isAuthorized": false})
-		return
-	}
-
-	if _, err := api.Service.IsAuthorized(r.Context(), session); err != nil {
-		json.ServeJSONBody(r.Context(), w, map[string]bool{"isAuthorized": false})
-		return
-	}
-
-	json.ServeJSONBody(r.Context(), w, map[string]bool{"isAuthorized": true})
 }

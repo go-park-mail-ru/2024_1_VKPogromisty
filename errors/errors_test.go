@@ -1,9 +1,12 @@
 package errors_test
 
 import (
+	"encoding/json"
 	"errors"
 	errorsCustom "socio/errors"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestParseHTTPError(t *testing.T) {
@@ -42,6 +45,38 @@ func TestParseHTTPError(t *testing.T) {
 			if gotStatus != tt.wantStatus {
 				t.Errorf("ParseHTTPError() gotStatus = %v, want %v", gotStatus, tt.wantStatus)
 			}
+		})
+	}
+}
+
+func TestMarshalError(t *testing.T) {
+	testCases := []struct {
+		name          string
+		err           error
+		expectedError string
+	}{
+		{
+			name:          "Test error",
+			err:           errors.New("Test error"),
+			expectedError: `{"error":"Test error"}`,
+		},
+		{
+			name:          "Another test error",
+			err:           errors.New("Another test error"),
+			expectedError: `{"error":"Another test error"}`,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			data, err := errorsCustom.MarshalError(tc.err)
+			assert.NoError(t, err)
+
+			var result map[string]string
+			err = json.Unmarshal(data, &result)
+			assert.NoError(t, err)
+
+			assert.Equal(t, tc.expectedError, string(data))
 		})
 	}
 }
