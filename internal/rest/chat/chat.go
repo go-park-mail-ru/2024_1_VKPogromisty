@@ -11,6 +11,7 @@ import (
 	"socio/pkg/requestcontext"
 	"socio/pkg/sanitizer"
 	"socio/usecase/chat"
+	"socio/usecase/csrf"
 	"strconv"
 	"time"
 
@@ -237,6 +238,21 @@ func (c *ChatServer) listenRead(ctx context.Context, conn *websocket.Conn, clien
 
 		action := new(chat.Action)
 		err = defJSON.Unmarshal(jsonMessage, action)
+		if err != nil {
+			return
+		}
+
+		sessionID, err := requestcontext.GetSessionID(ctx)
+		if err != nil {
+			return
+		}
+
+		userID, err := requestcontext.GetUserID(ctx)
+		if err != nil {
+			return
+		}
+
+		err = csrf.NewCSRFService().Check(sessionID, userID, action.CSRFToken)
 		if err != nil {
 			return
 		}
