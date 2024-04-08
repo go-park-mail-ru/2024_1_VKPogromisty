@@ -133,7 +133,6 @@ func (pm *PersonalMessages) GetLastMessageID(ctx context.Context, senderID, rece
 	contextlogger.LogSQL(ctx, getLastMessageIDQuery, senderID, receiverID)
 
 	err = pm.db.QueryRow(context.Background(), getLastMessageIDQuery, senderID, receiverID).Scan(&lastMessageID)
-
 	if err != nil {
 		return
 	}

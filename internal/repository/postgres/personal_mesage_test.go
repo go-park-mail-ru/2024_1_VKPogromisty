@@ -3,6 +3,7 @@ package repository_test
 import (
 	"context"
 	"socio/domain"
+	"socio/errors"
 	repository "socio/internal/repository/postgres"
 	customtime "socio/pkg/time"
 	"testing"
@@ -11,6 +12,7 @@ import (
 	"github.com/chrisyxlee/pgxpoolmock"
 	"github.com/golang/mock/gomock"
 	"github.com/jackc/pgconn"
+	"github.com/jackc/pgx/v4"
 )
 
 var (
@@ -43,59 +45,101 @@ var (
 
 func TestGetLastMessage(t *testing.T) {
 	t.Parallel()
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
-	timeProv := customtime.MockTimeProvider{}
-
-	pool := pgxpoolmock.NewMockPgxIface(ctrl)
-
-	row := pgxpoolmock.NewRow(uint(2))
-
-	pool.EXPECT().QueryRow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(row)
-
-	repo := repository.NewPersonalMessages(pool, timeProv)
-
-	lastMessageID, err := repo.GetLastMessageID(context.Background(), 1, 2)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-		return
+	tests := []struct {
+		name          string
+		expectedID    uint
+		expectedRow   *pgxpoolmock.Row
+		expectedError error
+	}{
+		{
+			name:          "TestGetLastMessage",
+			expectedID:    1,
+			expectedRow:   pgxpoolmock.NewRow(uint(1)),
+			expectedError: nil,
+		},
 	}
 
-	if lastMessageID != 2 {
-		t.Errorf("unexpected last message id: %d", lastMessageID)
-		return
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			timeProv := customtime.MockTimeProvider{}
+
+			pool := pgxpoolmock.NewMockPgxIface(ctrl)
+
+			pool.EXPECT().QueryRow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(tt.expectedRow)
+
+			repo := repository.NewPersonalMessages(pool, timeProv)
+
+			lastMessageID, err := repo.GetLastMessageID(context.Background(), 1, 2)
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+				return
+			}
+
+			if lastMessageID != tt.expectedID {
+				t.Errorf("unexpected last message id: %d", lastMessageID)
+				return
+			}
+		})
 	}
 }
 
 func TestGetMessagesByDialog(t *testing.T) {
 	t.Parallel()
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	timeProv := customtime.MockTimeProvider{}
 
-	pool := pgxpoolmock.NewMockPgxIface(ctrl)
-
-	rows := pgxpoolmock.NewRows(columns).AddRow(
-		uint(1), uint(1), uint(2), "Hello", timeProv.Now(), timeProv.Now(),
-	).AddRow(
-		uint(2), uint(2), uint(1), "Hi", timeProv.Now().Add(time.Hour), timeProv.Now().Add(time.Hour),
-	).ToPgxRows()
-
-	pool.EXPECT().Query(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(rows, nil)
-
-	repo := repository.NewPersonalMessages(pool, timeProv)
-
-	messages, err := repo.GetMessagesByDialog(context.Background(), 1, 2, 0)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-		return
+	tests := []struct {
+		name          string
+		expectedCount int
+		expectedError error
+		rows          pgx.Rows
+	}{
+		{
+			name:          "TestGetMessagesByDialog",
+			expectedCount: 2,
+			expectedError: nil,
+			rows: pgxpoolmock.NewRows(columns).AddRow(
+				uint(1), uint(1), uint(2), "Hello", timeProv.Now(), timeProv.Now(),
+			).AddRow(
+				uint(2), uint(2), uint(1), "Hi", timeProv.Now().Add(time.Hour), timeProv.Now().Add(time.Hour),
+			).ToPgxRows(),
+		},
+		{
+			name:          "TestGetMessagesByDialogError",
+			expectedCount: 0,
+			expectedError: errors.ErrNotFound,
+			rows:          pgxpoolmock.NewRows(columns).ToPgxRows(),
+		},
 	}
 
-	if len(messages) != 2 {
-		t.Errorf("unexpected messages count: %d", len(messages))
-		return
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			timeProv := customtime.MockTimeProvider{}
+
+			pool := pgxpoolmock.NewMockPgxIface(ctrl)
+
+			pool.EXPECT().Query(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(tt.rows, tt.expectedError)
+
+			repo := repository.NewPersonalMessages(pool, timeProv)
+
+			messages, err := repo.GetMessagesByDialog(context.Background(), 1, 2, 0)
+			if err != tt.expectedError {
+				t.Errorf("unexpected error: %v", err)
+				return
+			}
+
+			if len(messages) != tt.expectedCount {
+				t.Errorf("unexpected messages count: %d", len(messages))
+				return
+			}
+		})
 	}
 }
 

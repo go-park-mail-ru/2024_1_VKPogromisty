@@ -1,6 +1,7 @@
 package csrf_test
 
 import (
+	"os"
 	"socio/usecase/csrf"
 	"testing"
 	"time"
@@ -20,6 +21,7 @@ func TestCSRFService_Create(t *testing.T) {
 		args      args
 		wantToken bool
 		wantErr   bool
+		prepare   func()
 	}{
 		{
 			name: "Test 1",
@@ -31,6 +33,23 @@ func TestCSRFService_Create(t *testing.T) {
 			},
 			wantToken: true,
 			wantErr:   false,
+			prepare: func() {
+				os.Setenv("CSRF_SECRET", "secret")
+			},
+		},
+		{
+			name: "Test 1",
+			c:    csrf.NewCSRFService(customtime.MockTimeProvider{}),
+			args: args{
+				sessionID:    "sessionID",
+				userID:       1,
+				tokenExpTime: 1,
+			},
+			wantToken: true,
+			wantErr:   false,
+			prepare: func() {
+				os.Unsetenv("CSRF_SECRET")
+			},
 		},
 	}
 	for _, tt := range tests {
