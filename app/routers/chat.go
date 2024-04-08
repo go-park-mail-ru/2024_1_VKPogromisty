@@ -22,8 +22,8 @@ func MountChatRouter(rootRouter *mux.Router, pubSubRepo chat.PubSubRepository, m
 	csrfFreeRouter.Use(middleware.CreateCheckIsAuthorizedMiddleware(sessionStorage))
 
 	csrfRequiredRouter := rootRouter.PathPrefix("/chat").Subrouter()
-	csrfRequiredRouter.Use(middleware.CreateCSRFMiddleware(csrf.NewCSRFService(customtime.RealTimeProvider{})))
 	csrfRequiredRouter.Use(middleware.CreateCheckIsAuthorizedMiddleware(sessionStorage))
+	csrfRequiredRouter.Use(middleware.CreateCSRFMiddleware(csrf.NewCSRFService(customtime.RealTimeProvider{})))
 
 	csrfRequiredRouter.HandleFunc("/dialogs", h.HandleGetDialogs).Methods("GET", "OPTIONS")
 	csrfRequiredRouter.HandleFunc("/messages", h.HandleGetMessagesByDialog).Methods("GET", "OPTIONS")
