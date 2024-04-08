@@ -4,7 +4,9 @@ import (
 	"socio/internal/rest/middleware"
 	rest "socio/internal/rest/posts"
 	"socio/pkg/sanitizer"
+	customtime "socio/pkg/time"
 	"socio/usecase/auth"
+	"socio/usecase/csrf"
 	"socio/usecase/posts"
 
 	"github.com/gorilla/mux"
@@ -24,5 +26,5 @@ func MountPostsRouter(rootRouter *mux.Router, postStorage posts.PostsStorage, us
 	r.HandleFunc("/", h.HandleUpdatePost).Methods("PUT", "OPTIONS")
 	r.HandleFunc("/", h.HandleDeletePost).Methods("DELETE", "OPTIONS")
 	r.Use(middleware.CreateCheckIsAuthorizedMiddleware(sessionStorage))
-	r.Use(middleware.CSRFMiddleware)
+	r.Use(middleware.CreateCSRFMiddleware(csrf.NewCSRFService(customtime.RealTimeProvider{})))
 }

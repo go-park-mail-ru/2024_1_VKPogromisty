@@ -152,5 +152,9 @@ func (s *Service) UpdatePost(ctx context.Context, userID uint, input PostUpdateI
 
 func (s *Service) DeletePost(ctx context.Context, postID uint) (err error) {
 	err = s.PostsStorage.DeletePost(ctx, postID)
+	if err != nil {
+		return
+	}
+
 	return
 }

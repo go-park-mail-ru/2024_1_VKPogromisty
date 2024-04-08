@@ -19,7 +19,7 @@ func LogInfo(ctx context.Context) {
 func LogErr(ctx context.Context, err error) {
 	logger, ctxErr := requestcontext.GetLogger(ctx)
 	if ctxErr != nil {
-		err = ctxErr
+		return
 	}
 
 	logger.Error(zap.Error(err))

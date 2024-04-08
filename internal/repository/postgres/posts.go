@@ -11,13 +11,12 @@ import (
 
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
 	_ "github.com/lib/pq"
 )
 
 const (
 	PostsByPage      = 20
-	getPostByIDQuery = `
+	GetPostByIDQuery = `
 	SELECT p.id,
 		p.author_id,
 		p.content,
@@ -63,7 +62,7 @@ const (
 		INNER JOIN public.subscription AS s ON p.author_id = s.subscribed_to_id
 	WHERE s.subscriber_id = $1;
 	`
-	getUserFriendsPostsQuery = `
+	GetUserFriendsPostsQuery = `
 	SELECT p.id,
 		p.author_id,
 		p.content,
@@ -100,7 +99,7 @@ const (
 	ORDER BY p.created_at DESC
 	LIMIT $3;
 	`
-	storePostQuery = `
+	StorePostQuery = `
 	INSERT INTO public.post (author_id, content)
 	VALUES ($1, $2)
 	RETURNING id,
@@ -109,12 +108,12 @@ const (
 		created_at,
 		updated_at;
 	`
-	storeAttachmentQuery = `
+	StoreAttachmentQuery = `
 	INSERT INTO public.post_attachment (post_id, file_name)
 	VALUES ($1, $2)
 	RETURNING file_name;
 	`
-	updatePostQuery = `
+	UpdatePostQuery = `
 	UPDATE public.post
 	SET content = $1
 	WHERE id = $2
@@ -124,23 +123,23 @@ const (
 		created_at,
 		updated_at;
 	`
-	selectAttachmentsQuery = `
+	SelectAttachmentsQuery = `
 	SELECT array_agg(file_name) AS attachments
 	FROM public.post_attachment
 	WHERE post_id = $1;
 	`
-	deletePostQuery = `
+	DeletePostQuery = `
 	DELETE FROM public.post
 	WHERE id = $1;
 	`
 )
 
 type Posts struct {
-	db *pgxpool.Pool
+	db DBPool
 	TP customtime.TimeProvider
 }
 
-func NewPosts(db *pgxpool.Pool, tp customtime.TimeProvider) *Posts {
+func NewPosts(db DBPool, tp customtime.TimeProvider) *Posts {
 	return &Posts{
 		db: db,
 		TP: tp,
@@ -162,9 +161,9 @@ func (p *Posts) GetPostByID(ctx context.Context, postID uint) (post *domain.Post
 
 	var attachments pgtype.TextArray
 
-	contextlogger.LogSQL(ctx, getPostByIDQuery, postID)
+	contextlogger.LogSQL(ctx, GetPostByIDQuery, postID)
 
-	err = p.db.QueryRow(context.Background(), getPostByIDQuery, postID).Scan(
+	err = p.db.QueryRow(context.Background(), GetPostByIDQuery, postID).Scan(
 		&post.ID,
 		&post.AuthorID,
 		&post.Content,
@@ -223,6 +222,7 @@ func (p *Posts) GetUserPosts(ctx context.Context, userID uint, lastPostID uint) 
 }
 
 func (p *Posts) GetUserFriendsPosts(ctx context.Context, userID uint, lastPostID uint) (posts []domain.PostWithAuthor, err error) {
+	contextlogger.LogSQL(ctx, GetUserFriendsPostsQuery, userID, lastPostID, PostsByPage)
 	if lastPostID == 0 {
 		contextlogger.LogSQL(ctx, getLastUserFriendsPostIDQuery, userID)
 
@@ -232,9 +232,9 @@ func (p *Posts) GetUserFriendsPosts(ctx context.Context, userID uint, lastPostID
 		}
 	}
 
-	contextlogger.LogSQL(ctx, getUserFriendsPostsQuery, userID, lastPostID, PostsByPage)
+	contextlogger.LogSQL(ctx, GetUserFriendsPostsQuery, userID, lastPostID, PostsByPage)
 
-	rows, err := p.db.Query(context.Background(), getUserFriendsPostsQuery, userID, lastPostID, PostsByPage)
+	rows, err := p.db.Query(context.Background(), GetUserFriendsPostsQuery, userID, lastPostID, PostsByPage)
 	if err != nil {
 		return
 	}
@@ -294,9 +294,9 @@ func (p *Posts) StorePost(ctx context.Context, post *domain.Post, attachments []
 		err = nil
 	}()
 
-	contextlogger.LogSQL(ctx, storePostQuery, post.AuthorID, post.Content)
+	contextlogger.LogSQL(ctx, StorePostQuery, post.AuthorID, post.Content)
 
-	err = tx.QueryRow(context.Background(), storePostQuery, post.AuthorID, post.Content).Scan(
+	err = tx.QueryRow(context.Background(), StorePostQuery, post.AuthorID, post.Content).Scan(
 		&newPost.ID,
 		&newPost.AuthorID,
 		&newPost.Content,
@@ -314,9 +314,9 @@ func (p *Posts) StorePost(ctx context.Context, post *domain.Post, attachments []
 			return
 		}
 
-		contextlogger.LogSQL(ctx, storeAttachmentQuery, newPost.ID, fileName)
+		contextlogger.LogSQL(ctx, StoreAttachmentQuery, newPost.ID, fileName)
 
-		err = tx.QueryRow(context.Background(), storeAttachmentQuery, newPost.ID, fileName).Scan(&fileName)
+		err = tx.QueryRow(context.Background(), StoreAttachmentQuery, newPost.ID, fileName).Scan(&fileName)
 		if err != nil {
 			return
 		}
@@ -335,9 +335,9 @@ func (p *Posts) StorePost(ctx context.Context, post *domain.Post, attachments []
 func (p *Posts) UpdatePost(ctx context.Context, post *domain.Post) (updatedPost *domain.Post, err error) {
 	updatedPost = new(domain.Post)
 
-	contextlogger.LogSQL(ctx, updatePostQuery, post.Content, post.ID)
+	contextlogger.LogSQL(ctx, UpdatePostQuery, post.Content, post.ID)
 
-	err = p.db.QueryRow(context.Background(), updatePostQuery, post.Content, post.ID).Scan(
+	err = p.db.QueryRow(context.Background(), UpdatePostQuery, post.Content, post.ID).Scan(
 		&updatedPost.ID,
 		&updatedPost.AuthorID,
 		&updatedPost.Content,
@@ -370,9 +370,9 @@ func (p *Posts) DeletePost(ctx context.Context, postID uint) (err error) {
 
 	var attachments pgtype.TextArray
 
-	contextlogger.LogSQL(ctx, selectAttachmentsQuery, postID)
+	contextlogger.LogSQL(ctx, SelectAttachmentsQuery, postID)
 
-	err = tx.QueryRow(context.Background(), selectAttachmentsQuery, postID).Scan(&attachments)
+	err = tx.QueryRow(context.Background(), SelectAttachmentsQuery, postID).Scan(&attachments)
 	if err != nil && err != pgx.ErrNoRows {
 		return
 	}
@@ -386,9 +386,9 @@ func (p *Posts) DeletePost(ctx context.Context, postID uint) (err error) {
 		}
 	}
 
-	contextlogger.LogSQL(ctx, deletePostQuery, postID)
+	contextlogger.LogSQL(ctx, DeletePostQuery, postID)
 
-	result, err := tx.Exec(context.Background(), deletePostQuery, postID)
+	result, err := tx.Exec(context.Background(), DeletePostQuery, postID)
 	if err != nil {
 		return
 	}

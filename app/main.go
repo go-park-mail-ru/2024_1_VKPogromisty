@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"socio/app/routers"
 
+	"github.com/gorilla/mux"
 	httpSwagger "github.com/swaggo/http-swagger"
 
 	_ "socio/docs"
@@ -26,7 +27,8 @@ func main() {
 	))
 	go http.ListenAndServe(":8001", nil)
 
-	err := routers.MountRootRouter()
+	router := mux.NewRouter()
+	err := routers.MountRootRouter(router)
 	if err != nil {
 		fmt.Println(err)
 		return

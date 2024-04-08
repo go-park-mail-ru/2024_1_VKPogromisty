@@ -10,6 +10,7 @@ import (
 	"socio/pkg/json"
 	"socio/pkg/requestcontext"
 	"socio/pkg/sanitizer"
+	customtime "socio/pkg/time"
 	"socio/usecase/chat"
 	"socio/usecase/csrf"
 	"strconv"
@@ -252,7 +253,7 @@ func (c *ChatServer) listenRead(ctx context.Context, conn *websocket.Conn, clien
 			return
 		}
 
-		err = csrf.NewCSRFService().Check(sessionID, userID, action.CSRFToken)
+		err = csrf.NewCSRFService(customtime.RealTimeProvider{}).Check(sessionID, userID, action.CSRFToken)
 		if err != nil {
 			return
 		}

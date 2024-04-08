@@ -15,11 +15,15 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func MountRootRouter() (err error) {
-	if err = godotenv.Load("../.env"); err != nil {
+var (
+	DotenvPath = "../.env"
+)
+
+func MountRootRouter(router *mux.Router) (err error) {
+	if err = godotenv.Load(DotenvPath); err != nil {
 		return
 	}
-	rootRouter := mux.NewRouter().PathPrefix("/api/v1/").Subrouter()
+	rootRouter := router.PathPrefix("/api/v1/").Subrouter()
 
 	pgConnStr := fmt.Sprintf("user=%s dbname=%s password=%s host=%s port=%s sslmode=disable", os.Getenv("PG_USER"), os.Getenv("PG_DBNAME"), os.Getenv("PG_PASSWORD"), os.Getenv("PG_HOST"), os.Getenv("PG_PORT"))
 	db, err := pgRepo.NewPool(pgConnStr)

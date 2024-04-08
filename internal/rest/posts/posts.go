@@ -50,8 +50,6 @@ func NewPostsHandler(postsStorage posts.PostsStorage, usersStorage posts.UserSto
 //	@Failure		500	{object}	errors.HTTPError
 //	@Router			/posts/ [get]
 func (h *PostsHandler) HandleGetUserPosts(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
-
 	var input posts.ListUserPostsInput
 
 	userID, err := strconv.Atoi(r.URL.Query().Get("userId"))
@@ -259,11 +257,6 @@ func (h *PostsHandler) HandleDeletePost(w http.ResponseWriter, r *http.Request) 
 	err := decoder.Decode(&input)
 	if err != nil {
 		json.ServeJSONError(r.Context(), w, errors.ErrJSONUnmarshalling)
-		return
-	}
-
-	if err != nil {
-		json.ServeJSONError(r.Context(), w, err)
 		return
 	}
 

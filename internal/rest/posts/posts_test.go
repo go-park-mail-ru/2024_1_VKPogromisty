@@ -1,46 +1,221 @@
-package rest_test
+package rest
 
-// type ListPostsTestCase struct {
-// 	Method   string
-// 	URL      string
-// 	Body     string
-// 	Expected string
-// 	Status   int
-// }
+import (
+	"bytes"
+	"context"
+	"net/http"
+	"net/http/httptest"
+	"socio/domain"
+	"socio/errors"
+	mock_posts "socio/mocks/usecase/posts"
+	"socio/pkg/requestcontext"
+	"socio/pkg/sanitizer"
+	"testing"
 
-// var postsStorage = repository.NewPosts(customtime.MockTimeProvider{}, &sync.Map{})
-// var usersStorage = repository.NewUsers(customtime.MockTimeProvider{}, &sync.Map{})
-// var PostsHandler = rest.NewPostsHandler(postsStorage, usersStorage)
+	"github.com/golang/mock/gomock"
+	"github.com/microcosm-cc/bluemonday"
+)
 
-// var ListPostsTestCases = map[string]ListPostsTestCase{
-// 	"success": {
-// 		Method:   "GET",
-// 		URL:      "http://localhost:8080/api/v1/posts/",
-// 		Body:     "",
-// 		Expected: `{"body":{"posts":[{"post":{"postId":0,"authorId":0,"content":"Заснял такие вот красивые деревья)","attachments":["tree1.jpeg","tree2.jpeg","tree3.jpeg"],"createdAt":"2000-01-01T00:00:00Z","updatedAt":"2000-01-01T00:00:00Z"},"author":{"userId":0,"firstName":"Petr","lastName":"Mitin","email":"petr09mitin@mail.ru","avatar":"default_avatar.png","dateOfBirth":"1990-01-01T00:00:00Z","createdAt":"2021-01-01T00:00:00Z","updatedAt":"2021-01-01T00:00:00Z"}},{"post":{"postId":1,"authorId":0,"content":"Озеро недалеко от моего домика в Швейцарии. Красота!","attachments":["lake.jpeg"],"createdAt":"2000-01-01T00:00:00Z","updatedAt":"2000-01-01T00:00:00Z"},"author":{"userId":0,"firstName":"Petr","lastName":"Mitin","email":"petr09mitin@mail.ru","avatar":"default_avatar.png","dateOfBirth":"1990-01-01T00:00:00Z","createdAt":"2021-01-01T00:00:00Z","updatedAt":"2021-01-01T00:00:00Z"}},{"post":{"postId":2,"authorId":0,"content":"Moя подруга - очень хороший фотограф","attachments":["camera.jpeg"],"createdAt":"2000-01-01T00:00:00Z","updatedAt":"2000-01-01T00:00:00Z"},"author":{"userId":0,"firstName":"Petr","lastName":"Mitin","email":"petr09mitin@mail.ru","avatar":"default_avatar.png","dateOfBirth":"1990-01-01T00:00:00Z","createdAt":"2021-01-01T00:00:00Z","updatedAt":"2021-01-01T00:00:00Z"}},{"post":{"postId":3,"authorId":0,"content":"Мост в бесконечность","attachments":["bridge.jpeg"],"createdAt":"2000-01-01T00:00:00Z","updatedAt":"2000-01-01T00:00:00Z"},"author":{"userId":0,"firstName":"Petr","lastName":"Mitin","email":"petr09mitin@mail.ru","avatar":"default_avatar.png","dateOfBirth":"1990-01-01T00:00:00Z","createdAt":"2021-01-01T00:00:00Z","updatedAt":"2021-01-01T00:00:00Z"}},{"post":{"postId":4,"authorId":0,"content":"Белые розы, белые розы... Не совсем белые, но все равно прекрасно)","attachments":["rose.jpeg"],"createdAt":"2000-01-01T00:00:00Z","updatedAt":"2000-01-01T00:00:00Z"},"author":{"userId":0,"firstName":"Petr","lastName":"Mitin","email":"petr09mitin@mail.ru","avatar":"default_avatar.png","dateOfBirth":"1990-01-01T00:00:00Z","createdAt":"2021-01-01T00:00:00Z","updatedAt":"2021-01-01T00:00:00Z"}}]}}`,
-// 		Status:   200,
-// 	},
-// }
+type fields struct {
+	PostsStorage *mock_posts.MockPostsStorage
+	UserStorage  *mock_posts.MockUserStorage
+	Sanitizer    *sanitizer.Sanitizer
+}
 
-// func TestHandleListPosts(t *testing.T) {
-// 	for name, tc := range ListPostsTestCases {
-// 		t.Run(name, func(t *testing.T) {
-// 			req := httptest.NewRequest(tc.Method, tc.URL, nil)
-// 			w := httptest.NewRecorder()
-// 			PostsHandler.HandleListPosts(w, req)
+func TestHandleGetUserPosts(t *testing.T) {
+	tests := []struct {
+		name           string
+		request        *http.Request
+		expectedStatus int
+		prepare        func(f *fields)
+	}{
+		{
+			name:           "TestHandleGetUserPosts",
+			request:        httptest.NewRequest("GET", "/posts?userId=1&lastPostId=0", nil),
+			expectedStatus: http.StatusOK,
+			prepare: func(f *fields) {
+				f.UserStorage.EXPECT().GetUserByID(gomock.Any(), gomock.Any()).Return(&domain.User{}, nil)
+				f.PostsStorage.EXPECT().GetUserPosts(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
+			},
+		},
+		{
+			name:           "TestHandleGetUserPosts",
+			request:        httptest.NewRequest("GET", "/posts?userId=1&lastPostId=0", nil),
+			expectedStatus: http.StatusNotFound,
+			prepare: func(f *fields) {
+				f.UserStorage.EXPECT().GetUserByID(gomock.Any(), gomock.Any()).Return(nil, errors.ErrNotFound)
+			},
+		},
+		{
+			name:           "TestHandleGetUserPosts",
+			request:        httptest.NewRequest("GET", "/posts?userId=tyaazh&lastPostId=0", nil),
+			expectedStatus: http.StatusBadRequest,
+			prepare: func(f *fields) {
+			},
+		},
+		{
+			name:           "TestHandleGetUserPosts",
+			request:        httptest.NewRequest("GET", "/posts?userId=1&lastPostId=opa", nil),
+			expectedStatus: http.StatusBadRequest,
+			prepare: func(f *fields) {
+			},
+		},
+	}
 
-// 			if w.Code != tc.Status {
-// 				t.Errorf("wrong StatusCode: got %d, expected %d", w.Code, tc.Status)
-// 			}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-// 			resp := w.Result()
-// 			body, _ := io.ReadAll(resp.Body)
-// 			defer resp.Body.Close()
+			f := &fields{
+				PostsStorage: mock_posts.NewMockPostsStorage(ctrl),
+				UserStorage:  mock_posts.NewMockUserStorage(ctrl),
+				Sanitizer:    sanitizer.NewSanitizer(bluemonday.UGCPolicy()),
+			}
 
-// 			bodyStr := string(body)
-// 			if bodyStr != tc.Expected {
-// 				t.Errorf("wrong Response: \ngot %+v, \nexpected %+v", bodyStr, tc.Expected)
-// 			}
-// 		})
-// 	}
-// }
+			if tt.prepare != nil {
+				tt.prepare(f)
+			}
+
+			h := NewPostsHandler(f.PostsStorage, f.UserStorage, f.Sanitizer)
+
+			rr := httptest.NewRecorder()
+			handler := http.HandlerFunc(h.HandleGetUserPosts)
+
+			handler.ServeHTTP(rr, tt.request)
+
+			if status := rr.Code; status != tt.expectedStatus {
+				t.Errorf("handler returned wrong status code: got %v want %v", status, tt.expectedStatus)
+			}
+		})
+	}
+}
+
+func TestHandleGetUserFriendsPosts(t *testing.T) {
+	validCtx := context.WithValue(context.Background(), requestcontext.UserIDKey, uint(1))
+
+	tests := []struct {
+		name           string
+		request        *http.Request
+		expectedStatus int
+		ctx            context.Context
+		prepare        func(f *fields)
+	}{
+		{
+			name:           "TestHandleGetUserFriendsPosts",
+			request:        httptest.NewRequest("GET", "/friends/posts?lastPostId=0", nil),
+			expectedStatus: http.StatusOK,
+			ctx:            validCtx,
+			prepare: func(f *fields) {
+				f.PostsStorage.EXPECT().GetUserFriendsPosts(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
+			},
+		},
+		{
+			name:           "TestHandleGetUserFriendsPosts",
+			request:        httptest.NewRequest("GET", "/friends/posts?lastPostId=tyazh", nil),
+			expectedStatus: http.StatusBadRequest,
+			ctx:            validCtx,
+			prepare: func(f *fields) {
+			},
+		},
+		{
+			name:           "TestHandleGetUserFriendsPosts",
+			request:        httptest.NewRequest("GET", "/friends/posts?lastPostId=0", nil),
+			expectedStatus: http.StatusBadRequest,
+			ctx:            context.Background(),
+			prepare: func(f *fields) {
+			},
+		},
+		{
+			name:           "TestHandleGetUserFriendsPosts",
+			request:        httptest.NewRequest("GET", "/friends/posts?lastPostId=0", nil),
+			expectedStatus: http.StatusInternalServerError,
+			ctx:            validCtx,
+			prepare: func(f *fields) {
+				f.PostsStorage.EXPECT().GetUserFriendsPosts(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.ErrInternal)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			f := &fields{
+				PostsStorage: mock_posts.NewMockPostsStorage(ctrl),
+				UserStorage:  mock_posts.NewMockUserStorage(ctrl),
+				Sanitizer:    sanitizer.NewSanitizer(bluemonday.UGCPolicy()),
+			}
+
+			if tt.prepare != nil {
+				tt.prepare(f)
+			}
+
+			h := NewPostsHandler(f.PostsStorage, f.UserStorage, f.Sanitizer)
+
+			rr := httptest.NewRecorder()
+			handler := http.HandlerFunc(h.HandleGetUserFriendsPosts)
+
+			handler.ServeHTTP(rr, tt.request.WithContext(tt.ctx))
+
+			if status := rr.Code; status != tt.expectedStatus {
+				t.Errorf("handler returned wrong status code: got %v want %v", status, tt.expectedStatus)
+			}
+		})
+	}
+}
+
+func TestHandleDeletePost(t *testing.T) {
+	tests := []struct {
+		name           string
+		request        *http.Request
+		expectedStatus int
+		prepare        func(f *fields)
+	}{
+		{
+			name:           "TestHandleDeletePost",
+			request:        httptest.NewRequest("DELETE", "/posts", bytes.NewBufferString(`{"postID": 1}`)),
+			expectedStatus: http.StatusNoContent,
+			prepare: func(f *fields) {
+				f.PostsStorage.EXPECT().DeletePost(gomock.Any(), gomock.Any()).Return(nil)
+			},
+		},
+		{
+			name:           "TestHandleDeletePost",
+			request:        httptest.NewRequest("DELETE", "/posts", bytes.NewBufferString(`{"postID": 1}`)),
+			expectedStatus: http.StatusInternalServerError,
+			prepare: func(f *fields) {
+				f.PostsStorage.EXPECT().DeletePost(gomock.Any(), gomock.Any()).Return(errors.ErrInternal)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			f := &fields{
+				PostsStorage: mock_posts.NewMockPostsStorage(ctrl),
+				UserStorage:  mock_posts.NewMockUserStorage(ctrl),
+				Sanitizer:    sanitizer.NewSanitizer(bluemonday.UGCPolicy()),
+			}
+
+			if tt.prepare != nil {
+				tt.prepare(f)
+			}
+
+			h := NewPostsHandler(f.PostsStorage, f.UserStorage, f.Sanitizer)
+
+			rr := httptest.NewRecorder()
+			handler := http.HandlerFunc(h.HandleDeletePost)
+
+			handler.ServeHTTP(rr, tt.request)
+
+			if status := rr.Code; status != tt.expectedStatus {
+				t.Errorf("handler returned wrong status code: got %v want %v", status, tt.expectedStatus)
+			}
+		})
+	}
+}

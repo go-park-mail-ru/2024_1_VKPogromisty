@@ -6,8 +6,6 @@ import (
 	"socio/errors"
 	"socio/pkg/contextlogger"
 	customtime "socio/pkg/time"
-
-	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 const (
@@ -120,11 +118,11 @@ const (
 )
 
 type PersonalMessages struct {
-	db *pgxpool.Pool
+	db DBPool
 	TP customtime.TimeProvider
 }
 
-func NewPersonalMessages(db *pgxpool.Pool, tp customtime.TimeProvider) *PersonalMessages {
+func NewPersonalMessages(db DBPool, tp customtime.TimeProvider) *PersonalMessages {
 	return &PersonalMessages{
 		db: db,
 		TP: tp,
@@ -135,7 +133,6 @@ func (pm *PersonalMessages) GetLastMessageID(ctx context.Context, senderID, rece
 	contextlogger.LogSQL(ctx, getLastMessageIDQuery, senderID, receiverID)
 
 	err = pm.db.QueryRow(context.Background(), getLastMessageIDQuery, senderID, receiverID).Scan(&lastMessageID)
-
 	if err != nil {
 		return
 	}

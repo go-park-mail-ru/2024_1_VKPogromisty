@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	"socio/domain"
 	"socio/errors"
 	"socio/pkg/contextlogger"
@@ -12,7 +11,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
 	_ "github.com/lib/pq"
 )
 
@@ -130,11 +128,11 @@ const (
 )
 
 type Users struct {
-	db *pgxpool.Pool
+	db DBPool
 	TP customtime.TimeProvider
 }
 
-func NewUsers(db *pgxpool.Pool, tp customtime.TimeProvider) *Users {
+func NewUsers(db DBPool, tp customtime.TimeProvider) *Users {
 	return &Users{
 		db: db,
 		TP: tp,
@@ -190,7 +188,6 @@ func (s *Users) GetUserByIDWithSubsInfo(ctx context.Context, userID, authorizedU
 		&isSubscriber,
 	)
 	if err != nil {
-		fmt.Println(err)
 		if err == pgx.ErrNoRows {
 			err = errors.ErrNotFound
 			return

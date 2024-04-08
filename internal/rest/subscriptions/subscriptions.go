@@ -136,8 +136,6 @@ func (api *SubscriptionsHandler) HandleUnsubscription(w http.ResponseWriter, r *
 //	@Failure		500	{object}	errors.HTTPError
 //	@Router			/subscriptions/subscriptions/ [get]
 func (api *SubscriptionsHandler) HandleGetSubscriptions(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
-
 	userID, err := requestcontext.GetUserID(r.Context())
 	if err != nil {
 		json.ServeJSONError(r.Context(), w, err)
@@ -173,8 +171,6 @@ func (api *SubscriptionsHandler) HandleGetSubscriptions(w http.ResponseWriter, r
 //	@Failure		500	{object}	errors.HTTPError
 //	@Router			/subscriptions/subscribers/ [get]
 func (api *SubscriptionsHandler) HandleGetSubscribers(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
-
 	userID, err := requestcontext.GetUserID(r.Context())
 	if err != nil {
 		json.ServeJSONError(r.Context(), w, err)
@@ -209,8 +205,6 @@ func (api *SubscriptionsHandler) HandleGetSubscribers(w http.ResponseWriter, r *
 //	@Failure		500	{object}	errors.HTTPError
 //	@Router			/subscriptions/friends/ [get]
 func (api *SubscriptionsHandler) HandleGetFriends(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
-
 	userID, err := requestcontext.GetUserID(r.Context())
 	if err != nil {
 		json.ServeJSONError(r.Context(), w, err)

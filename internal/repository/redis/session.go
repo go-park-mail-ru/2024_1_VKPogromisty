@@ -9,8 +9,12 @@ import (
 	"github.com/google/uuid"
 )
 
+type Pool interface {
+	Get() redis.Conn
+}
+
 type Session struct {
-	pool *redis.Pool
+	pool Pool
 }
 
 func NewSession(pool *redis.Pool) (s *Session) {

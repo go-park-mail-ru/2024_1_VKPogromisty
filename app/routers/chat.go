@@ -4,8 +4,10 @@ import (
 	rest "socio/internal/rest/chat"
 	"socio/internal/rest/middleware"
 	"socio/pkg/sanitizer"
+	customtime "socio/pkg/time"
 	"socio/usecase/auth"
 	"socio/usecase/chat"
+	"socio/usecase/csrf"
 
 	"github.com/gorilla/mux"
 	"github.com/microcosm-cc/bluemonday"
@@ -20,7 +22,7 @@ func MountChatRouter(rootRouter *mux.Router, pubSubRepo chat.PubSubRepository, m
 	csrfFreeRouter.Use(middleware.CreateCheckIsAuthorizedMiddleware(sessionStorage))
 
 	csrfRequiredRouter := rootRouter.PathPrefix("/chat").Subrouter()
-	csrfRequiredRouter.Use(middleware.CSRFMiddleware)
+	csrfRequiredRouter.Use(middleware.CreateCSRFMiddleware(csrf.NewCSRFService(customtime.RealTimeProvider{})))
 	csrfRequiredRouter.Use(middleware.CreateCheckIsAuthorizedMiddleware(sessionStorage))
 
 	csrfRequiredRouter.HandleFunc("/dialogs", h.HandleGetDialogs).Methods("GET", "OPTIONS")
