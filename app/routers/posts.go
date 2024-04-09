@@ -20,6 +20,7 @@ func MountPostsRouter(rootRouter *mux.Router, postStorage posts.PostsStorage, us
 
 	h := rest.NewPostsHandler(postStorage, userStorage, sanitizer)
 
+	r.HandleFunc("/{postID:[0-9]+}", h.HandleGetPostByID).Methods("GET", "OPTIONS")
 	r.HandleFunc("/", h.HandleGetUserPosts).Methods("GET", "OPTIONS")
 	r.HandleFunc("/friends", h.HandleGetUserFriendsPosts).Methods("GET", "OPTIONS")
 	r.HandleFunc("/", h.HandleCreatePost).Methods("POST", "OPTIONS")

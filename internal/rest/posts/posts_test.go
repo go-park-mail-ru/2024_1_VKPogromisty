@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/gorilla/mux"
 	"github.com/microcosm-cc/bluemonday"
 )
 
@@ -20,6 +21,75 @@ type fields struct {
 	PostsStorage *mock_posts.MockPostsStorage
 	UserStorage  *mock_posts.MockUserStorage
 	Sanitizer    *sanitizer.Sanitizer
+}
+
+func TestHandleGetPostByID(t *testing.T) {
+	tests := []struct {
+		name           string
+		request        *http.Request
+		expectedStatus int
+		prepare        func(f *fields)
+	}{
+		{
+			name:           "TestHandleGetPostByID",
+			request:        httptest.NewRequest("GET", "/posts/1", nil),
+			expectedStatus: http.StatusOK,
+			prepare: func(f *fields) {
+				f.PostsStorage.EXPECT().GetPostByID(gomock.Any(), gomock.Any()).Return(&domain.Post{}, nil)
+			},
+		},
+		{
+			name:           "TestHandleGetPostByID",
+			request:        httptest.NewRequest("GET", "/posts/", nil),
+			expectedStatus: http.StatusNotFound,
+			prepare: func(f *fields) {
+			},
+		},
+		{
+			name:           "TestHandleGetPostByID",
+			request:        httptest.NewRequest("GET", "/posts/asd", nil),
+			expectedStatus: http.StatusBadRequest,
+			prepare: func(f *fields) {
+			},
+		},
+		{
+			name:           "TestHandleGetPostByID",
+			request:        httptest.NewRequest("GET", "/posts/1", nil),
+			expectedStatus: http.StatusNotFound,
+			prepare: func(f *fields) {
+				f.PostsStorage.EXPECT().GetPostByID(gomock.Any(), gomock.Any()).Return(nil, errors.ErrNotFound)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			f := &fields{
+				PostsStorage: mock_posts.NewMockPostsStorage(ctrl),
+				UserStorage:  mock_posts.NewMockUserStorage(ctrl),
+				Sanitizer:    sanitizer.NewSanitizer(bluemonday.UGCPolicy()),
+			}
+
+			if tt.prepare != nil {
+				tt.prepare(f)
+			}
+
+			h := NewPostsHandler(f.PostsStorage, f.UserStorage, f.Sanitizer)
+
+			rr := httptest.NewRecorder()
+			router := mux.NewRouter()
+			router.HandleFunc("/posts/{postID}", h.HandleGetPostByID)
+
+			router.ServeHTTP(rr, tt.request)
+
+			if status := rr.Code; status != tt.expectedStatus {
+				t.Errorf("handler returned wrong status code: got %v want %v", status, tt.expectedStatus)
+			}
+		})
+	}
 }
 
 func TestHandleGetUserPosts(t *testing.T) {

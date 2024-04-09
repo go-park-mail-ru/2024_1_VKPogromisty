@@ -65,6 +65,17 @@ func NewPostsService(postsStorage PostsStorage, userStorage UserStorage, sanitiz
 	return
 }
 
+func (s *Service) GetPostByID(ctx context.Context, postID uint) (post *domain.Post, err error) {
+	post, err = s.PostsStorage.GetPostByID(ctx, postID)
+	if err != nil {
+		return
+	}
+
+	s.Sanitizer.SanitizePost(post)
+
+	return
+}
+
 func (s *Service) GetUserPosts(ctx context.Context, userID uint, lastPostID uint) (posts []*domain.Post, author *domain.User, err error) {
 	author, err = s.UserStorage.GetUserByID(ctx, userID)
 	if err != nil {

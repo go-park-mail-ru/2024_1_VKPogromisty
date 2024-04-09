@@ -11,6 +11,8 @@ import (
 	"socio/usecase/posts"
 	"strconv"
 	"strings"
+
+	"github.com/gorilla/mux"
 )
 
 type ListUserPostsResponse struct {
@@ -27,6 +29,49 @@ func NewPostsHandler(postsStorage posts.PostsStorage, usersStorage posts.UserSto
 		Service: posts.NewPostsService(postsStorage, usersStorage, sanitizer),
 	}
 	return
+}
+
+// HandleGetPostByID godoc
+//
+//	@Summary		get post by id
+//
+//	@Description	get post by id
+//	@Tags			posts
+//	@license.name	Apache 2.0
+//	@ID				posts/get_post_by_id
+//	@Accept			json
+//
+//	@Param			Cookie	header	string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
+//	@Param			postId	query	uint	true	"ID of the post"
+//
+//	@Produce		json
+//	@Success		200	{object}	domain.Post
+//	@Failure		400	{object}	errors.HTTPError
+//	@Failure		401	{object}	errors.HTTPError
+//	@Failure		403	{object}	errors.HTTPError
+//	@Failure		500	{object}	errors.HTTPError
+//	@Router			/posts/ [get]
+func (h *PostsHandler) HandleGetPostByID(w http.ResponseWriter, r *http.Request) {
+	postID, ok := mux.Vars(r)["postID"]
+	if !ok {
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
+		return
+	}
+
+	postIDData, err := strconv.Atoi(postID)
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
+		return
+	}
+
+	post, err := h.Service.GetPostByID(r.Context(), uint(postIDData))
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, err)
+		return
+	}
+
+	json.ServeJSONBody(r.Context(), w, post)
 }
 
 // HandleGetUserPosts godoc
@@ -47,6 +92,7 @@ func NewPostsHandler(postsStorage posts.PostsStorage, usersStorage posts.UserSto
 //	@Success		200	{object}	ListUserPostsResponse
 //	@Failure		400	{object}	errors.HTTPError
 //	@Failure		401	{object}	errors.HTTPError
+//	@Failure		403	{object}	errors.HTTPError
 //	@Failure		500	{object}	errors.HTTPError
 //	@Router			/posts/ [get]
 func (h *PostsHandler) HandleGetUserPosts(w http.ResponseWriter, r *http.Request) {
@@ -98,6 +144,7 @@ func (h *PostsHandler) HandleGetUserPosts(w http.ResponseWriter, r *http.Request
 //	@Success		200	{object}	json.JSONResponse{body=[]domain.PostWithAuthor}
 //	@Failure		400	{object}	errors.HTTPError
 //	@Failure		401	{object}	errors.HTTPError
+//	@Failure		403	{object}	errors.HTTPError
 //	@Failure		500	{object}	errors.HTTPError
 //	@Router			/posts/friends [get]
 func (h *PostsHandler) HandleGetUserFriendsPosts(w http.ResponseWriter, r *http.Request) {
@@ -146,6 +193,7 @@ func (h *PostsHandler) HandleGetUserFriendsPosts(w http.ResponseWriter, r *http.
 //	@Success		201	{object}	json.JSONResponse{body=domain.PostWithAuthor}
 //	@Failure		400	{object}	errors.HTTPError
 //	@Failure		401	{object}	errors.HTTPError
+//	@Failure		403	{object}	errors.HTTPError
 //	@Failure		500	{object}	errors.HTTPError
 //	@Router			/posts/ [post]
 func (h *PostsHandler) HandleCreatePost(w http.ResponseWriter, r *http.Request) {
@@ -246,6 +294,7 @@ func (h *PostsHandler) HandleUpdatePost(w http.ResponseWriter, r *http.Request) 
 //	@Success		204	{object}	json.JSONResponse
 //	@Failure		400	{object}	errors.HTTPError
 //	@Failure		401	{object}	errors.HTTPError
+//	@Failure		403	{object}	errors.HTTPError
 //	@Failure		500	{object}	errors.HTTPError
 //	@Router			/posts/ [delete]
 func (h *PostsHandler) HandleDeletePost(w http.ResponseWriter, r *http.Request) {
