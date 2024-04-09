@@ -1,10 +1,5 @@
 basePath: /api/v1
 definitions:
-  auth.IsAuthorizedResponse:
-    properties:
-      isAuthorized:
-        type: boolean
-    type: object
   auth.LoginResponse:
     properties:
       user:
@@ -172,39 +167,6 @@ info:
   title: Socio API
   version: "1.0"
 paths:
-  /auth/is-authorized:
-    get:
-      consumes:
-      - application/json
-      operationId: auth/is-authorized
-      parameters:
-      - description: session_id=some_session
-        in: header
-        name: Cookie
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          headers:
-            Set-Cookie:
-              description: session_id=some_session_id; Path=/; HttpOnly; Expires=Thu,
-                01 Jan 1970 00:00:00 GMT;
-              type: string
-          schema:
-            allOf:
-            - $ref: '#/definitions/json.JSONResponse'
-            - properties:
-                body:
-                  $ref: '#/definitions/auth.IsAuthorizedResponse'
-              type: object
-        "500":
-          description: Internal Server Error
-      summary: check if user is authorized
-      tags:
-      - auth
   /auth/login/:
     post:
       consumes:
@@ -370,6 +332,7 @@ paths:
         {
         "type": ActionType,
         "receiver": uint,
+        "csrfToken": string,
         "payload": interface{}
         }
 
@@ -383,6 +346,7 @@ paths:
         {
         "type": ActionType,
         "receiver": uint,
+        "csrfToken": string,
         "payload": interface{}
         }
 
@@ -396,11 +360,6 @@ paths:
       - description: session_id=some_session
         in: header
         name: Cookie
-        required: true
-        type: string
-      - description: CSRF token
-        in: header
-        name: X-CSRF-Token
         required: true
         type: string
       produces:
@@ -462,6 +421,10 @@ paths:
           description: Unauthorized
           schema:
             $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
         "500":
           description: Internal Server Error
           schema:
@@ -516,6 +479,10 @@ paths:
             $ref: '#/definitions/errors.HTTPError'
         "401":
           description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
           schema:
             $ref: '#/definitions/errors.HTTPError'
         "500":
@@ -596,6 +563,10 @@ paths:
           description: Unauthorized
           schema:
             $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
         "500":
           description: Internal Server Error
           schema:
@@ -641,6 +612,10 @@ paths:
             $ref: '#/definitions/errors.HTTPError'
         "401":
           description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
           schema:
             $ref: '#/definitions/errors.HTTPError'
         "500":
@@ -693,6 +668,10 @@ paths:
             $ref: '#/definitions/errors.HTTPError'
         "401":
           description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
           schema:
             $ref: '#/definitions/errors.HTTPError'
         "500":
@@ -808,6 +787,10 @@ paths:
           description: Unauthorized
           schema:
             $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
         "500":
           description: Internal Server Error
           schema:
@@ -837,6 +820,10 @@ paths:
           description: No Content
         "401":
           description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
           schema:
             $ref: '#/definitions/errors.HTTPError'
         "404":
@@ -914,6 +901,10 @@ paths:
           description: Unauthorized
           schema:
             $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
         "404":
           description: Not Found
           schema:
@@ -962,6 +953,10 @@ paths:
           description: Unauthorized
           schema:
             $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
         "404":
           description: Not Found
           schema:
@@ -1007,6 +1002,10 @@ paths:
             $ref: '#/definitions/errors.HTTPError'
         "401":
           description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
           schema:
             $ref: '#/definitions/errors.HTTPError'
         "404":
@@ -1062,6 +1061,10 @@ paths:
           description: Unauthorized
           schema:
             $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
         "500":
           description: Internal Server Error
           schema:
@@ -1098,6 +1101,18 @@ paths:
                 body:
                   $ref: '#/definitions/subscriptions.GetFriendsResponse'
               type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
         "404":
           description: Not Found
           schema:
@@ -1138,6 +1153,18 @@ paths:
                 body:
                   $ref: '#/definitions/subscriptions.GetSubscribersResponse'
               type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
         "404":
           description: Not Found
           schema:
@@ -1180,6 +1207,10 @@ paths:
               type: object
         "401":
           description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
           schema:
             $ref: '#/definitions/errors.HTTPError'
         "500":

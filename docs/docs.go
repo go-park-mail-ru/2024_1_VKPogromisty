@@ -19,59 +19,6 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/auth/is-authorized": {
-            "get": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "auth"
-                ],
-                "summary": "check if user is authorized",
-                "operationId": "auth/is-authorized",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "session_id=some_session",
-                        "name": "Cookie",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/json.JSONResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "body": {
-                                            "$ref": "#/definitions/auth.IsAuthorizedResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        },
-                        "headers": {
-                            "Set-Cookie": {
-                                "type": "string",
-                                "description": "session_id=some_session_id; Path=/; HttpOnly; Expires=Thu, 01 Jan 1970 00:00:00 GMT;"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error"
-                    }
-                }
-            }
-        },
         "/auth/login/": {
             "post": {
                 "description": "login user by email and password",
@@ -310,7 +257,7 @@ const docTemplate = `{
         },
         "/chat/": {
             "get": {
-                "description": "Serve websocket connection. You can send actions to connection following simple structure:\n\n{\n\"type\": ActionType,\n\"receiver\": uint,\n\"payload\": interface{}\n}\n\nActionType is a string with one of following values: \"SEND_MESSAGE\", \"UPDATE_MESSAGE\", \"DELETE_MESSAGE\"\n\nIf \"type\" = \"SEND_MESSAGE\", then payload should be {\"content\": string}\nIf \"type\" = \"UPDATE_MESSAGE\", then payload should be {\"messageId\": uint, \"content\": string}\nIf \"type\" = \"DELETE_MESSAGE\", then payload should be {\"messageId\": uint}\n\nIn response clients, subscribed to corresponding channel, will get same structure back:\n{\n\"type\": ActionType,\n\"receiver\": uint,\n\"payload\": interface{}\n}\n\n\"payload\" can be:\nPersonalMessage if \"type\" = \"SEND_MESSAGE\"\nPersonalMessage if \"type\" = \"UPDATE_MESSAGE\"\nAbsent if \"type\" = \"DELETE_MESSAGE\"\n{\"error\": string} if error happened at any point of query processing\n",
+                "description": "Serve websocket connection. You can send actions to connection following simple structure:\n\n{\n\"type\": ActionType,\n\"receiver\": uint,\n\"csrfToken\": string,\n\"payload\": interface{}\n}\n\nActionType is a string with one of following values: \"SEND_MESSAGE\", \"UPDATE_MESSAGE\", \"DELETE_MESSAGE\"\n\nIf \"type\" = \"SEND_MESSAGE\", then payload should be {\"content\": string}\nIf \"type\" = \"UPDATE_MESSAGE\", then payload should be {\"messageId\": uint, \"content\": string}\nIf \"type\" = \"DELETE_MESSAGE\", then payload should be {\"messageId\": uint}\n\nIn response clients, subscribed to corresponding channel, will get same structure back:\n{\n\"type\": ActionType,\n\"receiver\": uint,\n\"csrfToken\": string,\n\"payload\": interface{}\n}\n\n\"payload\" can be:\nPersonalMessage if \"type\" = \"SEND_MESSAGE\"\nPersonalMessage if \"type\" = \"UPDATE_MESSAGE\"\nAbsent if \"type\" = \"DELETE_MESSAGE\"\n{\"error\": string} if error happened at any point of query processing\n",
                 "consumes": [
                     "application/json"
                 ],
@@ -327,13 +274,6 @@ const docTemplate = `{
                         "type": "string",
                         "description": "session_id=some_session",
                         "name": "Cookie",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "CSRF token",
-                        "name": "X-CSRF-Token",
                         "in": "header",
                         "required": true
                     }
@@ -427,6 +367,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/errors.HTTPError"
                         }
                     },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -509,6 +455,12 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
                         "schema": {
                             "$ref": "#/definitions/errors.HTTPError"
                         }
@@ -634,6 +586,12 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
                         "schema": {
                             "$ref": "#/definitions/errors.HTTPError"
                         }
@@ -817,6 +775,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/errors.HTTPError"
                         }
                     },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -878,6 +842,12 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
                         "schema": {
                             "$ref": "#/definitions/errors.HTTPError"
                         }
@@ -957,6 +927,12 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
                         "schema": {
                             "$ref": "#/definitions/errors.HTTPError"
                         }
@@ -1073,6 +1049,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/errors.HTTPError"
                         }
                     },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
                         "schema": {
@@ -1119,6 +1101,12 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
                         "schema": {
                             "$ref": "#/definitions/errors.HTTPError"
                         }
@@ -1195,6 +1183,12 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
                         "schema": {
                             "$ref": "#/definitions/errors.HTTPError"
                         }
@@ -1284,6 +1278,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/errors.HTTPError"
                         }
                     },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -1342,6 +1342,12 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
                         "schema": {
                             "$ref": "#/definitions/errors.HTTPError"
                         }
@@ -1410,6 +1416,24 @@ const docTemplate = `{
                             ]
                         }
                     },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
                         "schema": {
@@ -1472,6 +1496,24 @@ const docTemplate = `{
                                     }
                                 }
                             ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
                         }
                     },
                     "404": {
@@ -1544,6 +1586,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/errors.HTTPError"
                         }
                     },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -1555,14 +1603,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "auth.IsAuthorizedResponse": {
-            "type": "object",
-            "properties": {
-                "isAuthorized": {
-                    "type": "boolean"
-                }
-            }
-        },
         "auth.LoginResponse": {
             "type": "object",
             "properties": {
