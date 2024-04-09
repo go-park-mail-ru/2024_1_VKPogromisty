@@ -24,6 +24,93 @@ type fields struct {
 
 var timeProv = customtime.MockTimeProvider{}
 
+func TestService_GetPostByID(t *testing.T) {
+	type args struct {
+		ctx    context.Context
+		postID uint
+	}
+
+	tests := []struct {
+		name        string
+		args        args
+		wantPost    *domain.Post
+		wantErr     bool
+		prepareMock func(*fields)
+	}{
+		{
+			name: "success",
+			args: args{
+				ctx:    context.Background(),
+				postID: 1,
+			},
+			wantPost: &domain.Post{
+				ID:       1,
+				AuthorID: 1,
+				Content:  "content",
+				CreatedAt: customtime.CustomTime{
+					Time: timeProv.Now(),
+				},
+				UpdatedAt: customtime.CustomTime{
+					Time: timeProv.Now(),
+				},
+			},
+			wantErr: false,
+			prepareMock: func(f *fields) {
+				f.PostsStorage.EXPECT().GetPostByID(gomock.Any(), gomock.Any()).Return(&domain.Post{
+					ID:       1,
+					AuthorID: 1,
+					Content:  "content",
+					CreatedAt: customtime.CustomTime{
+						Time: timeProv.Now(),
+					},
+					UpdatedAt: customtime.CustomTime{
+						Time: timeProv.Now(),
+					},
+				}, nil)
+			},
+		},
+		{
+			name: "error no post",
+			args: args{
+				ctx:    context.Background(),
+				postID: 1,
+			},
+			wantPost: nil,
+			wantErr:  true,
+			prepareMock: func(f *fields) {
+				f.PostsStorage.EXPECT().GetPostByID(gomock.Any(), gomock.Any()).Return(nil, errors.ErrNotFound)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			f := fields{
+				PostsStorage: mock_posts.NewMockPostsStorage(ctrl),
+				UserStorage:  mock_posts.NewMockUserStorage(ctrl),
+				Sanitizer:    sanitizer.NewSanitizer(bluemonday.UGCPolicy()),
+			}
+
+			if tt.prepareMock != nil {
+				tt.prepareMock(&f)
+			}
+
+			s := posts.NewPostsService(f.PostsStorage, f.UserStorage, f.Sanitizer)
+
+			gotPost, err := s.GetPostByID(tt.args.ctx, tt.args.postID)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Service.GetUserPosts() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(gotPost, tt.wantPost) {
+				t.Errorf("Service.GetUserPosts() gotPosts = %v, want %v", gotPost, tt.wantPost)
+			}
+		})
+	}
+}
+
 func TestService_GetUserPosts(t *testing.T) {
 	type args struct {
 		ctx        context.Context

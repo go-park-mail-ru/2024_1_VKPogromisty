@@ -42,6 +42,7 @@ func NewSubscriptionsHandler(subStorage subscriptions.SubscriptionsStorage, user
 //	@Success		201	{object}	json.JSONResponse{body=domain.Subscription}
 //	@Failure		400	{object}	errors.HTTPError
 //	@Failure		401	{object}	errors.HTTPError
+//	@Failure		403	{object}	errors.HTTPError
 //	@Failure		500	{object}	errors.HTTPError
 //	@Router			/subscriptions/ [post]
 func (api *SubscriptionsHandler) HandleSubscription(w http.ResponseWriter, r *http.Request) {
@@ -71,26 +72,26 @@ func (api *SubscriptionsHandler) HandleSubscription(w http.ResponseWriter, r *ht
 
 // HandleUnsubscription godoc
 //
-//	@Summary		handle user's unsubscription flow
-//	@Description	unsubscribe from user
-//	@Tags			subscriptions
-//	@license.name	Apache 2.0
-//	@ID				subscriptions/unsubscribe
-//	@Accept			json
+//		@Summary		handle user's unsubscription flow
+//		@Description	unsubscribe from user
+//		@Tags			subscriptions
+//		@license.name	Apache 2.0
+//		@ID				subscriptions/unsubscribe
+//		@Accept			json
 //
-//	@Param			subscribedTo	body	int		true	"User to unsubscribe from"
-//	@Param			Cookie			header	string	true	"session_id=some_session"
-//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
+//		@Param			subscribedTo	body	int		true	"User to unsubscribe from"
+//		@Param			Cookie			header	string	true	"session_id=some_session"
+//		@Param			X-CSRF-Token	header	string	true	"CSRF token"
 //
-//	@Produce		json
-//	@Success		204
-//	@Failure		400	{object}	errors.HTTPError
-//	@Failure		401	{object}	errors.HTTPError
+//		@Produce		json
+//		@Success		204
+//		@Failure		400	{object}	errors.HTTPError
+//		@Failure		401	{object}	errors.HTTPError
+//		@Failure		403	{object}	errors.HTTPError
+//		@Failure		404	{object}	errors.HTTPError
+//	 @Failure		500	{object}	errors.HTTPError
 //
-//	@Failure		404	{object}	errors.HTTPError
-//
-//	@Failure		500	{object}	errors.HTTPError
-//	@Router			/subscriptions/ [delete]
+// @Router			/subscriptions/ [delete]
 func (api *SubscriptionsHandler) HandleUnsubscription(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
@@ -131,8 +132,7 @@ func (api *SubscriptionsHandler) HandleUnsubscription(w http.ResponseWriter, r *
 //	@Produce		json
 //	@Success		200	{object}	json.JSONResponse{body=subscriptions.GetSubscriptionsResponse}
 //	@Failure		401	{object}	errors.HTTPError
-//
-//
+//	@Failure		403	{object}	errors.HTTPError
 //	@Failure		500	{object}	errors.HTTPError
 //	@Router			/subscriptions/subscriptions/ [get]
 func (api *SubscriptionsHandler) HandleGetSubscriptions(w http.ResponseWriter, r *http.Request) {
@@ -165,9 +165,10 @@ func (api *SubscriptionsHandler) HandleGetSubscriptions(w http.ResponseWriter, r
 //
 //	@Produce		json
 //	@Success		200	{object}	json.JSONResponse{body=subscriptions.GetSubscribersResponse}
-//
+//	@Failure		400	{object}	errors.HTTPError
+//	@Failure		401	{object}	errors.HTTPError
+//	@Failure		403	{object}	errors.HTTPError
 //	@Failure		404	{object}	errors.HTTPError
-//
 //	@Failure		500	{object}	errors.HTTPError
 //	@Router			/subscriptions/subscribers/ [get]
 func (api *SubscriptionsHandler) HandleGetSubscribers(w http.ResponseWriter, r *http.Request) {
@@ -200,8 +201,10 @@ func (api *SubscriptionsHandler) HandleGetSubscribers(w http.ResponseWriter, r *
 //
 //	@Produce		json
 //	@Success		200	{object}	json.JSONResponse{body=subscriptions.GetFriendsResponse}
+//	@Failure		400	{object}	errors.HTTPError
+//	@Failure		401	{object}	errors.HTTPError
+//	@Failure		403	{object}	errors.HTTPError
 //	@Failure		404	{object}	errors.HTTPError
-//
 //	@Failure		500	{object}	errors.HTTPError
 //	@Router			/subscriptions/friends/ [get]
 func (api *SubscriptionsHandler) HandleGetFriends(w http.ResponseWriter, r *http.Request) {

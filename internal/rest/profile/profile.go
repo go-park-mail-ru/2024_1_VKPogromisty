@@ -39,6 +39,7 @@ func NewProfileHandler(userStorage profile.UserStorage, sessionStorage profile.S
 //	@Produce		json
 //	@Success		200	{object}	json.JSONResponse{body=profile.UserWithSubsInfo}
 //	@Failure		401	{object}	errors.HTTPError
+//	@Failure		403	{object}	errors.HTTPError
 //	@Failure		404	{object}	errors.HTTPError
 //	@Failure		500	{object}	errors.HTTPError
 //	@Router			/profile/{userID} [get]
@@ -96,6 +97,7 @@ func (h *ProfileHandler) HandleGetProfile(w http.ResponseWriter, r *http.Request
 //	@Success		200	{object}	json.JSONResponse{body=domain.User}
 //	@Failure		400	{object}	errors.HTTPError
 //	@Failure		401	{object}	errors.HTTPError
+//	@Failure		403	{object}	errors.HTTPError
 //	@Failure		404	{object}	errors.HTTPError
 //	@Failure		500	{object}	errors.HTTPError
 //	@Router			/profile/ [put]
@@ -149,6 +151,7 @@ func (h *ProfileHandler) HandleUpdateProfile(w http.ResponseWriter, r *http.Requ
 //
 //	@Success		204
 //	@Failure		401	{object}	errors.HTTPError
+//	@Failure		403	{object}	errors.HTTPError
 //	@Failure		404	{object}	errors.HTTPError
 //	@Failure		500	{object}	errors.HTTPError
 //	@Router			/profile/ [delete]

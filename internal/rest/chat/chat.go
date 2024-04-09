@@ -61,6 +61,7 @@ func NewChatServer(pubSubRepo chat.PubSubRepository, messagesRepo chat.PersonalM
 //	@Success		200	{object}	json.JSONResponse{body=[]domain.Dialog}
 //	@Failure		400	{object}	errors.HTTPError
 //	@Failure		401	{object}	errors.HTTPError
+//	@Failure		403	{object}	errors.HTTPError
 //	@Failure		500	{object}	errors.HTTPError
 //	@Router			/chat/dialogs/ [get]
 func (c *ChatServer) HandleGetDialogs(w http.ResponseWriter, r *http.Request) {
@@ -97,6 +98,7 @@ func (c *ChatServer) HandleGetDialogs(w http.ResponseWriter, r *http.Request) {
 //	@Success		200	{object}	json.JSONResponse{body=[]domain.PersonalMessage}
 //	@Failure		400	{object}	errors.HTTPError
 //	@Failure		401	{object}	errors.HTTPError
+//	@Failure		403	{object}	errors.HTTPError
 //	@Failure		500	{object}	errors.HTTPError
 //	@Router			/chat/messages/ [get]
 func (c *ChatServer) HandleGetMessagesByDialog(w http.ResponseWriter, r *http.Request) {
@@ -146,49 +148,50 @@ func (c *ChatServer) HandleGetMessagesByDialog(w http.ResponseWriter, r *http.Re
 
 // ServeWS godoc
 //
-//	@Summary		serve websocket connection
-//	@Description	Serve websocket connection. You can send actions to connection following simple structure:
-//	@Description
-//	@Description	{
-//	@Description	"type": ActionType,
-//	@Description	"receiver": uint,
-//	@Description	"payload": interface{}
-//	@Description	}
-//	@Description
-//	@Description	ActionType is a string with one of following values: "SEND_MESSAGE", "UPDATE_MESSAGE", "DELETE_MESSAGE"
-//	@Description
-//	@Description	If "type" = "SEND_MESSAGE", then payload should be {"content": string}
-//	@Description	If "type" = "UPDATE_MESSAGE", then payload should be {"messageId": uint, "content": string}
-//	@Description	If "type" = "DELETE_MESSAGE", then payload should be {"messageId": uint}
-//	@Description
-//	@Description	In response clients, subscribed to corresponding channel, will get same structure back:
-//	@Description	{
-//	@Description	"type": ActionType,
-//	@Description	"receiver": uint,
-//	@Description	"payload": interface{}
-//	@Description	}
-//	@Description
-//	@Description	"payload" can be:
-//	@Description	PersonalMessage if "type" = "SEND_MESSAGE"
-//	@Description	PersonalMessage if "type" = "UPDATE_MESSAGE"
-//	@Description	Absent if "type" = "DELETE_MESSAGE"
-//	@Description	{"error": string} if error happened at any point of query processing
-//	@Description
+//		@Summary		serve websocket connection
+//		@Description	Serve websocket connection. You can send actions to connection following simple structure:
+//		@Description
+//		@Description	{
+//		@Description	"type": ActionType,
+//		@Description	"receiver": uint,
+//		@Description	"csrfToken": string,
+//		@Description	"payload": interface{}
+//		@Description	}
+//		@Description
+//		@Description	ActionType is a string with one of following values: "SEND_MESSAGE", "UPDATE_MESSAGE", "DELETE_MESSAGE"
+//		@Description
+//		@Description	If "type" = "SEND_MESSAGE", then payload should be {"content": string}
+//		@Description	If "type" = "UPDATE_MESSAGE", then payload should be {"messageId": uint, "content": string}
+//		@Description	If "type" = "DELETE_MESSAGE", then payload should be {"messageId": uint}
+//		@Description
+//		@Description	In response clients, subscribed to corresponding channel, will get same structure back:
+//		@Description	{
+//		@Description	"type": ActionType,
+//		@Description	"receiver": uint,
+//	 	@Description	 "csrfToken": string,
+//		@Description	"payload": interface{}
+//		@Description	}
+//		@Description
+//		@Description	"payload" can be:
+//		@Description	PersonalMessage if "type" = "SEND_MESSAGE"
+//		@Description	PersonalMessage if "type" = "UPDATE_MESSAGE"
+//		@Description	Absent if "type" = "DELETE_MESSAGE"
+//		@Description	{"error": string} if error happened at any point of query processing
+//		@Description
 //
-//	@Tags			chat
-//	@license.name	Apache 2.0
-//	@ID				chat/serve_ws
-//	@Accept			json
+//		@Tags			chat
+//		@license.name	Apache 2.0
+//		@ID				chat/serve_ws
+//		@Accept			json
 //
-//	@Param			Cookie	header	string	true	"session_id=some_session"
-//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
+//		@Param			Cookie	header	string	true	"session_id=some_session"
 //
-//	@Produce		json
-//	@Success		200
-//	@Failure		400	{object}	errors.HTTPError
-//	@Failure		401	{object}	errors.HTTPError
-//	@Failure		500	{object}	errors.HTTPError
-//	@Router			/chat/ [get]
+//		@Produce		json
+//		@Success		200
+//		@Failure		400	{object}	errors.HTTPError
+//		@Failure		401	{object}	errors.HTTPError
+//		@Failure		500	{object}	errors.HTTPError
+//		@Router			/chat/ [get]
 func (c *ChatServer) ServeWS(w http.ResponseWriter, r *http.Request) {
 	userID, err := requestcontext.GetUserID(r.Context())
 	if err != nil {
