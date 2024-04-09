@@ -12,7 +12,10 @@ import (
 
 const DefaultAvatarFileName = "default_avatar.png"
 
-var StaticFilePath = "../static"
+var (
+	StaticFilePath  = "../static"
+	ImageExtensions = []string{".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".svg"}
+)
 
 func SaveImage(h *multipart.FileHeader) (fileName string, err error) {
 	if h == nil {
@@ -30,7 +33,21 @@ func SaveImage(h *multipart.FileHeader) (fileName string, err error) {
 		return
 	}
 
-	fileName = uuid.NewString() + path.Ext(h.Filename)
+	fileExt := path.Ext(h.Filename)
+	isImage := false
+	for _, ext := range ImageExtensions {
+		if fileExt == ext {
+			isImage = true
+			break
+		}
+	}
+
+	if !isImage {
+		err = errors.ErrInvalidData
+		return
+	}
+
+	fileName = uuid.NewString() + fileExt
 	filePath := path.Join(wd, StaticFilePath, fileName)
 
 	file, err := os.Create(filePath)
