@@ -1,30 +1,39 @@
 basePath: /api/v1
 definitions:
-  errors.HTTPError:
+  auth.LoginResponse:
     properties:
-      error:
-        type: string
-    type: object
-  services.IsAuthorizedResponse:
-    properties:
-      isAuthorized:
-        type: boolean
-    type: object
-  services.ListPostsResponse:
-    properties:
-      posts:
-        items:
-          $ref: '#/definitions/services.PostWithAuthor'
-        type: array
-    type: object
-  services.LoginResponse:
-    properties:
-      sessionId:
-        type: string
       user:
-        $ref: '#/definitions/services.User'
+        $ref: '#/definitions/domain.User'
     type: object
-  services.Post:
+  domain.Dialog:
+    properties:
+      lastMessage:
+        $ref: '#/definitions/domain.PersonalMessage'
+      user1:
+        $ref: '#/definitions/domain.User'
+      user2:
+        $ref: '#/definitions/domain.User'
+    type: object
+  domain.PersonalMessage:
+    properties:
+      content:
+        type: string
+      createdAt:
+        example: "2021-01-01T00:00:00Z"
+        format: date-time
+        type: string
+      id:
+        type: integer
+      receiverId:
+        type: integer
+      senderId:
+        type: integer
+      updatedAt:
+        example: "2021-01-01T00:00:00Z"
+        format: date-time
+        type: string
+    type: object
+  domain.Post:
     properties:
       attachments:
         items:
@@ -32,26 +41,51 @@ definitions:
         type: array
       authorId:
         type: integer
-      creationDate:
+      content:
+        type: string
+      createdAt:
         example: "2021-01-01T00:00:00Z"
         format: date-time
         type: string
       postId:
         type: integer
-      text:
+      updatedAt:
+        example: "2021-01-01T00:00:00Z"
+        format: date-time
         type: string
     type: object
-  services.PostWithAuthor:
+  domain.PostWithAuthor:
     properties:
       author:
-        $ref: '#/definitions/services.User'
+        $ref: '#/definitions/domain.User'
       post:
-        $ref: '#/definitions/services.Post'
+        $ref: '#/definitions/domain.Post'
     type: object
-  services.User:
+  domain.Subscription:
+    properties:
+      createdAt:
+        example: "2021-01-01T00:00:00Z"
+        format: date-time
+        type: string
+      subscribedTo:
+        type: integer
+      subscriber:
+        type: integer
+      subscriptionId:
+        type: integer
+      updatedAt:
+        example: "2021-01-01T00:00:00Z"
+        format: date-time
+        type: string
+    type: object
+  domain.User:
     properties:
       avatar:
         example: default_avatar.png
+        type: string
+      createdAt:
+        example: "2021-01-01T00:00:00Z"
+        format: date-time
         type: string
       dateOfBirth:
         example: "2021-01-01T00:00:00Z"
@@ -63,16 +97,65 @@ definitions:
         type: string
       lastName:
         type: string
-      registrationDate:
+      updatedAt:
         example: "2021-01-01T00:00:00Z"
         format: date-time
         type: string
       userId:
         type: integer
     type: object
-  utils.JSONResponse:
+  errors.HTTPError:
+    properties:
+      error:
+        type: string
+    type: object
+  json.JSONResponse:
     properties:
       body: {}
+    type: object
+  profile.UserWithSubsInfo:
+    properties:
+      isSubscribedTo:
+        type: boolean
+      isSubscriber:
+        type: boolean
+      user:
+        $ref: '#/definitions/domain.User'
+    type: object
+  rest.CSRFTokenResponse:
+    properties:
+      csrfToken:
+        type: string
+    type: object
+  rest.ListUserPostsResponse:
+    properties:
+      author:
+        $ref: '#/definitions/domain.User'
+      posts:
+        items:
+          $ref: '#/definitions/domain.Post'
+        type: array
+    type: object
+  subscriptions.GetFriendsResponse:
+    properties:
+      friends:
+        items:
+          $ref: '#/definitions/domain.User'
+        type: array
+    type: object
+  subscriptions.GetSubscribersResponse:
+    properties:
+      subscribers:
+        items:
+          $ref: '#/definitions/domain.User'
+        type: array
+    type: object
+  subscriptions.GetSubscriptionsResponse:
+    properties:
+      subscriptions:
+        items:
+          $ref: '#/definitions/domain.User'
+        type: array
     type: object
 host: localhost:8080
 info:
@@ -84,37 +167,6 @@ info:
   title: Socio API
   version: "1.0"
 paths:
-  /auth/is-authorized:
-    get:
-      consumes:
-      - application/json
-      operationId: auth/is-authorized
-      parameters:
-      - description: session_id=some_session
-        in: header
-        name: Cookie
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          headers:
-            Set-Cookie:
-              description: session_id=some_session_id; Path=/; HttpOnly; Expires=Thu,
-                01 Jan 1970 00:00:00 GMT;
-              type: string
-          schema:
-            allOf:
-            - $ref: '#/definitions/utils.JSONResponse'
-            - properties:
-                body:
-                  $ref: '#/definitions/services.IsAuthorizedResponse'
-              type: object
-      summary: check if user is authorized
-      tags:
-      - auth
   /auth/login/:
     post:
       consumes:
@@ -145,10 +197,10 @@ paths:
               type: string
           schema:
             allOf:
-            - $ref: '#/definitions/utils.JSONResponse'
+            - $ref: '#/definitions/json.JSONResponse'
             - properties:
                 body:
-                  $ref: '#/definitions/services.LoginResponse'
+                  $ref: '#/definitions/auth.LoginResponse'
               type: object
         "400":
           description: Bad Request
@@ -250,18 +302,14 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
-          headers:
-            Set-Cookie:
-              description: session_id=some_session_id; Path=/; Max-Age=36000; HttpOnly;
-              type: string
+        "201":
+          description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/utils.JSONResponse'
+            - $ref: '#/definitions/json.JSONResponse'
             - properties:
                 body:
-                  $ref: '#/definitions/services.User'
+                  $ref: '#/definitions/domain.User'
               type: object
         "400":
           description: Bad Request
@@ -274,12 +322,40 @@ paths:
       summary: handle user's registration flow
       tags:
       - auth
-  /posts/:
+  /chat/:
     get:
       consumes:
       - application/json
-      description: list posts to authorized user
-      operationId: posts/
+      description: |
+        Serve websocket connection. You can send actions to connection following simple structure:
+
+        {
+        "type": ActionType,
+        "receiver": uint,
+        "csrfToken": string,
+        "payload": interface{}
+        }
+
+        ActionType is a string with one of following values: "SEND_MESSAGE", "UPDATE_MESSAGE", "DELETE_MESSAGE"
+
+        If "type" = "SEND_MESSAGE", then payload should be {"content": string}
+        If "type" = "UPDATE_MESSAGE", then payload should be {"messageId": uint, "content": string}
+        If "type" = "DELETE_MESSAGE", then payload should be {"messageId": uint}
+
+        In response clients, subscribed to corresponding channel, will get same structure back:
+        {
+        "type": ActionType,
+        "receiver": uint,
+        "csrfToken": string,
+        "payload": interface{}
+        }
+
+        "payload" can be:
+        PersonalMessage if "type" = "SEND_MESSAGE"
+        PersonalMessage if "type" = "UPDATE_MESSAGE"
+        Absent if "type" = "DELETE_MESSAGE"
+        {"error": string} if error happened at any point of query processing
+      operationId: chat/serve_ws
       parameters:
       - description: session_id=some_session
         in: header
@@ -291,12 +367,148 @@ paths:
       responses:
         "200":
           description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: serve websocket connection
+      tags:
+      - chat
+  /chat/dialogs/:
+    get:
+      consumes:
+      - application/json
+      description: get user dialogs
+      operationId: chat/get_dialogs
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/utils.JSONResponse'
+            - $ref: '#/definitions/json.JSONResponse'
             - properties:
                 body:
-                  $ref: '#/definitions/services.ListPostsResponse'
+                  items:
+                    $ref: '#/definitions/domain.Dialog'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: get user dialogs
+      tags:
+      - chat
+  /chat/messages/:
+    get:
+      consumes:
+      - application/json
+      description: get messages by dialog with pagination
+      operationId: chat/get_messages
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: ID of the peer
+        in: query
+        name: peerId
+        required: true
+        type: integer
+      - description: ID of the last message, if last messages needed, should be set
+          to 0
+        in: query
+        name: lastMessageId
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/domain.PersonalMessage'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: get messages by dialog
+      tags:
+      - chat
+  /csrf/:
+    get:
+      consumes:
+      - application/json
+      description: Get CSRF token
+      operationId: csrf/get_csrf_token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  $ref: '#/definitions/rest.CSRFTokenResponse'
               type: object
         "400":
           description: Bad Request
@@ -310,7 +522,702 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/errors.HTTPError'
-      summary: list all posts
+      summary: Get CSRF token
+      tags:
+      - csrf
+  /posts/:
+    delete:
+      consumes:
+      - application/json
+      description: delete post by id
+      operationId: posts/delete
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: ID of the post
+        in: body
+        name: post_id
+        required: true
+        schema:
+          type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            $ref: '#/definitions/json.JSONResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: delete post
       tags:
       - posts
+    get:
+      consumes:
+      - application/json
+      description: get user posts
+      operationId: posts/get_user_posts
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: ID of the user
+        in: query
+        name: userId
+        required: true
+        type: integer
+      - description: ID of the last post, if 0 - get first posts
+        in: query
+        name: lastPostId
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.ListUserPostsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: get user posts
+      tags:
+      - posts
+    post:
+      consumes:
+      - multipart/form-data
+      description: create post with attachments
+      operationId: posts/create
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: Content of the post
+        in: formData
+        name: content
+        required: true
+        type: string
+      - description: Attachments of the post
+        in: formData
+        name: attachments
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  $ref: '#/definitions/domain.PostWithAuthor'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: create post
+      tags:
+      - posts
+    put:
+      consumes:
+      - application/json
+      description: update post by id
+      operationId: posts/update
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: ID of the post
+        in: body
+        name: post_id
+        required: true
+        schema:
+          type: integer
+      - description: Content of the post
+        in: body
+        name: content
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: "application/json\"\t\"Attachments is always null!!!"
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  $ref: '#/definitions/domain.Post'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: update post
+      tags:
+      - posts
+  /posts/friends:
+    get:
+      consumes:
+      - application/json
+      description: get user friends posts
+      operationId: posts/get_user_friends_posts
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: ID of the last post
+        in: query
+        name: lastPostId
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/domain.PostWithAuthor'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: get user friends posts
+      tags:
+      - posts
+  /profile/:
+    delete:
+      consumes:
+      - application/json
+      description: delete user profile
+      operationId: profile/delete
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: delete user profile
+      tags:
+      - profile
+    put:
+      consumes:
+      - multipart/form-data
+      description: update user profile
+      operationId: profile/update
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: First name
+        in: formData
+        name: firstName
+        type: string
+      - description: Last name
+        in: formData
+        name: lastName
+        type: string
+      - description: Email
+        in: formData
+        name: email
+        type: string
+      - description: Password
+        in: formData
+        name: password
+        type: string
+      - description: Repeat password
+        in: formData
+        name: repeatPassword
+        type: string
+      - description: Date of birth
+        in: formData
+        name: dateOfBirth
+        type: string
+      - description: Avatar
+        in: formData
+        name: avatar
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  $ref: '#/definitions/domain.User'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: update user profile
+      tags:
+      - profile
+  /profile/{userID}:
+    get:
+      consumes:
+      - application/json
+      description: get user profile with subscriptions info
+      operationId: profile/get
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: User ID, if empty - get authorized user profile
+        in: path
+        name: userID
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  $ref: '#/definitions/profile.UserWithSubsInfo'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: get user profile with subscriptions info
+      tags:
+      - profile
+  /subscriptions/:
+    delete:
+      consumes:
+      - application/json
+      description: unsubscribe from user
+      operationId: subscriptions/unsubscribe
+      parameters:
+      - description: User to unsubscribe from
+        in: body
+        name: subscribedTo
+        required: true
+        schema:
+          type: integer
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: handle user's unsubscription flow
+      tags:
+      - subscriptions
+    post:
+      consumes:
+      - application/json
+      description: subscribe to user
+      operationId: subscriptions/subscribe
+      parameters:
+      - description: Subscribed to ID
+        in: body
+        name: subscribedTo
+        required: true
+        schema:
+          type: integer
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  $ref: '#/definitions/domain.Subscription'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: handle user's subscription flow
+      tags:
+      - subscriptions
+  /subscriptions/friends/:
+    get:
+      consumes:
+      - application/json
+      description: get user's friends
+      operationId: subscriptions/friends
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  $ref: '#/definitions/subscriptions.GetFriendsResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: get user's friends
+      tags:
+      - subscriptions
+  /subscriptions/subscribers/:
+    get:
+      consumes:
+      - application/json
+      description: get user's subscribers
+      operationId: subscriptions/subscribers
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  $ref: '#/definitions/subscriptions.GetSubscribersResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: get user's subscribers
+      tags:
+      - subscriptions
+  /subscriptions/subscriptions/:
+    get:
+      consumes:
+      - application/json
+      description: get user's subscriptions
+      operationId: subscriptions/subscriptions
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  $ref: '#/definitions/subscriptions.GetSubscriptionsResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: get user's subscriptions
+      tags:
+      - subscriptions
 swagger: "2.0"

@@ -13,7 +13,7 @@
 </ul>
 
 <b>Сервис задеплоен по адресу:</b>
-http://94.139.246.134/login
+https://socio-project.ru/login
 
 Разработчики:
 <ul>
