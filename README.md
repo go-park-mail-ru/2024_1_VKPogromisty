@@ -13,10 +13,7 @@
 </ul>
 
 <b>Сервис задеплоен по адресу:</b>
-http://94.139.246.134/login
-
-<b>Swagger-документация API:</b>
-http://94.139.246.134:8001/swagger/index.html
+https://socio-project.ru/login
 
 Разработчики:
 <ul>
