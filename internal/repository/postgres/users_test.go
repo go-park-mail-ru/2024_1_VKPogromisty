@@ -228,7 +228,7 @@ func TestUpdateUser(t *testing.T) {
 		DateOfBirth: customtime.CustomTime{
 			Time: timeProv.Now(),
 		},
-	})
+	}, "prev_pass")
 
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
