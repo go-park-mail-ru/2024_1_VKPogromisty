@@ -14,7 +14,7 @@ type UserStorage interface {
 	GetUserByID(ctx context.Context, userID uint) (user *domain.User, err error)
 	GetUserByEmail(ctx context.Context, email string) (user *domain.User, err error)
 	GetUserByIDWithSubsInfo(ctx context.Context, userID, authorizedUserID uint) (user *domain.User, isSubscribedTo bool, isSubscriber bool, err error)
-	UpdateUser(ctx context.Context, user *domain.User) (updatedUser *domain.User, err error)
+	UpdateUser(ctx context.Context, user *domain.User, prevPassword string) (updatedUser *domain.User, err error)
 	DeleteUser(ctx context.Context, userID uint) (err error)
 }
 
@@ -70,6 +70,8 @@ func (p *Service) UpdateUser(ctx context.Context, input UpdateUserInput) (update
 		return
 	}
 
+	prevPassword := oldUser.Password
+
 	updatedUser = oldUser
 
 	if err = p.ValidateUserInput(ctx, input, oldUser); err != nil {
@@ -111,7 +113,7 @@ func (p *Service) UpdateUser(ctx context.Context, input UpdateUserInput) (update
 		updatedUser.Avatar = fileName
 	}
 
-	updatedUser, err = p.UserStorage.UpdateUser(ctx, updatedUser)
+	updatedUser, err = p.UserStorage.UpdateUser(ctx, updatedUser, prevPassword)
 	if err != nil {
 		return
 	}

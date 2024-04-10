@@ -175,7 +175,7 @@ func TestService_UpdateUser(t *testing.T) {
 						Email:     "email",
 					}, nil)
 				f.UserStorage.EXPECT().GetUserByEmail(gomock.Any(), gomock.Any()).Return(nil, errors.ErrNotFound)
-				f.UserStorage.EXPECT().UpdateUser(gomock.Any(), gomock.Any()).Return(&domain.User{
+				f.UserStorage.EXPECT().UpdateUser(gomock.Any(), gomock.Any(), gomock.Any()).Return(&domain.User{
 					ID:        1,
 					FirstName: "John",
 					LastName:  "Doe",
@@ -225,7 +225,7 @@ func TestService_UpdateUser(t *testing.T) {
 						Email:     "email",
 					}, nil)
 				f.UserStorage.EXPECT().GetUserByEmail(gomock.Any(), gomock.Any()).Return(nil, errors.ErrNotFound)
-				f.UserStorage.EXPECT().UpdateUser(gomock.Any(), gomock.Any()).Return(nil, errors.ErrInternal)
+				f.UserStorage.EXPECT().UpdateUser(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.ErrInternal)
 			},
 		},
 		{

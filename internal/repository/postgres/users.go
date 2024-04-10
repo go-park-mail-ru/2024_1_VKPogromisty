@@ -266,12 +266,14 @@ func (s *Users) StoreUser(ctx context.Context, user *domain.User) (err error) {
 	return
 }
 
-func (s *Users) UpdateUser(ctx context.Context, user *domain.User) (updatedUser *domain.User, err error) {
+func (s *Users) UpdateUser(ctx context.Context, user *domain.User, prevPassword string) (updatedUser *domain.User, err error) {
 	updatedUser = &domain.User{}
 
-	salt := uuid.NewString()
-	user.Password = hash.HashPassword(user.Password, []byte(salt))
-	user.Salt = salt
+	if user.Password != prevPassword {
+		salt := uuid.NewString()
+		user.Password = hash.HashPassword(user.Password, []byte(salt))
+		user.Salt = salt
+	}
 
 	contextlogger.LogSQL(ctx, updateUserQuery,
 		user.ID,
