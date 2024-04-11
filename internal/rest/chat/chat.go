@@ -77,7 +77,7 @@ func (c *ChatServer) HandleGetDialogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.ServeJSONBody(r.Context(), w, dialogs)
+	json.ServeJSONBody(r.Context(), w, dialogs, http.StatusOK)
 }
 
 // HandleGetMessagesByDialog godoc
@@ -142,8 +142,7 @@ func (c *ChatServer) HandleGetMessagesByDialog(w http.ResponseWriter, r *http.Re
 		messages = make([]*domain.PersonalMessage, 0)
 	}
 
-	json.ServeJSONBody(r.Context(), w, messages)
-
+	json.ServeJSONBody(r.Context(), w, messages, http.StatusOK)
 }
 
 // ServeWS godoc

@@ -70,7 +70,7 @@ func (h *ProfileHandler) HandleGetProfile(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	json.ServeJSONBody(r.Context(), w, userWithInfo)
+	json.ServeJSONBody(r.Context(), w, userWithInfo, http.StatusOK)
 }
 
 // HandleUpdateProfile godoc
@@ -134,7 +134,7 @@ func (h *ProfileHandler) HandleUpdateProfile(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	json.ServeJSONBody(r.Context(), w, updatedUser)
+	json.ServeJSONBody(r.Context(), w, updatedUser, http.StatusOK)
 }
 
 // HandleDeleteProfile godoc

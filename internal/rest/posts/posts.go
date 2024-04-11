@@ -71,7 +71,7 @@ func (h *PostsHandler) HandleGetPostByID(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	json.ServeJSONBody(r.Context(), w, post)
+	json.ServeJSONBody(r.Context(), w, post, http.StatusOK)
 }
 
 // HandleGetUserPosts godoc
@@ -124,7 +124,7 @@ func (h *PostsHandler) HandleGetUserPosts(w http.ResponseWriter, r *http.Request
 		Posts:  posts,
 		Author: author,
 	}
-	json.ServeJSONBody(r.Context(), w, response)
+	json.ServeJSONBody(r.Context(), w, response, http.StatusOK)
 }
 
 // HandleGetUserFriendsPosts godoc
@@ -172,7 +172,7 @@ func (h *PostsHandler) HandleGetUserFriendsPosts(w http.ResponseWriter, r *http.
 		return
 	}
 
-	json.ServeJSONBody(r.Context(), w, postsWithAuthors)
+	json.ServeJSONBody(r.Context(), w, postsWithAuthors, http.StatusOK)
 }
 
 // HandleCreatePost godoc
@@ -223,8 +223,7 @@ func (h *PostsHandler) HandleCreatePost(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	json.ServeJSONBody(r.Context(), w, postWithAuthor)
+	json.ServeJSONBody(r.Context(), w, postWithAuthor, http.StatusCreated)
 }
 
 // HandleUpdatePost godoc
@@ -273,7 +272,7 @@ func (h *PostsHandler) HandleUpdatePost(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	json.ServeJSONBody(r.Context(), w, updatedPost)
+	json.ServeJSONBody(r.Context(), w, updatedPost, http.StatusOK)
 
 }
 

@@ -67,7 +67,7 @@ func (api *SubscriptionsHandler) HandleSubscription(w http.ResponseWriter, r *ht
 		return
 	}
 
-	json.ServeJSONBody(r.Context(), w, map[string]*domain.Subscription{"subscription": subscription})
+	json.ServeJSONBody(r.Context(), w, map[string]*domain.Subscription{"subscription": subscription}, http.StatusCreated)
 }
 
 // HandleUnsubscription godoc
@@ -148,7 +148,7 @@ func (api *SubscriptionsHandler) HandleGetSubscriptions(w http.ResponseWriter, r
 		return
 	}
 
-	json.ServeJSONBody(r.Context(), w, map[string][]*domain.User{"subscriptions": subscriptions})
+	json.ServeJSONBody(r.Context(), w, map[string][]*domain.User{"subscriptions": subscriptions}, http.StatusOK)
 }
 
 // HandleGetSubscribers godoc
@@ -184,7 +184,7 @@ func (api *SubscriptionsHandler) HandleGetSubscribers(w http.ResponseWriter, r *
 		return
 	}
 
-	json.ServeJSONBody(r.Context(), w, map[string][]*domain.User{"subscribers": subscribers})
+	json.ServeJSONBody(r.Context(), w, map[string][]*domain.User{"subscribers": subscribers}, http.StatusOK)
 }
 
 // HandleGetFriends godoc
@@ -220,5 +220,5 @@ func (api *SubscriptionsHandler) HandleGetFriends(w http.ResponseWriter, r *http
 		return
 	}
 
-	json.ServeJSONBody(r.Context(), w, map[string][]*domain.User{"friends": friends})
+	json.ServeJSONBody(r.Context(), w, map[string][]*domain.User{"friends": friends}, http.StatusOK)
 }

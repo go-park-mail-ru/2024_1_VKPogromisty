@@ -37,7 +37,7 @@ func TestHandleSubscription(t *testing.T) {
 			input: &SubscriptionInput{
 				SubscribedToID: 1,
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusCreated,
 			ctx:            context.WithValue(context.Background(), requestcontext.UserIDKey, uint(2)),
 			setupMocks: func(fields *fields) {
 				fields.UserStorage.EXPECT().GetUserByID(gomock.Any(), gomock.Any()).Return(&domain.User{

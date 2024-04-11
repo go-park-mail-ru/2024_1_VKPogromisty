@@ -3,6 +3,7 @@ package json_test
 import (
 	"context"
 	goErr "errors"
+	"net/http"
 	"net/http/httptest"
 	"socio/errors"
 	"socio/pkg/json"
@@ -23,7 +24,7 @@ func TestServeJSONBody(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			rr := httptest.NewRecorder()
-			json.ServeJSONBody(context.Background(), rr, tt.body)
+			json.ServeJSONBody(context.Background(), rr, tt.body, http.StatusOK)
 
 			if rr.Body.String() != tt.want {
 				t.Errorf("ServeJSONBody() = %v, want %v", rr.Body.String(), tt.want)

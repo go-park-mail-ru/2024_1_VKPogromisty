@@ -74,8 +74,7 @@ func (api *AuthHandler) HandleRegistration(w http.ResponseWriter, r *http.Reques
 	}
 
 	http.SetCookie(w, session)
-	w.WriteHeader(http.StatusCreated)
-	json.ServeJSONBody(r.Context(), w, map[string]*domain.User{"user": user})
+	json.ServeJSONBody(r.Context(), w, map[string]*domain.User{"user": user}, http.StatusOK)
 }
 
 // HandleLogin godoc
@@ -122,7 +121,7 @@ func (api *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.SetCookie(w, session)
-	json.ServeJSONBody(r.Context(), w, map[string]any{"user": user})
+	json.ServeJSONBody(r.Context(), w, map[string]any{"user": user}, http.StatusOK)
 }
 
 // HandleLogout godoc
