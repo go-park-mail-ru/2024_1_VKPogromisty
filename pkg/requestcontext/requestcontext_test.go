@@ -103,7 +103,7 @@ func TestGetLogger(t *testing.T) {
 		{
 			name: "Valid logger",
 			args: args{
-				ctx: context.WithValue(context.Background(), LoggerKey, zap.NewNop().Sugar()),
+				ctx: context.WithValue(context.Background(), LoggerKey, zap.NewNop()),
 			},
 			wantLogger: zap.NewNop(),
 			wantErr:    false,
