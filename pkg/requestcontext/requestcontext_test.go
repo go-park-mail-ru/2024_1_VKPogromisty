@@ -97,15 +97,15 @@ func TestGetLogger(t *testing.T) {
 	tests := []struct {
 		name       string
 		args       args
-		wantLogger *zap.SugaredLogger
+		wantLogger *zap.Logger
 		wantErr    bool
 	}{
 		{
 			name: "Valid logger",
 			args: args{
-				ctx: context.WithValue(context.Background(), LoggerKey, zap.NewNop().Sugar()),
+				ctx: context.WithValue(context.Background(), LoggerKey, zap.NewNop()),
 			},
-			wantLogger: zap.NewNop().Sugar(),
+			wantLogger: zap.NewNop(),
 			wantErr:    false,
 		},
 		{
