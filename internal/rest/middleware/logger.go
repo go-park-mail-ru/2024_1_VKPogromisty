@@ -11,10 +11,10 @@ import (
 )
 
 type Logger struct {
-	logger *zap.SugaredLogger
+	logger *zap.Logger
 }
 
-func NewZapLogger() (sugar *zap.SugaredLogger, err error) {
+func NewZapLogger() (logger *zap.Logger, err error) {
 	cfg := zap.NewProductionConfig()
 
 	cfg.Sampling = nil
@@ -24,17 +24,15 @@ func NewZapLogger() (sugar *zap.SugaredLogger, err error) {
 		"stderr",
 	}
 
-	logger, err := cfg.Build()
+	logger, err = cfg.Build()
 	if err != nil {
 		return
 	}
 
-	sugar = logger.Sugar()
-
 	return
 }
 
-func NewLogger(logger *zap.SugaredLogger) *Logger {
+func NewLogger(logger *zap.Logger) *Logger {
 	return &Logger{
 		logger: logger,
 	}
@@ -46,7 +44,7 @@ func (l *Logger) LoggerMiddleware(h http.Handler) http.Handler {
 		requestID := uuid.New().String()
 
 		currLogger := l.logger.With(
-			"requestID", requestID,
+			zap.String("requestID", requestID),
 			zap.String("method", r.Method),
 			zap.String("remote_addr", r.RemoteAddr),
 			zap.String("url", r.URL.Path),

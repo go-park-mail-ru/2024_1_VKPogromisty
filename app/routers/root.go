@@ -51,18 +51,18 @@ func MountRootRouter(router *mux.Router) (err error) {
 	MountSubscriptionsRouter(rootRouter, subStorage, userStorage, sessionStorage)
 	MountStaticRouter(rootRouter)
 
-	sugar, err := middleware.NewZapLogger()
+	prodLogger, err := middleware.NewZapLogger()
 	if err != nil {
 		return
 	}
 
-	defer sugar.Sync()
+	defer prodLogger.Sync()
 
-	logger := middleware.NewLogger(sugar)
+	logger := middleware.NewLogger(prodLogger)
 
-	rootRouter.Use(middleware.DisableCache)
-	rootRouter.Use(logger.LoggerMiddleware)
 	rootRouter.Use(middleware.Recovery)
+	rootRouter.Use(logger.LoggerMiddleware)
+	rootRouter.Use(middleware.DisableCache)
 
 	handler := cors.New(cors.Options{
 		AllowedOrigins:   middleware.ALLOWED_ORIGINS,

@@ -13,7 +13,7 @@ func LogInfo(ctx context.Context) {
 		return
 	}
 
-	logger.Info()
+	logger.Info("message", zap.String("message", "Request processed successfully"))
 }
 
 func LogErr(ctx context.Context, err error) {
@@ -22,7 +22,7 @@ func LogErr(ctx context.Context, err error) {
 		return
 	}
 
-	logger.Error(zap.Error(err))
+	logger.Error("error", zap.Error(err))
 }
 
 func LogSQL(ctx context.Context, query string, args ...interface{}) {
