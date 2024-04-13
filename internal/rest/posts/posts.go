@@ -15,6 +15,12 @@ import (
 	"github.com/gorilla/mux"
 )
 
+const (
+	UserIDQueryParam      = "userId"
+	LastPostIDQueryParam  = "lastPostId"
+	PostsAmountQueryParam = "postsAmount"
+)
+
 type ListUserPostsResponse struct {
 	Posts  []*domain.Post `json:"posts"`
 	Author *domain.User   `json:"author"`
@@ -86,7 +92,8 @@ func (h *PostsHandler) HandleGetPostByID(w http.ResponseWriter, r *http.Request)
 //	@Param			Cookie		header	string	true	"session_id=some_session"
 //	@Param			X-CSRF-Token	header	string	true	"CSRF token"
 //	@Param			userId		query	uint	true	"ID of the user"
-//	@Param			lastPostId	query	uint	false	"ID of the last post, if 0 - get first posts"
+//	@Param			lastPostId	query	uint	true	"ID of the last post, if 0 - get first posts"
+//	@Param			postsAmount	query	uint	true	"Amount of posts to get, if 0 - get 20 posts"
 //
 //	@Produce		json
 //	@Success		200	{object}	ListUserPostsResponse
@@ -98,7 +105,7 @@ func (h *PostsHandler) HandleGetPostByID(w http.ResponseWriter, r *http.Request)
 func (h *PostsHandler) HandleGetUserPosts(w http.ResponseWriter, r *http.Request) {
 	var input posts.ListUserPostsInput
 
-	userID, err := strconv.Atoi(r.URL.Query().Get("userId"))
+	userID, err := strconv.Atoi(r.URL.Query().Get(UserIDQueryParam))
 	if err != nil {
 		json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
 		return
@@ -106,7 +113,7 @@ func (h *PostsHandler) HandleGetUserPosts(w http.ResponseWriter, r *http.Request
 
 	input.UserID = uint(userID)
 
-	lastPostID, err := strconv.Atoi(r.URL.Query().Get("lastPostId"))
+	lastPostID, err := strconv.Atoi(r.URL.Query().Get(LastPostIDQueryParam))
 	if err != nil {
 		json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
 		return
@@ -114,7 +121,15 @@ func (h *PostsHandler) HandleGetUserPosts(w http.ResponseWriter, r *http.Request
 
 	input.LastPostID = uint(lastPostID)
 
-	posts, author, err := h.Service.GetUserPosts(r.Context(), input.UserID, input.LastPostID)
+	postsAmount, err := strconv.Atoi(r.URL.Query().Get(PostsAmountQueryParam))
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
+		return
+	}
+
+	input.PostsAmount = uint(postsAmount)
+
+	posts, author, err := h.Service.GetUserPosts(r.Context(), input.UserID, input.LastPostID, input.PostsAmount)
 	if err != nil {
 		json.ServeJSONError(r.Context(), w, err)
 		return
@@ -138,7 +153,8 @@ func (h *PostsHandler) HandleGetUserPosts(w http.ResponseWriter, r *http.Request
 //
 //	@Param			Cookie		header	string	true	"session_id=some_session"
 //	@Param			X-CSRF-Token	header	string	true	"CSRF token"
-//	@Param			lastPostId	query	uint	false	"ID of the last post"
+//	@Param			lastPostId	query	uint	true	"ID of the last post"
+//	@Param			postsAmount	query	uint	true	"Amount of posts to get, if 0 - get 20 posts"
 //
 //	@Produce		json
 //	@Success		200	{object}	json.JSONResponse{body=[]domain.PostWithAuthor}
@@ -166,7 +182,15 @@ func (h *PostsHandler) HandleGetUserFriendsPosts(w http.ResponseWriter, r *http.
 		return
 	}
 
-	postsWithAuthors, err := h.Service.GetUserFriendsPosts(r.Context(), userID, input.LastPostID)
+	postsAmount, err := strconv.Atoi(r.URL.Query().Get(PostsAmountQueryParam))
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
+		return
+	}
+
+	input.PostsAmount = uint(postsAmount)
+
+	postsWithAuthors, err := h.Service.GetUserFriendsPosts(r.Context(), userID, input.LastPostID, input.PostsAmount)
 	if err != nil {
 		json.ServeJSONError(r.Context(), w, err)
 		return
