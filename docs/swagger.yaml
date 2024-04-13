@@ -598,6 +598,12 @@ paths:
       - description: ID of the last post, if 0 - get first posts
         in: query
         name: lastPostId
+        required: true
+        type: integer
+      - description: Amount of posts to get, if 0 - get 20 posts
+        in: query
+        name: postsAmount
+        required: true
         type: integer
       produces:
       - application/json
@@ -764,6 +770,12 @@ paths:
       - description: ID of the last post
         in: query
         name: lastPostId
+        required: true
+        type: integer
+      - description: Amount of posts to get, if 0 - get 20 posts
+        in: query
+        name: postsAmount
+        required: true
         type: integer
       produces:
       - application/json

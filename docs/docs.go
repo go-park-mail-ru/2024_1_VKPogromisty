@@ -568,7 +568,15 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "ID of the last post, if 0 - get first posts",
                         "name": "lastPostId",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Amount of posts to get, if 0 - get 20 posts",
+                        "name": "postsAmount",
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -894,7 +902,15 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "ID of the last post",
                         "name": "lastPostId",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Amount of posts to get, if 0 - get 20 posts",
+                        "name": "postsAmount",
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {

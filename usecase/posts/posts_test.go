@@ -113,9 +113,10 @@ func TestService_GetPostByID(t *testing.T) {
 
 func TestService_GetUserPosts(t *testing.T) {
 	type args struct {
-		ctx        context.Context
-		userID     uint
-		lastPostID uint
+		ctx         context.Context
+		userID      uint
+		lastPostID  uint
+		postsAmount uint
 	}
 
 	tests := []struct {
@@ -129,9 +130,10 @@ func TestService_GetUserPosts(t *testing.T) {
 		{
 			name: "success",
 			args: args{
-				ctx:        context.Background(),
-				userID:     1,
-				lastPostID: 0,
+				ctx:         context.Background(),
+				userID:      1,
+				lastPostID:  0,
+				postsAmount: 20,
 			},
 			wantPosts: []*domain.Post{
 				{
@@ -161,7 +163,7 @@ func TestService_GetUserPosts(t *testing.T) {
 			},
 			wantErr: false,
 			prepareMock: func(f *fields) {
-				f.PostsStorage.EXPECT().GetUserPosts(gomock.Any(), gomock.Any(), gomock.Any()).Return([]*domain.Post{
+				f.PostsStorage.EXPECT().GetUserPosts(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]*domain.Post{
 					{
 						ID:       1,
 						AuthorID: 1,
@@ -192,9 +194,10 @@ func TestService_GetUserPosts(t *testing.T) {
 		{
 			name: "no user",
 			args: args{
-				ctx:        context.Background(),
-				userID:     1,
-				lastPostID: 0,
+				ctx:         context.Background(),
+				userID:      1,
+				lastPostID:  0,
+				postsAmount: 20,
 			},
 			wantPosts:  nil,
 			wantAuthor: nil,
@@ -206,9 +209,10 @@ func TestService_GetUserPosts(t *testing.T) {
 		{
 			name: "no posts",
 			args: args{
-				ctx:        context.Background(),
-				userID:     1,
-				lastPostID: 0,
+				ctx:         context.Background(),
+				userID:      1,
+				lastPostID:  0,
+				postsAmount: 20,
 			},
 			wantPosts: nil,
 			wantAuthor: &domain.User{
@@ -226,7 +230,7 @@ func TestService_GetUserPosts(t *testing.T) {
 			},
 			wantErr: true,
 			prepareMock: func(f *fields) {
-				f.PostsStorage.EXPECT().GetUserPosts(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.ErrNotFound)
+				f.PostsStorage.EXPECT().GetUserPosts(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.ErrNotFound)
 				f.UserStorage.EXPECT().GetUserByID(gomock.Any(), gomock.Any()).Return(&domain.User{
 					ID:        1,
 					FirstName: "firstName",
@@ -259,7 +263,7 @@ func TestService_GetUserPosts(t *testing.T) {
 
 			s := posts.NewPostsService(f.PostsStorage, f.UserStorage, f.Sanitizer)
 
-			gotPosts, gotAuthor, err := s.GetUserPosts(tt.args.ctx, tt.args.userID, tt.args.lastPostID)
+			gotPosts, gotAuthor, err := s.GetUserPosts(tt.args.ctx, tt.args.userID, tt.args.lastPostID, tt.args.postsAmount)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Service.GetUserPosts() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -324,7 +328,7 @@ func TestService_GetUserFriendsPosts(t *testing.T) {
 			},
 			wantErr: false,
 			prepareMock: func(f *fields) {
-				f.PostsStorage.EXPECT().GetUserFriendsPosts(gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.PostWithAuthor{
+				f.PostsStorage.EXPECT().GetUserFriendsPosts(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.PostWithAuthor{
 					{
 						Post: &domain.Post{
 							ID:       1,
@@ -364,7 +368,7 @@ func TestService_GetUserFriendsPosts(t *testing.T) {
 			wantPosts: nil,
 			wantErr:   true,
 			prepareMock: func(f *fields) {
-				f.PostsStorage.EXPECT().GetUserFriendsPosts(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.ErrNotFound)
+				f.PostsStorage.EXPECT().GetUserFriendsPosts(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.ErrNotFound)
 			},
 		},
 	}
@@ -384,7 +388,7 @@ func TestService_GetUserFriendsPosts(t *testing.T) {
 
 			s := posts.NewPostsService(f.PostsStorage, f.UserStorage, f.Sanitizer)
 
-			gotPosts, err := s.GetUserFriendsPosts(tt.args.ctx, tt.args.userID, tt.args.lastPostID)
+			gotPosts, err := s.GetUserFriendsPosts(tt.args.ctx, tt.args.userID, tt.args.lastPostID, 20)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Service.GetUserFriendsPosts() error = %v, wantErr %v", err, tt.wantErr)
 				return

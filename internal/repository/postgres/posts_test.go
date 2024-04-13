@@ -81,7 +81,7 @@ func TestGetUserPosts(t *testing.T) {
 
 	repo := repository.NewPosts(pool, customtime.MockTimeProvider{})
 
-	posts, err := repo.GetUserPosts(context.Background(), 1, 2)
+	posts, err := repo.GetUserPosts(context.Background(), 1, 2, 20)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -125,7 +125,7 @@ func TestGetUserFriendsPosts(t *testing.T) {
 
 	repo := repository.NewPosts(pool, customtime.MockTimeProvider{})
 
-	posts, err := repo.GetUserFriendsPosts(context.Background(), 1, 2)
+	posts, err := repo.GetUserFriendsPosts(context.Background(), 1, 2, 20)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}

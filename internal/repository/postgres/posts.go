@@ -15,7 +15,6 @@ import (
 )
 
 const (
-	PostsByPage      = 20
 	GetPostByIDQuery = `
 	SELECT p.id,
 		p.author_id,
@@ -180,7 +179,7 @@ func (p *Posts) GetPostByID(ctx context.Context, postID uint) (post *domain.Post
 	return
 }
 
-func (p *Posts) GetUserPosts(ctx context.Context, userID uint, lastPostID uint) (posts []*domain.Post, err error) {
+func (p *Posts) GetUserPosts(ctx context.Context, userID uint, lastPostID uint, postsAmount uint) (posts []*domain.Post, err error) {
 	if lastPostID == 0 {
 		contextlogger.LogSQL(ctx, getLastUserPostIDQuery, userID)
 
@@ -192,9 +191,9 @@ func (p *Posts) GetUserPosts(ctx context.Context, userID uint, lastPostID uint) 
 		lastPostID += 1
 	}
 
-	contextlogger.LogSQL(ctx, getUserPostsQuery, userID, lastPostID, PostsByPage)
+	contextlogger.LogSQL(ctx, getUserPostsQuery, userID, lastPostID, postsAmount)
 
-	rows, err := p.db.Query(context.Background(), getUserPostsQuery, userID, lastPostID, PostsByPage)
+	rows, err := p.db.Query(context.Background(), getUserPostsQuery, userID, lastPostID, postsAmount)
 	if err != nil {
 		return
 	}
@@ -223,8 +222,8 @@ func (p *Posts) GetUserPosts(ctx context.Context, userID uint, lastPostID uint) 
 	return
 }
 
-func (p *Posts) GetUserFriendsPosts(ctx context.Context, userID uint, lastPostID uint) (posts []domain.PostWithAuthor, err error) {
-	contextlogger.LogSQL(ctx, GetUserFriendsPostsQuery, userID, lastPostID, PostsByPage)
+func (p *Posts) GetUserFriendsPosts(ctx context.Context, userID uint, lastPostID uint, postsAmount uint) (posts []domain.PostWithAuthor, err error) {
+	contextlogger.LogSQL(ctx, GetUserFriendsPostsQuery, userID, lastPostID, postsAmount)
 	if lastPostID == 0 {
 		contextlogger.LogSQL(ctx, getLastUserFriendsPostIDQuery, userID)
 
@@ -236,9 +235,9 @@ func (p *Posts) GetUserFriendsPosts(ctx context.Context, userID uint, lastPostID
 		lastPostID += 1
 	}
 
-	contextlogger.LogSQL(ctx, GetUserFriendsPostsQuery, userID, lastPostID, PostsByPage)
+	contextlogger.LogSQL(ctx, GetUserFriendsPostsQuery, userID, lastPostID, postsAmount)
 
-	rows, err := p.db.Query(context.Background(), GetUserFriendsPostsQuery, userID, lastPostID, PostsByPage)
+	rows, err := p.db.Query(context.Background(), GetUserFriendsPostsQuery, userID, lastPostID, postsAmount)
 	if err != nil {
 		return
 	}

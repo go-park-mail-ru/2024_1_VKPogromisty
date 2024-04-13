@@ -8,6 +8,10 @@ import (
 	"socio/pkg/sanitizer"
 )
 
+const (
+	defaultPostsAmount = 20
+)
+
 type PostInput struct {
 	Content     string                  `json:"content"`
 	AuthorID    uint                    `json:"authorId"`
@@ -15,12 +19,14 @@ type PostInput struct {
 }
 
 type ListUserPostsInput struct {
-	UserID     uint `json:"userId"`
-	LastPostID uint `json:"lastPostId"`
+	UserID      uint `json:"userId"`
+	LastPostID  uint `json:"lastPostId"`
+	PostsAmount uint `json:"postsAmount"`
 }
 
 type ListUserFriendsPostsInput struct {
-	LastPostID uint `json:"lastPostId"`
+	LastPostID  uint `json:"lastPostId"`
+	PostsAmount uint `json:"postsAmount"`
 }
 
 type PostUpdateInput struct {
@@ -38,8 +44,8 @@ type UserStorage interface {
 
 type PostsStorage interface {
 	GetPostByID(ctx context.Context, postID uint) (post *domain.Post, err error)
-	GetUserPosts(ctx context.Context, userID uint, lastPostID uint) (posts []*domain.Post, err error)
-	GetUserFriendsPosts(ctx context.Context, userID uint, lastPostID uint) (posts []domain.PostWithAuthor, err error)
+	GetUserPosts(ctx context.Context, userID uint, lastPostID uint, postsAmount uint) (posts []*domain.Post, err error)
+	GetUserFriendsPosts(ctx context.Context, userID uint, lastPostID uint, postsAmount uint) (posts []domain.PostWithAuthor, err error)
 	StorePost(ctx context.Context, post *domain.Post, attachments []*multipart.FileHeader) (newPost *domain.Post, err error)
 	UpdatePost(ctx context.Context, post *domain.Post) (updatedPost *domain.Post, err error)
 	DeletePost(ctx context.Context, postID uint) (err error)
@@ -76,13 +82,17 @@ func (s *Service) GetPostByID(ctx context.Context, postID uint) (post *domain.Po
 	return
 }
 
-func (s *Service) GetUserPosts(ctx context.Context, userID uint, lastPostID uint) (posts []*domain.Post, author *domain.User, err error) {
+func (s *Service) GetUserPosts(ctx context.Context, userID uint, lastPostID uint, postsAmount uint) (posts []*domain.Post, author *domain.User, err error) {
 	author, err = s.UserStorage.GetUserByID(ctx, userID)
 	if err != nil {
 		return
 	}
 
-	posts, err = s.PostsStorage.GetUserPosts(ctx, userID, lastPostID)
+	if postsAmount == 0 {
+		postsAmount = defaultPostsAmount
+	}
+
+	posts, err = s.PostsStorage.GetUserPosts(ctx, userID, lastPostID, postsAmount)
 	if err != nil {
 		return
 	}
@@ -94,8 +104,12 @@ func (s *Service) GetUserPosts(ctx context.Context, userID uint, lastPostID uint
 	return
 }
 
-func (s *Service) GetUserFriendsPosts(ctx context.Context, userID uint, lastPostID uint) (posts []domain.PostWithAuthor, err error) {
-	posts, err = s.PostsStorage.GetUserFriendsPosts(ctx, userID, lastPostID)
+func (s *Service) GetUserFriendsPosts(ctx context.Context, userID uint, lastPostID uint, postsAmount uint) (posts []domain.PostWithAuthor, err error) {
+	if postsAmount == 0 {
+		postsAmount = defaultPostsAmount
+	}
+
+	posts, err = s.PostsStorage.GetUserFriendsPosts(ctx, userID, lastPostID, postsAmount)
 	if err != nil {
 		return
 	}

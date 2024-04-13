@@ -30,4 +30,4 @@ docker-migrate:
 	cd ./db/migrations && tern migrate
 
 make go-run:
-	cd ./app && go build && ./app
+	cd ./cmd && go build && ./cmd
