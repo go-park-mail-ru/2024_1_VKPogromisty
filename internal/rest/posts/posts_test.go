@@ -100,7 +100,7 @@ func TestHandleGetUserPosts(t *testing.T) {
 		prepare        func(f *fields)
 	}{
 		{
-			name:           "TestHandleGetUserPosts",
+			name:           "success",
 			request:        httptest.NewRequest("GET", "/posts?userId=1&lastPostId=0&postsAmount=20", nil),
 			expectedStatus: http.StatusOK,
 			prepare: func(f *fields) {
@@ -109,7 +109,7 @@ func TestHandleGetUserPosts(t *testing.T) {
 			},
 		},
 		{
-			name:           "TestHandleGetUserPosts",
+			name:           "no user",
 			request:        httptest.NewRequest("GET", "/posts?userId=1&lastPostId=0&postsAmount=20", nil),
 			expectedStatus: http.StatusNotFound,
 			prepare: func(f *fields) {
@@ -117,14 +117,14 @@ func TestHandleGetUserPosts(t *testing.T) {
 			},
 		},
 		{
-			name:           "TestHandleGetUserPosts",
+			name:           "invalid user id",
 			request:        httptest.NewRequest("GET", "/posts?userId=tyaazh&lastPostId=0&postsAmount=20", nil),
 			expectedStatus: http.StatusBadRequest,
 			prepare: func(f *fields) {
 			},
 		},
 		{
-			name:           "TestHandleGetUserPosts",
+			name:           "invalid last post id",
 			request:        httptest.NewRequest("GET", "/posts?userId=1&lastPostId=opa&postsAmount=20", nil),
 			expectedStatus: http.StatusBadRequest,
 			prepare: func(f *fields) {
@@ -132,7 +132,7 @@ func TestHandleGetUserPosts(t *testing.T) {
 		},
 		{
 			name:           "TestHandleGetUserPosts",
-			request:        httptest.NewRequest("GET", "/posts?userId=1&lastPostId=0", nil),
+			request:        httptest.NewRequest("GET", "/posts?userId=1&lastPostId=0&postsAmount=opa", nil),
 			expectedStatus: http.StatusBadRequest,
 			prepare: func(f *fields) {
 			},
@@ -179,7 +179,7 @@ func TestHandleGetUserFriendsPosts(t *testing.T) {
 		prepare        func(f *fields)
 	}{
 		{
-			name:           "TestHandleGetUserFriendsPosts",
+			name:           "success",
 			request:        httptest.NewRequest("GET", "/friends/posts?lastPostId=0&postsAmount=20", nil),
 			expectedStatus: http.StatusOK,
 			ctx:            validCtx,
@@ -188,7 +188,7 @@ func TestHandleGetUserFriendsPosts(t *testing.T) {
 			},
 		},
 		{
-			name:           "TestHandleGetUserFriendsPosts",
+			name:           "invalid last post id",
 			request:        httptest.NewRequest("GET", "/friends/posts?lastPostId=tyazh&postsAmount=20", nil),
 			expectedStatus: http.StatusBadRequest,
 			ctx:            validCtx,
@@ -196,15 +196,15 @@ func TestHandleGetUserFriendsPosts(t *testing.T) {
 			},
 		},
 		{
-			name:           "TestHandleGetUserFriendsPosts",
-			request:        httptest.NewRequest("GET", "/friends/posts?lastPostId=0", nil),
+			name:           "invalid posts amount",
+			request:        httptest.NewRequest("GET", "/friends/posts?lastPostId=0&postsAmount=oppa", nil),
 			expectedStatus: http.StatusBadRequest,
 			ctx:            validCtx,
 			prepare: func(f *fields) {
 			},
 		},
 		{
-			name:           "TestHandleGetUserFriendsPosts",
+			name:           "invalid context",
 			request:        httptest.NewRequest("GET", "/friends/posts?lastPostId=0&postsAmount=20", nil),
 			expectedStatus: http.StatusBadRequest,
 			ctx:            context.Background(),
@@ -212,20 +212,12 @@ func TestHandleGetUserFriendsPosts(t *testing.T) {
 			},
 		},
 		{
-			name:           "TestHandleGetUserFriendsPosts",
+			name:           "internal error",
 			request:        httptest.NewRequest("GET", "/friends/posts?lastPostId=0&postsAmount=20", nil),
 			expectedStatus: http.StatusInternalServerError,
 			ctx:            validCtx,
 			prepare: func(f *fields) {
 				f.PostsStorage.EXPECT().GetUserFriendsPosts(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.ErrInternal)
-			},
-		},
-		{
-			name:           "TestHandleGetUserFriendsPosts",
-			request:        httptest.NewRequest("GET", "/friends/posts?lastPostId=0", nil),
-			expectedStatus: http.StatusBadRequest,
-			ctx:            validCtx,
-			prepare: func(f *fields) {
 			},
 		},
 	}

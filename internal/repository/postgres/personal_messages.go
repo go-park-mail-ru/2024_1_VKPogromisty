@@ -9,7 +9,6 @@ import (
 )
 
 const (
-	messagesLimit            = 20
 	getMessagesByDialogQuery = `
 	SELECT id,
 		sender_id,
@@ -140,10 +139,10 @@ func (pm *PersonalMessages) GetLastMessageID(ctx context.Context, senderID, rece
 	return
 }
 
-func (pm *PersonalMessages) GetMessagesByDialog(ctx context.Context, senderID, receiverID, lastMessageID uint) (messages []*domain.PersonalMessage, err error) {
-	contextlogger.LogSQL(ctx, getMessagesByDialogQuery, senderID, receiverID, lastMessageID, messagesLimit)
+func (pm *PersonalMessages) GetMessagesByDialog(ctx context.Context, senderID, receiverID, lastMessageID, messagesAmount uint) (messages []*domain.PersonalMessage, err error) {
+	contextlogger.LogSQL(ctx, getMessagesByDialogQuery, senderID, receiverID, lastMessageID, messagesAmount)
 
-	rows, err := pm.db.Query(context.Background(), getMessagesByDialogQuery, senderID, receiverID, lastMessageID, messagesLimit)
+	rows, err := pm.db.Query(context.Background(), getMessagesByDialogQuery, senderID, receiverID, lastMessageID, messagesAmount)
 	if err != nil {
 		return
 	}

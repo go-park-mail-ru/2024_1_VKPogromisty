@@ -92,8 +92,8 @@ func (h *PostsHandler) HandleGetPostByID(w http.ResponseWriter, r *http.Request)
 //	@Param			Cookie		header	string	true	"session_id=some_session"
 //	@Param			X-CSRF-Token	header	string	true	"CSRF token"
 //	@Param			userId		query	uint	true	"ID of the user"
-//	@Param			lastPostId	query	uint	true	"ID of the last post, if 0 - get first posts"
-//	@Param			postsAmount	query	uint	true	"Amount of posts to get, if 0 - get 20 posts"
+//	@Param			lastPostId	query	uint	false	"ID of the last post, if 0 - get first posts"
+//	@Param			postsAmount	query	uint	false	"Amount of posts to get, if 0 - get 20 posts"
 //
 //	@Produce		json
 //	@Success		200	{object}	ListUserPostsResponse
@@ -113,18 +113,32 @@ func (h *PostsHandler) HandleGetUserPosts(w http.ResponseWriter, r *http.Request
 
 	input.UserID = uint(userID)
 
-	lastPostID, err := strconv.Atoi(r.URL.Query().Get(LastPostIDQueryParam))
-	if err != nil {
-		json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
-		return
+	lastPostIDData := r.URL.Query().Get(LastPostIDQueryParam)
+	var lastPostID uint64
+
+	if lastPostIDData == "" {
+		lastPostID = 0
+	} else {
+		lastPostID, err = strconv.ParseUint(lastPostIDData, 0, 0)
+		if err != nil {
+			json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
+			return
+		}
 	}
 
 	input.LastPostID = uint(lastPostID)
 
-	postsAmount, err := strconv.Atoi(r.URL.Query().Get(PostsAmountQueryParam))
-	if err != nil {
-		json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
-		return
+	postsAmountData := r.URL.Query().Get(PostsAmountQueryParam)
+	var postsAmount uint64
+
+	if postsAmountData == "" {
+		postsAmount = 0
+	} else {
+		postsAmount, err = strconv.ParseUint(postsAmountData, 0, 0)
+		if err != nil {
+			json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
+			return
+		}
 	}
 
 	input.PostsAmount = uint(postsAmount)
@@ -153,8 +167,8 @@ func (h *PostsHandler) HandleGetUserPosts(w http.ResponseWriter, r *http.Request
 //
 //	@Param			Cookie		header	string	true	"session_id=some_session"
 //	@Param			X-CSRF-Token	header	string	true	"CSRF token"
-//	@Param			lastPostId	query	uint	true	"ID of the last post"
-//	@Param			postsAmount	query	uint	true	"Amount of posts to get, if 0 - get 20 posts"
+//	@Param			lastPostId	query	uint	false	"ID of the last post"
+//	@Param			postsAmount	query	uint	false	"Amount of posts to get, if 0 - get 20 posts"
 //
 //	@Produce		json
 //	@Success		200	{object}	json.JSONResponse{body=[]domain.PostWithAuthor}
@@ -168,10 +182,18 @@ func (h *PostsHandler) HandleGetUserFriendsPosts(w http.ResponseWriter, r *http.
 
 	var input posts.ListUserFriendsPostsInput
 
-	lastPostID, err := strconv.Atoi(r.URL.Query().Get("lastPostId"))
-	if err != nil {
-		json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
-		return
+	lastPostIDData := r.URL.Query().Get(LastPostIDQueryParam)
+	var lastPostID uint64
+	var err error
+
+	if lastPostIDData == "" {
+		lastPostID = 0
+	} else {
+		lastPostID, err = strconv.ParseUint(lastPostIDData, 0, 0)
+		if err != nil {
+			json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
+			return
+		}
 	}
 
 	input.LastPostID = uint(lastPostID)
@@ -182,10 +204,17 @@ func (h *PostsHandler) HandleGetUserFriendsPosts(w http.ResponseWriter, r *http.
 		return
 	}
 
-	postsAmount, err := strconv.Atoi(r.URL.Query().Get(PostsAmountQueryParam))
-	if err != nil {
-		json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
-		return
+	postsAmountData := r.URL.Query().Get(PostsAmountQueryParam)
+	var postsAmount uint64
+
+	if postsAmountData == "" {
+		postsAmount = 0
+	} else {
+		postsAmount, err = strconv.ParseUint(postsAmountData, 0, 0)
+		if err != nil {
+			json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
+			return
+		}
 	}
 
 	input.PostsAmount = uint(postsAmount)

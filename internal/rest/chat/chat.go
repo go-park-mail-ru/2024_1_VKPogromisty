@@ -20,13 +20,14 @@ import (
 )
 
 const (
-	pongWait        = 60 * time.Second
-	writeWait       = 10 * time.Second
-	pingPeriod      = 1 * time.Second
-	maxMessageSize  = 10000
-	readBufferSize  = 4096
-	writeBufferSize = 4096
-	newline         = '\n'
+	pongWait                 = 60 * time.Second
+	writeWait                = 10 * time.Second
+	pingPeriod               = 1 * time.Second
+	maxMessageSize           = 10000
+	readBufferSize           = 4096
+	writeBufferSize          = 4096
+	newline                  = '\n'
+	MessagesAmountQueryParam = "messagesAmount"
 )
 
 type ChatServer struct {
@@ -132,7 +133,20 @@ func (c *ChatServer) HandleGetMessagesByDialog(w http.ResponseWriter, r *http.Re
 		}
 	}
 
-	messages, err := c.Service.GetMessagesByDialog(r.Context(), userID, uint(peerID), uint(lastMessageID))
+	messagesAmountData := r.URL.Query().Get(MessagesAmountQueryParam)
+	var messagesAmount uint64
+
+	if messagesAmountData == "" {
+		messagesAmount = 0
+	} else {
+		messagesAmount, err = strconv.ParseUint(messagesAmountData, 0, 0)
+		if err != nil {
+			json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
+			return
+		}
+	}
+
+	messages, err := c.Service.GetMessagesByDialog(r.Context(), userID, uint(peerID), uint(lastMessageID), uint(messagesAmount))
 	if err != nil {
 		json.ServeJSONError(r.Context(), w, err)
 		return

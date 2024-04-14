@@ -8,6 +8,10 @@ import (
 	"sync"
 )
 
+const (
+	defaultMessagesAmount = 20
+)
+
 // Service will: register and unregister new clients by userID, establish pub/sub connection to redis
 type Service struct {
 	Clients          *sync.Map
@@ -65,7 +69,7 @@ func (s *Service) Unregister(userID uint) (err error) {
 	return
 }
 
-func (s *Service) GetMessagesByDialog(ctx context.Context, userID, peerID, lastMessageID uint) (messages []*domain.PersonalMessage, err error) {
+func (s *Service) GetMessagesByDialog(ctx context.Context, userID, peerID, lastMessageID, messagesAmount uint) (messages []*domain.PersonalMessage, err error) {
 	if lastMessageID == 0 {
 		lastMessageID, err = s.MessagesRepo.GetLastMessageID(ctx, userID, peerID)
 		if err != nil {
@@ -74,7 +78,11 @@ func (s *Service) GetMessagesByDialog(ctx context.Context, userID, peerID, lastM
 		lastMessageID++
 	}
 
-	messages, err = s.MessagesRepo.GetMessagesByDialog(ctx, userID, peerID, lastMessageID)
+	if messagesAmount == 0 {
+		messagesAmount = defaultMessagesAmount
+	}
+
+	messages, err = s.MessagesRepo.GetMessagesByDialog(ctx, userID, peerID, lastMessageID, messagesAmount)
 	if err != nil {
 		return
 	}

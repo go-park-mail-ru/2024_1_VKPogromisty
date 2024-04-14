@@ -78,16 +78,18 @@ func TestGetMessagesByDialog(t *testing.T) {
 		userID          uint
 		peerID          uint
 		lastMessageID   uint
+		messagesAmount  uint
 		expectedErr     error
 		expectedMessage []*domain.PersonalMessage
 		prepare         func(f *fields)
 	}{
 		{
-			name:          "TestGetMessagesByDialog",
-			userID:        1,
-			peerID:        2,
-			lastMessageID: 0,
-			expectedErr:   nil,
+			name:           "TestGetMessagesByDialog",
+			userID:         1,
+			peerID:         2,
+			lastMessageID:  0,
+			messagesAmount: 0,
+			expectedErr:    nil,
 			expectedMessage: []*domain.PersonalMessage{
 				{
 					ID:         1,
@@ -98,7 +100,7 @@ func TestGetMessagesByDialog(t *testing.T) {
 			},
 			prepare: func(f *fields) {
 				f.PersonalMessagesRepo.EXPECT().GetLastMessageID(gomock.Any(), gomock.Any(), gomock.Any()).Return(uint(1), nil)
-				f.PersonalMessagesRepo.EXPECT().GetMessagesByDialog(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]*domain.PersonalMessage{
+				f.PersonalMessagesRepo.EXPECT().GetMessagesByDialog(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]*domain.PersonalMessage{
 					{
 						ID:         1,
 						SenderID:   1,
@@ -113,6 +115,7 @@ func TestGetMessagesByDialog(t *testing.T) {
 			userID:          1,
 			peerID:          2,
 			lastMessageID:   0,
+			messagesAmount:  0,
 			expectedErr:     errors.ErrNotFound,
 			expectedMessage: nil,
 			prepare: func(f *fields) {
@@ -124,11 +127,12 @@ func TestGetMessagesByDialog(t *testing.T) {
 			userID:          1,
 			peerID:          2,
 			lastMessageID:   0,
+			messagesAmount:  0,
 			expectedErr:     errors.ErrNotFound,
 			expectedMessage: nil,
 			prepare: func(f *fields) {
 				f.PersonalMessagesRepo.EXPECT().GetLastMessageID(gomock.Any(), gomock.Any(), gomock.Any()).Return(uint(1), nil)
-				f.PersonalMessagesRepo.EXPECT().GetMessagesByDialog(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.ErrNotFound)
+				f.PersonalMessagesRepo.EXPECT().GetMessagesByDialog(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.ErrNotFound)
 			},
 		},
 	}
@@ -147,7 +151,7 @@ func TestGetMessagesByDialog(t *testing.T) {
 
 			s := chat.NewChatService(nil, fields.PersonalMessagesRepo, fields.Sanitizer)
 
-			messages, err := s.GetMessagesByDialog(context.Background(), tt.userID, tt.peerID, tt.lastMessageID)
+			messages, err := s.GetMessagesByDialog(context.Background(), tt.userID, tt.peerID, tt.lastMessageID, tt.messagesAmount)
 
 			if !errorsDef.Is(err, tt.expectedErr) {
 				t.Errorf("expected error %v, got %v", tt.expectedErr, err)

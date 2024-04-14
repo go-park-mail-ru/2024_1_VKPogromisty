@@ -29,7 +29,7 @@ type Action struct {
 
 type PersonalMessagesRepository interface {
 	GetLastMessageID(ctx context.Context, senderID, receiverID uint) (lastMessageID uint, err error)
-	GetMessagesByDialog(ctx context.Context, senderID, receiverID, lastMessageID uint) (messages []*domain.PersonalMessage, err error)
+	GetMessagesByDialog(ctx context.Context, senderID, receiverID, lastMessageID, messagesAmount uint) (messages []*domain.PersonalMessage, err error)
 	GetDialogsByUserID(ctx context.Context, userID uint) (dialogs []*domain.Dialog, err error)
 	StoreMessage(ctx context.Context, message *domain.PersonalMessage) (newMessage *domain.PersonalMessage, err error)
 	UpdateMessage(ctx context.Context, message *domain.PersonalMessage) (updatedMessage *domain.PersonalMessage, err error)

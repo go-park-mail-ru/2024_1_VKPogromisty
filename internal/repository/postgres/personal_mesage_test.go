@@ -129,7 +129,7 @@ func TestGetMessagesByDialog(t *testing.T) {
 
 			repo := repository.NewPersonalMessages(pool, timeProv)
 
-			messages, err := repo.GetMessagesByDialog(context.Background(), 1, 2, 0)
+			messages, err := repo.GetMessagesByDialog(context.Background(), 1, 2, 0, 20)
 			if err != tt.expectedError {
 				t.Errorf("unexpected error: %v", err)
 				return
