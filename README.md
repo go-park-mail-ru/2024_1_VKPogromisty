@@ -15,6 +15,9 @@
 <b>Сервис задеплоен по адресу:</b>
 https://socio-project.ru/login
 
+<b>Swagger-документация:</b>
+https://socio-project.ru/swagger/index.html#/
+
 Разработчики:
 <ul>
   <li>Никита Плёнкин - https://github.com/kond9</li>
