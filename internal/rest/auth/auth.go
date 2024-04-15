@@ -74,7 +74,7 @@ func (api *AuthHandler) HandleRegistration(w http.ResponseWriter, r *http.Reques
 	}
 
 	http.SetCookie(w, session)
-	json.ServeJSONBody(r.Context(), w, map[string]*domain.User{"user": user}, http.StatusOK)
+	json.ServeJSONBody(r.Context(), w, map[string]*domain.User{"user": user}, http.StatusCreated)
 }
 
 // HandleLogin godoc

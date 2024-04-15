@@ -121,6 +121,15 @@ const (
 		salt = $2
 	WHERE id = $3;
 	`
+	deleteUserPostsQuery = `
+	DELETE FROM public.post
+	WHERE author_id=$1;
+	`
+	deleteUserMessagesQuery = `
+	DELETE FROM public.personal_message
+	WHERE sender_id = $1
+		OR receiver_id = $1;
+	`
 	deleteUserQuery = `
 	DELETE FROM public.user
 	WHERE id = $1;
@@ -336,20 +345,50 @@ func (s *Users) RefreshSaltAndRehashPassword(ctx context.Context, user *domain.U
 }
 
 func (s *Users) DeleteUser(ctx context.Context, userID uint) (err error) {
-	contextlogger.LogSQL(ctx, deleteUserQuery, userID)
-
-	result, err := s.db.Exec(context.Background(), deleteUserQuery, userID)
+	tx, err := s.db.BeginTx(context.Background(), pgx.TxOptions{})
 	if err != nil {
 		return
 	}
 
-	rowsAffected := result.RowsAffected()
+	defer func() {
+		if err != nil {
+			return
+		}
+		if err = tx.Rollback(context.Background()); err != nil && err != pgx.ErrTxClosed {
+			return
+		}
 
-	if rowsAffected == 0 {
-		err = errors.ErrNotFound
+		err = nil
+	}()
+
+	contextlogger.LogSQL(ctx, deleteUserMessagesQuery, userID)
+
+	_, err = tx.Exec(context.Background(), deleteUserMessagesQuery, userID)
+	if err != nil {
 		return
-	} else if rowsAffected != 1 {
+	}
+
+	contextlogger.LogSQL(ctx, deleteUserPostsQuery, userID)
+
+	_, err = tx.Exec(context.Background(), deleteUserPostsQuery, userID)
+	if err != nil {
+		return
+	}
+
+	contextlogger.LogSQL(ctx, deleteUserQuery, userID)
+
+	result, err := tx.Exec(context.Background(), deleteUserQuery, userID)
+	if err != nil {
+		return
+	}
+
+	if result.RowsAffected() != 1 {
 		return errors.ErrRowsAffected
+	}
+
+	err = tx.Commit(context.Background())
+	if err != nil {
+		return
 	}
 
 	return

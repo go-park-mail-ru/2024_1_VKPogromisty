@@ -272,7 +272,10 @@ func TestDeleteUser(t *testing.T) {
 
 	tag := pgconn.CommandTag("DELETE 1")
 
-	pool.EXPECT().Exec(gomock.Any(), gomock.Any(), gomock.Any()).Return(tag, nil)
+	pool.EXPECT().BeginTx(gomock.Any(), gomock.Any()).Return(pool, nil)
+	pool.EXPECT().Exec(gomock.Any(), gomock.Any(), gomock.Any()).Return(tag, nil).AnyTimes()
+	pool.EXPECT().Rollback(gomock.Any()).Return(nil)
+	pool.EXPECT().Commit(gomock.Any()).Return(nil)
 
 	repo := repository.NewUsers(pool, customtime.MockTimeProvider{})
 
@@ -289,7 +292,8 @@ func TestDeleteUserErr(t *testing.T) {
 
 	pool := pgxpoolmock.NewMockPgxIface(ctrl)
 
-	pool.EXPECT().Exec(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
+	pool.EXPECT().BeginTx(gomock.Any(), gomock.Any()).Return(pool, nil)
+	pool.EXPECT().Exec(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.ErrNotFound).AnyTimes()
 
 	repo := repository.NewUsers(pool, customtime.MockTimeProvider{})
 
