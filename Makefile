@@ -24,7 +24,8 @@ app-build:
 	docker build -t socio/app-service -f cmd/app/Dockerfile . --no-cache
 
 docker-build:
-	 make user-build && make app-build
+	make user-build
+	make app-build
 
 docker-run:
 	docker-compose up -d
