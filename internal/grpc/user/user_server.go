@@ -2,8 +2,18 @@ package user
 
 import (
 	"context"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
 	uspb "socio/internal/grpc/user/proto"
 	"socio/usecase/user"
+
+	"github.com/google/uuid"
+)
+
+const (
+	staticFilePath = "."
 )
 
 type UserManager struct {
@@ -12,9 +22,9 @@ type UserManager struct {
 	UserService *user.Service
 }
 
-func NewUserManager(userStorage user.UserStorage) *UserManager {
+func NewUserManager(userStorage user.UserStorage, avatarStorage user.AvatarStorage) *UserManager {
 	return &UserManager{
-		UserService: user.NewUserService(userStorage),
+		UserService: user.NewUserService(userStorage, avatarStorage),
 	}
 }
 
@@ -65,6 +75,51 @@ func (u *UserManager) Create(ctx context.Context, in *uspb.CreateRequest) (res *
 	}
 
 	return
+}
+
+func (u *UserManager) UploadAvatar(stream uspb.User_UploadAvatarServer) (err error) {
+	file, err := os.Create(filepath.Join(staticFilePath, uuid.NewString()))
+	if err != nil {
+		return
+	}
+
+	fileName := ""
+
+	var fileSize uint64
+	fileSize = 0
+	defer func() {
+		if err = file.Close(); err != nil {
+			fmt.Println(err)
+		}
+	}()
+	for {
+		req, err := stream.Recv()
+		if fileName == "" {
+			fileName = req.GetFileName()
+		}
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+		chunk := req.GetChunk()
+		fileSize += uint64(len(chunk))
+		if _, err = file.Write(chunk); err != nil {
+			return err
+		}
+	}
+
+	u.UserService.UploadAvatar(fileName, file.Name())
+
+	if err = os.Remove(file.Name()); err != nil {
+		return
+	}
+
+	return stream.SendAndClose(&uspb.UploadAvatarResponse{
+		FileName: fileName,
+		Size:     fileSize,
+	})
 }
 
 func (u *UserManager) Update(ctx context.Context, in *uspb.UpdateRequest) (res *uspb.UpdateResponse, err error) {

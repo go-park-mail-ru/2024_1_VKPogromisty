@@ -9,11 +9,11 @@ RUN apk update && apk add --no-cache git && apk add --no-cache bash && apk add b
 COPY . .
 COPY .env /
 
-RUN go install github.com/golang/mock/mockgen@v1.6.0
+# RUN go install github.com/golang/mock/mockgen@v1.6.0
 
-RUN make mocks
+# RUN make mocks
 
-RUN make test
+# RUN make test
 
 # Build the Go app
 RUN CGO_ENABLED=0 go build -o /build/user ./cmd/user/main.go

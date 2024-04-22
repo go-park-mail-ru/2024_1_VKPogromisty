@@ -2,10 +2,8 @@ package user
 
 import (
 	"context"
-	"mime/multipart"
 	"socio/domain"
 	"socio/pkg/sanitizer"
-	"socio/pkg/static"
 	customtime "socio/pkg/time"
 	"time"
 
@@ -21,8 +19,9 @@ type UserStorage interface {
 	DeleteUser(ctx context.Context, userID uint) (err error)
 }
 
-type SessionStorage interface {
-	DeleteSession(ctx context.Context, sessionID string) (err error)
+type AvatarStorage interface {
+	StoreAvatar(fileName string, filePath string) (err error)
+	DeleteAvatar(fileName string) (err error)
 }
 
 type UserWithSubsInfo struct {
@@ -37,7 +36,7 @@ type CreateUserInput struct {
 	Password       string
 	RepeatPassword string
 	Email          string
-	Avatar         *multipart.FileHeader
+	Avatar         string
 	DateOfBirth    string
 }
 
@@ -48,20 +47,49 @@ type UpdateUserInput struct {
 	Password       string
 	RepeatPassword string
 	Email          string
-	Avatar         *multipart.FileHeader
+	Avatar         string
 	DateOfBirth    string
 }
 
 type Service struct {
-	UserStorage UserStorage
-	Sanitizer   *sanitizer.Sanitizer
+	UserStorage   UserStorage
+	AvatarStorage AvatarStorage
+	Sanitizer     *sanitizer.Sanitizer
 }
 
-func NewUserService(userStorage UserStorage) (p *Service) {
+func NewUserService(userStorage UserStorage, avatarStorage AvatarStorage) (p *Service) {
 	return &Service{
-		UserStorage: userStorage,
-		Sanitizer:   sanitizer.NewSanitizer(bluemonday.UGCPolicy()),
+		UserStorage:   userStorage,
+		AvatarStorage: avatarStorage,
+		Sanitizer:     sanitizer.NewSanitizer(bluemonday.UGCPolicy()),
 	}
+}
+
+func (p *Service) GetUserByID(ctx context.Context, userID uint) (user *domain.User, err error) {
+	user, err = p.UserStorage.GetUserByID(ctx, userID)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (p *Service) GetUserByEmail(ctx context.Context, email string) (user *domain.User, err error) {
+	user, err = p.UserStorage.GetUserByEmail(ctx, email)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (p *Service) UploadAvatar(fileName string, filePath string) (err error) {
+	err = p.AvatarStorage.StoreAvatar(fileName, filePath)
+	if err != nil {
+		return
+	}
+
+	return
 }
 
 func (p *Service) CreateUser(ctx context.Context, userInput CreateUserInput) (user *domain.User, err error) {
@@ -71,17 +99,12 @@ func (p *Service) CreateUser(ctx context.Context, userInput CreateUserInput) (us
 
 	dateOfBirth, _ := time.Parse(customtime.DateFormat, userInput.DateOfBirth)
 
-	fileName, err := static.SaveImage(userInput.Avatar)
-	if err != nil {
-		return
-	}
-
 	user = &domain.User{
 		FirstName: userInput.FirstName,
 		LastName:  userInput.LastName,
 		Password:  userInput.Password,
 		Email:     userInput.Email,
-		Avatar:    fileName,
+		Avatar:    userInput.Avatar,
 		DateOfBirth: customtime.CustomTime{
 			Time: dateOfBirth,
 		},
@@ -143,18 +166,13 @@ func (p *Service) UpdateUser(ctx context.Context, input UpdateUserInput) (update
 		updatedUser.DateOfBirth = customtime.CustomTime{Time: date}
 	}
 
-	if input.Avatar != nil {
-		err = static.RemoveImage(updatedUser.Avatar)
+	if len(input.Avatar) > 0 {
+		err = p.AvatarStorage.DeleteAvatar(updatedUser.Avatar)
 		if err != nil {
-			return nil, err
+			return
 		}
 
-		fileName, err := static.SaveImage(input.Avatar)
-		if err != nil {
-			return nil, err
-		}
-
-		updatedUser.Avatar = fileName
+		updatedUser.Avatar = input.Avatar
 	}
 
 	updatedUser, err = p.UserStorage.UpdateUser(ctx, updatedUser, prevPassword)
@@ -168,6 +186,16 @@ func (p *Service) UpdateUser(ctx context.Context, input UpdateUserInput) (update
 }
 
 func (p *Service) DeleteUser(ctx context.Context, userID uint) (err error) {
+	user, err := p.UserStorage.GetUserByID(ctx, userID)
+	if err != nil {
+		return
+	}
+
+	err = p.AvatarStorage.DeleteAvatar(user.Avatar)
+	if err != nil {
+		return
+	}
+
 	err = p.UserStorage.DeleteUser(ctx, userID)
 	if err != nil {
 		return

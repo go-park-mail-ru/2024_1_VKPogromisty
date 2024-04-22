@@ -28,7 +28,7 @@ services:
   minio:
     image: minio/minio:RELEASE.2024-04-18T19-09-19Z
     volumes:
-      - ./volumes/minio/:/data/
+      - ./static/:/data/
     ports:
       - 9000:9000
     command: server /data
@@ -57,6 +57,7 @@ services:
     depends_on:
       - postgresdb
       - redis
+      - minio
 
   app:
     image: socio/app-service:latest

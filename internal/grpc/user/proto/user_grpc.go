@@ -4,7 +4,6 @@ import (
 	"socio/domain"
 	customtime "socio/pkg/time"
 	"socio/usecase/user"
-	"time"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -48,14 +47,14 @@ func ToCreateUserInput(req *CreateRequest) (userInput *user.CreateUserInput) {
 		FirstName:      req.GetFirstName(),
 		LastName:       req.GetLastName(),
 		Email:          req.GetEmail(),
+		Avatar:         req.GetAvatar(),
 		Password:       req.GetPassword(),
 		RepeatPassword: req.GetRepeatPassword(),
-		DateOfBirth:    req.DateOfBirth.AsTime().Format(customtime.DateFormat),
+		DateOfBirth:    req.GetDateOfBirth(),
 	}
 }
 
 func ToUpdateRequest(input *user.UpdateUserInput) *UpdateRequest {
-	dateOfBirth, _ := time.Parse(customtime.DateFormat, input.DateOfBirth)
 	return &UpdateRequest{
 		UserId:         uint64(input.ID),
 		FirstName:      input.FirstName,
@@ -63,8 +62,8 @@ func ToUpdateRequest(input *user.UpdateUserInput) *UpdateRequest {
 		Email:          input.Email,
 		Password:       input.Password,
 		RepeatPassword: input.RepeatPassword,
-		Avatar:         input.Avatar.Filename,
-		DateOfBirth:    timestamppb.New(dateOfBirth),
+		Avatar:         input.Avatar,
+		DateOfBirth:    input.DateOfBirth,
 	}
 }
 
@@ -74,8 +73,9 @@ func ToUpdateUserInput(req *UpdateRequest) (userInput *user.UpdateUserInput) {
 		FirstName:      req.GetFirstName(),
 		LastName:       req.GetLastName(),
 		Email:          req.GetEmail(),
+		Avatar:         req.GetAvatar(),
 		Password:       req.GetPassword(),
 		RepeatPassword: req.GetRepeatPassword(),
-		DateOfBirth:    req.DateOfBirth.AsTime().Format(customtime.DateFormat),
+		DateOfBirth:    req.GetDateOfBirth(),
 	}
 }

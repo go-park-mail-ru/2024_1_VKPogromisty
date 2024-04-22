@@ -1,7 +1,11 @@
 package rest
 
 import (
+	"fmt"
+	"io"
+	"mime/multipart"
 	"net/http"
+	"path/filepath"
 	"socio/errors"
 	"socio/pkg/json"
 	"socio/pkg/requestcontext"
@@ -11,7 +15,12 @@ import (
 
 	uspb "socio/internal/grpc/user/proto"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+)
+
+const (
+	BatchSize = 1 << 23
 )
 
 type ProfileHandler struct {
@@ -22,6 +31,53 @@ func NewProfileHandler(userClient uspb.UserClient) (h *ProfileHandler) {
 	return &ProfileHandler{
 		userClient: userClient,
 	}
+}
+
+func (h *ProfileHandler) uploadAvatar(r *http.Request, avatarFH *multipart.FileHeader) (string, error) {
+	fileName := uuid.NewString() + filepath.Ext(avatarFH.Filename)
+	stream, err := h.userClient.UploadAvatar(r.Context())
+	if err != nil {
+		return "", err
+	}
+
+	file, err := avatarFH.Open()
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	buf := make([]byte, BatchSize)
+	batchNumber := 1
+
+	for {
+		num, err := file.Read(buf)
+		if err == io.EOF {
+			break
+		}
+
+		if err != nil {
+			return "", err
+		}
+
+		chunk := buf[:num]
+
+		err = stream.Send(&uspb.UploadAvatarRequest{
+			FileName: fileName,
+			Chunk:    chunk,
+		})
+
+		if err != nil {
+			return "", err
+		}
+		batchNumber += 1
+	}
+
+	res, err := stream.CloseAndRecv()
+	if err != nil {
+		return "", err
+	}
+
+	return res.FileName, nil
 }
 
 // HandleGetProfile godoc
@@ -126,10 +182,22 @@ func (h *ProfileHandler) HandleUpdateProfile(w http.ResponseWriter, r *http.Requ
 	input.Password = r.PostFormValue("password")
 	input.RepeatPassword = r.PostFormValue("repeatPassword")
 	input.DateOfBirth = strings.Trim(r.PostFormValue("dateOfBirth"), " \n\r\t")
-	_, input.Avatar, err = r.FormFile("avatar")
+	_, avatarFH, err := r.FormFile("avatar")
 	if err != nil && err != http.ErrMissingFile {
 		json.ServeJSONError(r.Context(), w, err)
 		return
+	}
+
+	if avatarFH != nil {
+		avatarFileName, err := h.uploadAvatar(r, avatarFH)
+		if err != nil {
+			json.ServeJSONError(r.Context(), w, err)
+			return
+		}
+
+		fmt.Println(avatarFileName)
+
+		input.Avatar = avatarFileName
 	}
 
 	var grpcInput = uspb.ToUpdateRequest(&input)

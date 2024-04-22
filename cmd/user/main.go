@@ -6,10 +6,12 @@ import (
 	"os"
 	"socio/internal/grpc/user"
 	uspb "socio/internal/grpc/user/proto"
+	minioRepo "socio/internal/repository/minio"
 	pgRepo "socio/internal/repository/postgres"
 	customtime "socio/pkg/time"
 
 	"github.com/joho/godotenv"
+	"github.com/minio/minio-go"
 	"google.golang.org/grpc"
 )
 
@@ -31,6 +33,18 @@ func main() {
 	}
 	defer db.Close()
 
+	minioClient, err := minio.New(os.Getenv("MINIO_HOST"), os.Getenv("MINIO_ACCESS_KEY"), os.Getenv("MINIO_SECRET_KEY"), false)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	avatarStorage, err := minioRepo.NewAvatarStorage(minioClient)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
 	port := os.Getenv("GRPC_USER_SERVICE_PORT")
 	lis, err := net.Listen("tcp", "0.0.0.0"+port)
 	if err != nil {
@@ -39,7 +53,7 @@ func main() {
 	}
 
 	userStorage := pgRepo.NewUsers(db, customtime.RealTimeProvider{})
-	manager := user.NewUserManager(userStorage)
+	manager := user.NewUserManager(userStorage, avatarStorage)
 
 	server := grpc.NewServer()
 
