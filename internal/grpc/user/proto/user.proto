@@ -8,11 +8,21 @@ package user;
 import "google/protobuf/timestamp.proto";
 
 service User {
+    rpc GetByID(GetByIDRequest) returns (GetByIDResponse) {}
     rpc GetByIDWithSubsInfo(GetByIDWithSubsInfoRequest) returns (GetByIDWithSubsInfoResponse) {}
     rpc Create(CreateRequest) returns (CreateResponse) {}
     rpc Update(UpdateRequest) returns (UpdateResponse) {}
     rpc Delete(DeleteRequest) returns (DeleteResponse) {}
 }
+
+message GetByIDRequest {
+    uint64 user_id = 1;
+}
+
+message GetByIDResponse {
+    UserResponse user = 1;
+}
+
 
 message UserResponse {
     uint64 id = 1;

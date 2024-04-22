@@ -18,6 +18,22 @@ func NewUserManager(userStorage user.UserStorage) *UserManager {
 	}
 }
 
+func (u *UserManager) GetByID(ctx context.Context, in *uspb.GetByIDRequest) (res *uspb.GetByIDResponse, err error) {
+	userID := in.GetUserId()
+
+	user, err := u.UserService.GetUserByID(ctx, uint(userID))
+	if err != nil {
+		return
+	}
+
+	res = &uspb.GetByIDResponse{
+		User: uspb.ToUserResponse(user),
+	}
+
+	return
+
+}
+
 func (u *UserManager) GetByIDWithSubsInfo(ctx context.Context, in *uspb.GetByIDWithSubsInfoRequest) (res *uspb.GetByIDWithSubsInfoResponse, err error) {
 	userID := in.GetUserId()
 	authorizedUserID := in.GetAuthorizedUserId()
