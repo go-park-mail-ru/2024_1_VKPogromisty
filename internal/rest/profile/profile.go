@@ -5,21 +5,22 @@ import (
 	"socio/errors"
 	"socio/pkg/json"
 	"socio/pkg/requestcontext"
-	"socio/pkg/sanitizer"
-	"socio/usecase/profile"
+	"socio/usecase/user"
 	"strconv"
 	"strings"
+
+	uspb "socio/internal/grpc/user/proto"
 
 	"github.com/gorilla/mux"
 )
 
 type ProfileHandler struct {
-	Service *profile.Service
+	userClient uspb.UserClient
 }
 
-func NewProfileHandler(userStorage profile.UserStorage, sessionStorage profile.SessionStorage, sanitizer *sanitizer.Sanitizer) (h *ProfileHandler) {
+func NewProfileHandler(userClient uspb.UserClient) (h *ProfileHandler) {
 	return &ProfileHandler{
-		Service: profile.NewProfileService(userStorage, sessionStorage, sanitizer),
+		userClient: userClient,
 	}
 }
 
@@ -64,7 +65,10 @@ func (h *ProfileHandler) HandleGetProfile(w http.ResponseWriter, r *http.Request
 		userID = uint64(authorizedUserID)
 	}
 
-	userWithInfo, err := h.Service.GetUserByIDWithSubsInfo(r.Context(), uint(userID), authorizedUserID)
+	userWithInfo, err := h.userClient.GetByIDWithSubsInfo(r.Context(), &uspb.GetByIDWithSubsInfoRequest{
+		UserId:           userID,
+		AuthorizedUserId: uint64(authorizedUserID),
+	})
 	if err != nil {
 		json.ServeJSONError(r.Context(), w, err)
 		return
@@ -114,7 +118,7 @@ func (h *ProfileHandler) HandleUpdateProfile(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	var input profile.UpdateUserInput
+	var input user.UpdateUserInput
 	input.ID = userID
 	input.FirstName = strings.Trim(r.PostFormValue("firstName"), " \n\r\t")
 	input.LastName = strings.Trim(r.PostFormValue("lastName"), " \n\r\t")
@@ -128,7 +132,9 @@ func (h *ProfileHandler) HandleUpdateProfile(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	updatedUser, err := h.Service.UpdateUser(r.Context(), input)
+	var grpcInput = uspb.ToUpdateRequest(&input)
+
+	updatedUser, err := h.userClient.Update(r.Context(), grpcInput)
 	if err != nil {
 		json.ServeJSONError(r.Context(), w, err)
 		return
@@ -162,13 +168,9 @@ func (h *ProfileHandler) HandleDeleteProfile(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	sessionID, err := requestcontext.GetSessionID(r.Context())
-	if err != nil {
-		json.ServeJSONError(r.Context(), w, err)
-		return
-	}
-
-	err = h.Service.DeleteUser(r.Context(), userID, sessionID)
+	_, err = h.userClient.Delete(r.Context(), &uspb.DeleteRequest{
+		UserId: uint64(userID),
+	})
 	if err != nil {
 		json.ServeJSONError(r.Context(), w, err)
 		return

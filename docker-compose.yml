@@ -25,6 +25,29 @@ services:
       - REDIS_PORT=6379
       - REDIS_DATABASES=16
 
+  user_service:
+    image: socio/user-service:latest
+    container_name: user_service_container
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - PG_USER=${PG_USER}
+      - PG_PASSWORD=${PG_PASSWORD}
+      - PG_DBNAME=${PG_DBNAME}
+      - PG_HOST=postgresdb
+      - PG_PORT=${PG_PORT}
+    tty: true
+    build: ./cmd/user
+    ports:
+      - 8082:8082
+    restart: on-failure
+    volumes:
+      - ./volumes/logs/:/var/log/socio/
+    depends_on:
+      - postgresdb
+      - redis
+
   app:
     image: socio:1.0.0
     container_name: golang_container
@@ -38,7 +61,7 @@ services:
       - PG_HOST=postgresdb
       - PG_PORT=${PG_PORT}
     tty: true
-    build: .
+    build: ./cmd/app
     ports:
       - 8001:8001
       - 8080:8080
@@ -50,6 +73,7 @@ services:
     depends_on:
       - postgresdb
       - redis
+      - user_service
   
   nginx:
     image: nginx:1.25.4
