@@ -16,7 +16,7 @@ COPY .env /
 # RUN make test
 
 # Build the Go app
-RUN CGO_ENABLED=0 go build -o /build/post ./cmd/user/main.go
+RUN CGO_ENABLED=0 go build -o /build/post ./cmd/post/main.go
 
 FROM gcr.io/distroless/base-debian11 AS build-release-stage
 
