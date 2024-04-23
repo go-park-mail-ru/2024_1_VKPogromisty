@@ -4,7 +4,7 @@ import (
 	"context"
 	"socio/domain"
 	"socio/errors"
-	mock_profile "socio/mocks/usecase/profile"
+	mock_user "socio/mocks/usecase/user"
 	"socio/pkg/validators"
 	"testing"
 
@@ -75,7 +75,7 @@ func TestCheckDuplicatedEmail(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockUserStorage := mock_profile.NewMockUserStorage(ctrl)
+	mockUserStorage := mock_user.NewMockUserStorage(ctrl)
 	ctx := context.Background()
 	email := "test@example.com"
 

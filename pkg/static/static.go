@@ -17,6 +17,26 @@ var (
 	ImageExtensions = []string{".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".svg", ".webp"}
 )
 
+func CreateFileFromHeader(fh *multipart.FileHeader) (*os.File, error) {
+	src, err := fh.Open()
+	if err != nil {
+		return nil, err
+	}
+	defer src.Close()
+
+	dst, err := os.Create("../../static_files/" + fh.Filename)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = io.Copy(dst, src)
+	if err != nil {
+		return nil, err
+	}
+
+	return dst, nil
+}
+
 func SaveImage(h *multipart.FileHeader) (fileName string, err error) {
 	if h == nil {
 		return DefaultAvatarFileName, nil

@@ -25,8 +25,42 @@ services:
       - REDIS_PORT=6379
       - REDIS_DATABASES=16
 
+  minio:
+    image: minio/minio:RELEASE.2024-04-18T19-09-19Z
+    volumes:
+      - ./static/:/data/
+    ports:
+      - 9000:9000
+    command: server /data
+    environment:
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+
+  user_service:
+    image: socio/user-service:latest
+    container_name: user_service_container
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - PG_USER=${PG_USER}
+      - PG_PASSWORD=${PG_PASSWORD}
+      - PG_DBNAME=${PG_DBNAME}
+      - PG_HOST=postgresdb
+      - PG_PORT=${PG_PORT}
+    tty: true
+    ports:
+      - 8082:8082
+    restart: on-failure
+    volumes:
+      - ./volumes/logs/:/var/log/socio/
+    depends_on:
+      - postgresdb
+      - redis
+      - minio
+
   app:
-    image: socio:1.0.0
+    image: socio/app-service:latest
     container_name: golang_container
     environment:
       - REDIS_HOST=redis
@@ -38,7 +72,6 @@ services:
       - PG_HOST=postgresdb
       - PG_PORT=${PG_PORT}
     tty: true
-    build: .
     ports:
       - 8001:8001
       - 8080:8080
@@ -50,6 +83,7 @@ services:
     depends_on:
       - postgresdb
       - redis
+      - user_service
   
   nginx:
     image: nginx:1.25.4

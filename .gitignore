@@ -3,10 +3,11 @@ cover.out.tmp
 virt.cer
 socio.exe
 app.exe
-app
 .env
-/app/app
-/app/app.exe
+/cmd/app/app
+/cmd/app/app.exe
+/cmd/user/user
+/cmd/user/user.exe
 dump.rdb
 tern.conf
 .vscode
