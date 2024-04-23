@@ -17,6 +17,9 @@ test:
 coverage:
 	go tool cover -func cover.out
 
+post-build:
+	docker build -t socio/post-service -f cmd/post/Dockerfile . --no-cache
+
 user-build:
 	docker build -t socio/user-service -f cmd/user/Dockerfile . --no-cache
 
@@ -25,6 +28,7 @@ app-build:
 
 docker-build:
 	make user-build
+	make post-build
 	make app-build
 
 docker-run:

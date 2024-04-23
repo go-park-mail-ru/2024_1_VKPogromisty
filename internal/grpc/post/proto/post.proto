@@ -1,0 +1,121 @@
+// protoc --go_out=. --go-grpc_out=. --go-grpc_opt=paths=source_relative --go_opt=paths=source_relative *.proto 
+syntax="proto3";
+
+option go_package = "./;post";
+
+package post;
+
+import "google/protobuf/timestamp.proto";
+
+service Post {
+    rpc GetPostByID(GetPostByIDRequest) returns (GetPostByIDResponse) {}
+    rpc GetUserPosts(GetUserPostsRequest) returns (GetUserPostsResponse) {}
+    rpc GetUserFriendsPosts(GetUserFriendsPostsRequest) returns (GetUserFriendsPostsResponse) {}
+    rpc CreatePost(CreatePostRequest) returns (CreatePostResponse) {}
+    rpc UpdatePost(UpdatePostRequest) returns (UpdatePostResponse) {}
+    rpc DeletePost(DeletePostRequest) returns (DeletePostResponse) {}
+    rpc LikePost(LikePostRequest) returns (LikePostResponse) {}
+    rpc UnlikePost(UnlikePostRequest) returns (UnlikePostResponse) {}
+    rpc UploadAttachment(stream UploadAttachmentRequest) returns (UploadAttachmentResponse) {}
+}
+
+message PostResponse {
+    uint64 id = 1;
+    string content = 2;
+    uint64 author_id = 3;
+    repeated string attachments = 4;
+    repeated uint64 liked_by_ids = 5;
+    google.protobuf.Timestamp created_at = 6;
+    google.protobuf.Timestamp updated_at = 7;
+}
+
+message PostLikeResponse {
+    uint64 id = 1;
+    uint64 post_id = 2;
+    uint64 user_id = 3;
+    google.protobuf.Timestamp created_at = 4;
+}
+
+message GetPostByIDRequest {
+    uint64 post_id = 1;
+}
+
+message GetPostByIDResponse {
+    PostResponse post = 1;
+}
+
+message GetUserPostsRequest {
+    uint64 user_id = 1;
+    uint64 last_post_id = 2;
+    uint64 posts_amount = 3;
+}
+
+message GetUserPostsResponse {
+    repeated PostResponse posts = 1;
+}
+
+message GetUserFriendsPostsRequest {
+    uint64 user_id = 1;
+    uint64 last_post_id = 2;
+    uint64 posts_amount = 3;
+}
+
+message GetUserFriendsPostsResponse {
+    repeated PostResponse posts = 1;
+}
+
+message CreatePostRequest {
+    string content = 1;
+    uint64 author_id = 2;
+    repeated string attachments = 3;
+}
+
+message CreatePostResponse {
+    PostResponse post = 1;
+}
+
+message UpdatePostRequest {
+    uint64 user_id = 1;
+    uint64 post_id = 2;
+    string content = 3;
+}
+
+message UpdatePostResponse {
+    PostResponse post = 1;
+}
+
+message DeletePostRequest {
+    uint64 post_id = 1;
+    uint64 user_id = 2;
+}
+
+message DeletePostResponse {
+    PostResponse post = 1;
+}
+
+message LikePostRequest {
+    uint64 post_id = 1;
+    uint64 user_id = 2;
+}
+
+message LikePostResponse {
+    PostLikeResponse like = 1;
+}
+
+message UnlikePostRequest {
+    uint64 post_id = 1;
+    uint64 user_id = 2;
+}
+
+message UnlikePostResponse {
+}
+
+message UploadAttachmentRequest {
+    string file_name = 1;
+    bytes data = 2;
+}
+
+message UploadAttachmentResponse {
+    string file_name = 1;
+    uint64 size = 2;
+}

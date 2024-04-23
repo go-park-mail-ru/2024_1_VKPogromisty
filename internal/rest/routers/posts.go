@@ -1,24 +1,21 @@
 package routers
 
 import (
+	post "socio/internal/grpc/post/proto"
+	user "socio/internal/grpc/user/proto"
 	"socio/internal/rest/middleware"
 	rest "socio/internal/rest/posts"
-	"socio/pkg/sanitizer"
 	customtime "socio/pkg/time"
 	"socio/usecase/auth"
 	"socio/usecase/csrf"
-	"socio/usecase/posts"
 
 	"github.com/gorilla/mux"
-	"github.com/microcosm-cc/bluemonday"
 )
 
-func MountPostsRouter(rootRouter *mux.Router, postStorage posts.PostsStorage, userStorage posts.UserStorage, sessionStorage auth.SessionStorage) {
+func MountPostsRouter(rootRouter *mux.Router, postsClient post.PostClient, userClient user.UserClient, sessionStorage auth.SessionStorage) {
 	r := rootRouter.PathPrefix("/posts").Subrouter()
 
-	sanitizer := sanitizer.NewSanitizer(bluemonday.UGCPolicy())
-
-	h := rest.NewPostsHandler(postStorage, userStorage, sanitizer)
+	h := rest.NewPostsHandler(postsClient, userClient)
 
 	r.HandleFunc("/{postID:[0-9]+}", h.HandleGetPostByID).Methods("GET", "OPTIONS")
 	r.HandleFunc("/", h.HandleGetUserPosts).Methods("GET", "OPTIONS")

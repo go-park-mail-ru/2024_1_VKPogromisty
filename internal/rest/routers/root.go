@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	postpb "socio/internal/grpc/post/proto"
 	uspb "socio/internal/grpc/user/proto"
 	pgRepo "socio/internal/repository/postgres"
 	redisRepo "socio/internal/repository/redis"
@@ -36,7 +37,6 @@ func MountRootRouter(router *mux.Router) (err error) {
 	defer db.Close()
 
 	userStorage := pgRepo.NewUsers(db, customtime.RealTimeProvider{})
-	postStorage := pgRepo.NewPosts(db, customtime.RealTimeProvider{})
 	subStorage := pgRepo.NewSubscriptions(db, customtime.RealTimeProvider{})
 	personalMessageStorage := pgRepo.NewPersonalMessages(db, customtime.RealTimeProvider{})
 
@@ -57,11 +57,22 @@ func MountRootRouter(router *mux.Router) (err error) {
 
 	userClient := uspb.NewUserClient(userClientConn)
 
+	postClientConn, err := grpc.Dial(
+		os.Getenv("GRPC_POST_SERVICE_HOST")+os.Getenv("GRPC_POST_SERVICE_PORT"),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		return
+	}
+	defer postClientConn.Close()
+
+	postClient := postpb.NewPostClient(postClientConn)
+
 	MountAuthRouter(rootRouter, userStorage, sessionStorage)
 	MountCSRFRouter(rootRouter, sessionStorage)
 	MountChatRouter(rootRouter, chatPubSubRepository, personalMessageStorage, sessionStorage)
 	MountProfileRouter(rootRouter, userClient, sessionStorage)
-	MountPostsRouter(rootRouter, postStorage, userStorage, sessionStorage)
+	MountPostsRouter(rootRouter, postClient, userClient, sessionStorage)
 	MountSubscriptionsRouter(rootRouter, subStorage, userStorage, sessionStorage)
 	MountStaticRouter(rootRouter)
 

@@ -2,16 +2,22 @@ package rest
 
 import (
 	defJSON "encoding/json"
+	"io"
+	"mime/multipart"
 	"net/http"
+	"path/filepath"
 	"socio/domain"
 	"socio/errors"
 	"socio/pkg/json"
 	"socio/pkg/requestcontext"
-	"socio/pkg/sanitizer"
 	"socio/usecase/posts"
 	"strconv"
 	"strings"
 
+	postspb "socio/internal/grpc/post/proto"
+	uspb "socio/internal/grpc/user/proto"
+
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 )
 
@@ -19,6 +25,7 @@ const (
 	UserIDQueryParam      = "userId"
 	LastPostIDQueryParam  = "lastPostId"
 	PostsAmountQueryParam = "postsAmount"
+	BatchSize             = 1 << 23
 )
 
 type ListUserPostsResponse struct {
@@ -27,14 +34,63 @@ type ListUserPostsResponse struct {
 }
 
 type PostsHandler struct {
-	Service *posts.Service
+	PostsClient postspb.PostClient
+	UserClient  uspb.UserClient
 }
 
-func NewPostsHandler(postsStorage posts.PostsStorage, usersStorage posts.UserStorage, sanitizer *sanitizer.Sanitizer) (handler *PostsHandler) {
+func NewPostsHandler(postsClient postspb.PostClient, userClient uspb.UserClient) (handler *PostsHandler) {
 	handler = &PostsHandler{
-		Service: posts.NewPostsService(postsStorage, usersStorage, sanitizer),
+		PostsClient: postsClient,
+		UserClient:  userClient,
 	}
 	return
+}
+
+func (h *PostsHandler) uploadAvatar(r *http.Request, fh *multipart.FileHeader) (string, error) {
+	fileName := uuid.NewString() + filepath.Ext(fh.Filename)
+	stream, err := h.PostsClient.UploadAttachment(r.Context())
+	if err != nil {
+		return "", err
+	}
+
+	file, err := fh.Open()
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	buf := make([]byte, BatchSize)
+	batchNumber := 1
+
+	for {
+		num, err := file.Read(buf)
+		if err == io.EOF {
+			break
+		}
+
+		if err != nil {
+			return "", err
+		}
+
+		chunk := buf[:num]
+
+		err = stream.Send(&postspb.UploadAttachmentRequest{
+			FileName: fileName,
+			Data:     chunk,
+		})
+
+		if err != nil {
+			return "", err
+		}
+		batchNumber += 1
+	}
+
+	res, err := stream.CloseAndRecv()
+	if err != nil {
+		return "", err
+	}
+
+	return res.FileName, nil
 }
 
 // HandleGetPostByID godoc
@@ -71,7 +127,9 @@ func (h *PostsHandler) HandleGetPostByID(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	post, err := h.Service.GetPostByID(r.Context(), uint(postIDData))
+	post, err := h.PostsClient.GetPostByID(r.Context(), &postspb.GetPostByIDRequest{
+		PostId: uint64(postIDData),
+	})
 	if err != nil {
 		json.ServeJSONError(r.Context(), w, err)
 		return
@@ -143,15 +201,27 @@ func (h *PostsHandler) HandleGetUserPosts(w http.ResponseWriter, r *http.Request
 
 	input.PostsAmount = uint(postsAmount)
 
-	posts, author, err := h.Service.GetUserPosts(r.Context(), input.UserID, input.LastPostID, input.PostsAmount)
+	posts, err := h.PostsClient.GetUserPosts(r.Context(), &postspb.GetUserPostsRequest{
+		UserId:      uint64(input.UserID),
+		LastPostId:  uint64(input.LastPostID),
+		PostsAmount: uint64(input.PostsAmount),
+	})
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, err)
+		return
+	}
+
+	author, err := h.UserClient.GetByID(r.Context(), &uspb.GetByIDRequest{
+		UserId: uint64(input.UserID),
+	})
 	if err != nil {
 		json.ServeJSONError(r.Context(), w, err)
 		return
 	}
 
 	response := ListUserPostsResponse{
-		Posts:  posts,
-		Author: author,
+		Posts:  postspb.ToPosts(posts),
+		Author: uspb.ToUser(author.User),
 	}
 	json.ServeJSONBody(r.Context(), w, response, http.StatusOK)
 }
@@ -219,10 +289,30 @@ func (h *PostsHandler) HandleGetUserFriendsPosts(w http.ResponseWriter, r *http.
 
 	input.PostsAmount = uint(postsAmount)
 
-	postsWithAuthors, err := h.Service.GetUserFriendsPosts(r.Context(), userID, input.LastPostID, input.PostsAmount)
+	posts, err := h.PostsClient.GetUserFriendsPosts(r.Context(), &postspb.GetUserFriendsPostsRequest{
+		UserId:      uint64(userID),
+		LastPostId:  uint64(input.LastPostID),
+		PostsAmount: uint64(input.PostsAmount),
+	})
 	if err != nil {
 		json.ServeJSONError(r.Context(), w, err)
 		return
+	}
+
+	postsWithAuthors := make([]*domain.PostWithAuthor, 0, len(posts.Posts))
+	for _, post := range posts.Posts {
+		author, err := h.UserClient.GetByID(r.Context(), &uspb.GetByIDRequest{
+			UserId: post.AuthorId,
+		})
+		if err != nil {
+			json.ServeJSONError(r.Context(), w, err)
+			return
+		}
+
+		postsWithAuthors = append(postsWithAuthors, &domain.PostWithAuthor{
+			Post:   postspb.ToPost(post),
+			Author: uspb.ToUser(author.User),
+		})
 	}
 
 	json.ServeJSONBody(r.Context(), w, postsWithAuthors, http.StatusOK)
@@ -266,14 +356,40 @@ func (h *PostsHandler) HandleCreatePost(w http.ResponseWriter, r *http.Request) 
 
 	postInput.Content = strings.Trim(r.PostFormValue("content"), " \n\r\t")
 
-	for _, fileHeaders := range r.MultipartForm.File {
-		postInput.Attachments = append(postInput.Attachments, fileHeaders...)
+	for _, fh := range r.MultipartForm.File {
+		for _, f := range fh {
+			fileName, err := h.uploadAvatar(r, f)
+			if err != nil {
+				json.ServeJSONError(r.Context(), w, err)
+				return
+			}
+			postInput.Attachments = append(postInput.Attachments, fileName)
+		}
 	}
 
-	postWithAuthor, err := h.Service.CreatePost(r.Context(), postInput)
+	postData, err := h.PostsClient.CreatePost(r.Context(), &postspb.CreatePostRequest{
+		AuthorId:    uint64(postInput.AuthorID),
+		Content:     postInput.Content,
+		Attachments: postInput.Attachments,
+	})
 	if err != nil {
 		json.ServeJSONError(r.Context(), w, err)
 		return
+	}
+
+	post := postspb.ToPost(postData.Post)
+
+	author, err := h.UserClient.GetByID(r.Context(), &uspb.GetByIDRequest{
+		UserId: uint64(post.AuthorID),
+	})
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, err)
+		return
+	}
+
+	postWithAuthor := &domain.PostWithAuthor{
+		Post:   post,
+		Author: uspb.ToUser(author.User),
 	}
 
 	json.ServeJSONBody(r.Context(), w, postWithAuthor, http.StatusCreated)
@@ -319,13 +435,17 @@ func (h *PostsHandler) HandleUpdatePost(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	updatedPost, err := h.Service.UpdatePost(r.Context(), userID, input)
+	updatedPost, err := h.PostsClient.UpdatePost(r.Context(), &postspb.UpdatePostRequest{
+		PostId:  uint64(input.PostID),
+		Content: input.Content,
+		UserId:  uint64(userID),
+	})
 	if err != nil {
 		json.ServeJSONError(r.Context(), w, err)
 		return
 	}
 
-	json.ServeJSONBody(r.Context(), w, updatedPost, http.StatusOK)
+	json.ServeJSONBody(r.Context(), w, postspb.ToPost(updatedPost.Post), http.StatusOK)
 
 }
 
@@ -361,7 +481,9 @@ func (h *PostsHandler) HandleDeletePost(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err = h.Service.DeletePost(r.Context(), input.PostID)
+	_, err = h.PostsClient.DeletePost(r.Context(), &postspb.DeletePostRequest{
+		PostId: uint64(input.PostID),
+	})
 	if err != nil {
 		json.ServeJSONError(r.Context(), w, err)
 		return
