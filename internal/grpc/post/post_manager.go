@@ -147,6 +147,25 @@ func (p *PostManager) DeletePost(ctx context.Context, in *postspb.DeletePostRequ
 	return
 }
 
+func (p *PostManager) GetLikedPosts(ctx context.Context, in *postspb.GetLikedPostsRequest) (res *postspb.GetLikedPostsResponse, err error) {
+	userID := in.GetUserId()
+	lastLikeID := in.GetLastLikeId()
+	postsAmount := in.GetPostsAmount()
+
+	posts, err := p.PostsService.GetLikedPosts(ctx, uint(userID), uint(lastLikeID), uint(postsAmount))
+	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
+		return
+	}
+
+	res = &postspb.GetLikedPostsResponse{
+		LikedPosts: postspb.ToLikedPosts(posts),
+	}
+
+	return
+}
+
 func (p *PostManager) LikePost(ctx context.Context, in *postspb.LikePostRequest) (res *postspb.LikePostResponse, err error) {
 	postID := in.GetPostId()
 	userID := in.GetUserId()

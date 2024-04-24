@@ -6,6 +6,7 @@ import (
 	"socio/errors"
 	"socio/pkg/contextlogger"
 	customtime "socio/pkg/time"
+	"socio/usecase/posts"
 
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
@@ -128,6 +129,42 @@ const (
 	DELETE FROM public.post_like
 	WHERE post_id = $1
 		AND user_id = $2;
+	`
+	getLikedPosts = `
+	SELECT
+		pl.id as like_id, 
+		pl.post_id,
+		pl.user_id,
+		pl.created_at,
+		p.author_id,
+		p.content,
+		p.created_at as post_created_at,
+		p.updated_at as post_updated_at,
+		array_agg(DISTINCT pa.file_name) AS attachments,
+		array_agg(DISTINCT pl1.user_id) AS liked_by_users
+	FROM public.post_like AS pl
+	JOIN public.post AS p ON pl.post_id = p.id
+	LEFT JOIN public.post_like AS pl1 ON p.id = pl1.post_id
+	LEFT JOIN public.post_attachment AS pa ON p.id = pa.post_id
+	WHERE p.author_id = $1
+		AND pl.id < $2
+	GROUP BY pl.id, 
+        p.id,
+		pl.post_id,
+		pl.user_id,
+		pl.created_at,
+		p.author_id,
+		p.content,
+		p.created_at,
+		p.updated_at
+	ORDER BY pl.created_at DESC
+	LIMIT $3;
+	`
+	getLastPostLikeIDQuery = `
+	SELECT COALESCE(MAX(pl.id), 0) AS last_like_id
+	FROM public.post_like AS pl
+	JOIN public.post AS p ON post_id = p.id
+	WHERE p.author_id = $1;
 	`
 )
 
@@ -380,6 +417,63 @@ func (p *Posts) DeletePost(ctx context.Context, postID uint) (err error) {
 
 	if result.RowsAffected() != 1 {
 		return errors.ErrRowsAffected
+	}
+
+	return
+}
+
+func (p *Posts) GetLikedPosts(ctx context.Context, userID uint, lastLikeID uint, limit uint) (likedPosts []posts.LikeWithPost, err error) {
+	contextlogger.LogSQL(ctx, GetUserFriendsPostsQuery, userID, lastLikeID, limit)
+	if lastLikeID == 0 {
+		contextlogger.LogSQL(ctx, getLastPostLikeIDQuery, userID)
+
+		err = p.db.QueryRow(context.Background(), getLastPostLikeIDQuery, userID).Scan(&lastLikeID)
+		if err != nil {
+			return
+		}
+
+		lastLikeID += 1
+	}
+
+	contextlogger.LogSQL(ctx, getLikedPosts, userID, lastLikeID, limit)
+
+	rows, err := p.db.Query(context.Background(), getLikedPosts, userID, lastLikeID, limit)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		post := new(domain.Post)
+		like := new(domain.PostLike)
+
+		var attachments pgtype.TextArray
+		var likedByUsers pgtype.Int8Array
+
+		err = rows.Scan(
+			&like.ID,
+			&like.PostID,
+			&like.UserID,
+			&like.CreatedAt.Time,
+			&post.AuthorID,
+			&post.Content,
+			&post.CreatedAt.Time,
+			&post.UpdatedAt.Time,
+			&attachments,
+			&likedByUsers,
+		)
+		if err != nil {
+			return
+		}
+
+		post.ID = like.PostID
+		post.Attachments = textArrayIntoStringSlice(attachments)
+		post.LikedByIDs = int8ArrayIntoUintSlice(likedByUsers)
+
+		likedPosts = append(likedPosts, posts.LikeWithPost{
+			Like: like,
+			Post: post,
+		})
 	}
 
 	return

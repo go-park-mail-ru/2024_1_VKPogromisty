@@ -25,6 +25,7 @@ const (
 	UserIDQueryParam      = "userId"
 	LastPostIDQueryParam  = "lastPostId"
 	PostsAmountQueryParam = "postsAmount"
+	LastLikeIDQueryParam  = "lastLikeId"
 	BatchSize             = 1 << 23
 )
 
@@ -497,6 +498,74 @@ func (h *PostsHandler) HandleDeletePost(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *PostsHandler) HandleGetLikedPosts(w http.ResponseWriter, r *http.Request) {
+	authorizedUserID, err := requestcontext.GetUserID(r.Context())
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, err)
+		return
+	}
+
+	lastLikeIDData := r.URL.Query().Get(LastLikeIDQueryParam)
+	var lastLikeID uint64
+
+	if lastLikeIDData == "" {
+		lastLikeID = 0
+	} else {
+		lastLikeID, err = strconv.ParseUint(lastLikeIDData, 0, 0)
+		if err != nil {
+			json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
+			return
+		}
+	}
+
+	postsAmountData := r.URL.Query().Get(PostsAmountQueryParam)
+	var postsAmount uint64
+
+	if postsAmountData == "" {
+		postsAmount = 0
+	} else {
+		postsAmount, err = strconv.ParseUint(postsAmountData, 0, 0)
+		if err != nil {
+			json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
+			return
+		}
+	}
+
+	postsRes, err := h.PostsClient.GetLikedPosts(r.Context(), &postspb.GetLikedPostsRequest{
+		UserId:      uint64(authorizedUserID),
+		LastLikeId:  lastLikeID,
+		PostsAmount: postsAmount,
+	})
+	if err != nil {
+		json.ServeGRPCStatus(r.Context(), w, err)
+		return
+	}
+
+	likedPosts := postspb.ToLikesWithPosts(postsRes)
+
+	var likedPostsWithUsers []posts.LikeWithPostAndUser
+
+	for _, post := range likedPosts {
+		var likedPostWithUser posts.LikeWithPostAndUser
+
+		author, err := h.UserClient.GetByID(r.Context(), &uspb.GetByIDRequest{
+			UserId: uint64(post.Like.UserID),
+		})
+		if err != nil {
+			json.ServeGRPCStatus(r.Context(), w, err)
+			return
+		}
+
+		likedPostWithUser.Like = post.Like
+		likedPostWithUser.Post = post.Post
+		likedPostWithUser.User = uspb.ToUser(author.User)
+
+		likedPostsWithUsers = append(likedPostsWithUsers, likedPostWithUser)
+	}
+
+	json.ServeJSONBody(r.Context(), w, likedPostsWithUsers, http.StatusOK)
 }
 
 func (h *PostsHandler) HandleLikePost(w http.ResponseWriter, r *http.Request) {

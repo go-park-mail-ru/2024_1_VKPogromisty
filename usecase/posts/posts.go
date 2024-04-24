@@ -10,7 +10,8 @@ import (
 )
 
 const (
-	defaultPostsAmount = 20
+	defaultPostsAmount      = 20
+	defaultLikedPostsAmount = 20
 )
 
 type PostInput struct {
@@ -39,6 +40,16 @@ type DeletePostInput struct {
 	PostID uint `json:"postId"`
 }
 
+type LikeWithPost struct {
+	Like *domain.PostLike `json:"like"`
+	Post *domain.Post     `json:"post"`
+}
+
+type LikeWithPostAndUser struct {
+	LikeWithPost
+	User *domain.User `json:"likedBy"`
+}
+
 type PostsStorage interface {
 	GetPostByID(ctx context.Context, postID uint) (post *domain.Post, err error)
 	GetUserPosts(ctx context.Context, userID uint, lastPostID uint, postsAmount uint) (posts []*domain.Post, err error)
@@ -46,6 +57,7 @@ type PostsStorage interface {
 	StorePost(ctx context.Context, post *domain.Post) (newPost *domain.Post, err error)
 	UpdatePost(ctx context.Context, post *domain.Post) (updatedPost *domain.Post, err error)
 	DeletePost(ctx context.Context, postID uint) (err error)
+	GetLikedPosts(ctx context.Context, userID uint, lastLikeID uint, limit uint) (likedPosts []LikeWithPost, err error)
 	StorePostLike(ctx context.Context, likeData *domain.PostLike) (like *domain.PostLike, err error)
 	DeletePostLike(ctx context.Context, likeData *domain.PostLike) (err error)
 }
@@ -182,6 +194,23 @@ func (s *Service) DeletePost(ctx context.Context, userID uint, postID uint) (err
 	err = s.PostsStorage.DeletePost(ctx, postID)
 	if err != nil {
 		return
+	}
+
+	return
+}
+
+func (s *Service) GetLikedPosts(ctx context.Context, userID uint, lastLikeID uint, limit uint) (likedPosts []LikeWithPost, err error) {
+	if limit == 0 {
+		limit = defaultLikedPostsAmount
+	}
+
+	likedPosts, err = s.PostsStorage.GetLikedPosts(ctx, userID, lastLikeID, limit)
+	if err != nil {
+		return
+	}
+
+	for _, likedPost := range likedPosts {
+		s.Sanitizer.SanitizePost(likedPost.Post)
 	}
 
 	return

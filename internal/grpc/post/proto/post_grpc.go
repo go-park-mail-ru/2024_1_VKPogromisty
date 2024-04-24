@@ -3,6 +3,7 @@ package post
 import (
 	"socio/domain"
 	customtime "socio/pkg/time"
+	"socio/usecase/posts"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -69,6 +70,47 @@ func ToPosts(res *GetUserPostsResponse) (posts []*domain.Post) {
 			CreatedAt: customtime.CustomTime{
 				Time: post.CreatedAt.AsTime(),
 			},
+		})
+	}
+
+	return
+}
+
+func ToPostLike(res *PostLikeResponse) *domain.PostLike {
+	return &domain.PostLike{
+		ID:     uint(res.Id),
+		PostID: uint(res.PostId),
+		UserID: uint(res.UserId),
+		CreatedAt: customtime.CustomTime{
+			Time: res.CreatedAt.AsTime(),
+		},
+	}
+}
+
+func ToLikeWithPost(res *LikedPostResponse) *posts.LikeWithPost {
+	return &posts.LikeWithPost{
+		Post: ToPost(res.Post),
+		Like: ToPostLike(res.Like),
+	}
+}
+
+func ToLikesWithPosts(res *GetLikedPostsResponse) (likesWithPosts []*posts.LikeWithPost) {
+	likesWithPosts = make([]*posts.LikeWithPost, 0)
+
+	for _, likedPost := range res.LikedPosts {
+		likesWithPosts = append(likesWithPosts, ToLikeWithPost(likedPost))
+	}
+
+	return
+}
+
+func ToLikedPosts(likesWithPosts []posts.LikeWithPost) (res []*LikedPostResponse) {
+	res = make([]*LikedPostResponse, 0)
+
+	for _, likeWithPost := range likesWithPosts {
+		res = append(res, &LikedPostResponse{
+			Post: ToPostResponse(likeWithPost.Post),
+			Like: ToPostLikeResponse(likeWithPost.Like),
 		})
 	}
 
