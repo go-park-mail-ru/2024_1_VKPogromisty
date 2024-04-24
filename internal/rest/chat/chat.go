@@ -27,6 +27,8 @@ const (
 	readBufferSize           = 4096
 	writeBufferSize          = 4096
 	newline                  = '\n'
+	PeerIDQueryParam         = "peerId"
+	LastMessageIDQueryParam  = "lastMessageId"
 	MessagesAmountQueryParam = "messagesAmount"
 )
 
@@ -109,7 +111,7 @@ func (c *ChatServer) HandleGetMessagesByDialog(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	peerIDData := r.URL.Query().Get("peerId")
+	peerIDData := r.URL.Query().Get(PeerIDQueryParam)
 	if peerIDData == "" {
 		json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
 		return
@@ -121,7 +123,7 @@ func (c *ChatServer) HandleGetMessagesByDialog(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	lastMessageIDData := r.URL.Query().Get("lastMessageId")
+	lastMessageIDData := r.URL.Query().Get(LastMessageIDQueryParam)
 	var lastMessageID uint64
 	if lastMessageIDData == "" {
 		lastMessageID = 0

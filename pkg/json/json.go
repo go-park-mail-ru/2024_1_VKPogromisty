@@ -51,6 +51,28 @@ func ServeJSONBody(ctx context.Context, w http.ResponseWriter, value any, status
 	}
 }
 
+func ServeGRPCStatus(ctx context.Context, w http.ResponseWriter, err error) {
+	contextlogger.LogErr(ctx, err)
+
+	msg, statusCode := errors.ParseGRPCError(err)
+
+	w.Header().Set("Content-Type", "application/json;")
+
+	data, marshallErr := MarshalResponseError(msg)
+	if marshallErr != nil {
+		contextlogger.LogErr(ctx, marshallErr)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(statusCode)
+	_, marshallErr = w.Write(data)
+	if marshallErr != nil {
+		contextlogger.LogErr(ctx, marshallErr)
+		return
+	}
+}
+
 func ServeJSONError(ctx context.Context, w http.ResponseWriter, err error) {
 	contextlogger.LogErr(ctx, err)
 

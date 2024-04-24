@@ -1,7 +1,6 @@
 package rest
 
 import (
-	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -24,18 +23,18 @@ const (
 )
 
 type ProfileHandler struct {
-	userClient uspb.UserClient
+	UserClient uspb.UserClient
 }
 
 func NewProfileHandler(userClient uspb.UserClient) (h *ProfileHandler) {
 	return &ProfileHandler{
-		userClient: userClient,
+		UserClient: userClient,
 	}
 }
 
 func (h *ProfileHandler) uploadAvatar(r *http.Request, avatarFH *multipart.FileHeader) (string, error) {
 	fileName := uuid.NewString() + filepath.Ext(avatarFH.Filename)
-	stream, err := h.userClient.UploadAvatar(r.Context())
+	stream, err := h.UserClient.Upload(r.Context())
 	if err != nil {
 		return "", err
 	}
@@ -61,7 +60,7 @@ func (h *ProfileHandler) uploadAvatar(r *http.Request, avatarFH *multipart.FileH
 
 		chunk := buf[:num]
 
-		err = stream.Send(&uspb.UploadAvatarRequest{
+		err = stream.Send(&uspb.UploadRequest{
 			FileName: fileName,
 			Chunk:    chunk,
 		})
@@ -121,12 +120,12 @@ func (h *ProfileHandler) HandleGetProfile(w http.ResponseWriter, r *http.Request
 		userID = uint64(authorizedUserID)
 	}
 
-	userWithInfo, err := h.userClient.GetByIDWithSubsInfo(r.Context(), &uspb.GetByIDWithSubsInfoRequest{
+	userWithInfo, err := h.UserClient.GetByIDWithSubsInfo(r.Context(), &uspb.GetByIDWithSubsInfoRequest{
 		UserId:           userID,
 		AuthorizedUserId: uint64(authorizedUserID),
 	})
 	if err != nil {
-		json.ServeJSONError(r.Context(), w, err)
+		json.ServeGRPCStatus(r.Context(), w, err)
 		return
 	}
 
@@ -195,16 +194,14 @@ func (h *ProfileHandler) HandleUpdateProfile(w http.ResponseWriter, r *http.Requ
 			return
 		}
 
-		fmt.Println(avatarFileName)
-
 		input.Avatar = avatarFileName
 	}
 
 	var grpcInput = uspb.ToUpdateRequest(&input)
 
-	updatedUser, err := h.userClient.Update(r.Context(), grpcInput)
+	updatedUser, err := h.UserClient.Update(r.Context(), grpcInput)
 	if err != nil {
-		json.ServeJSONError(r.Context(), w, err)
+		json.ServeGRPCStatus(r.Context(), w, err)
 		return
 	}
 
@@ -236,11 +233,11 @@ func (h *ProfileHandler) HandleDeleteProfile(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	_, err = h.userClient.Delete(r.Context(), &uspb.DeleteRequest{
+	_, err = h.UserClient.Delete(r.Context(), &uspb.DeleteRequest{
 		UserId: uint64(userID),
 	})
 	if err != nil {
-		json.ServeJSONError(r.Context(), w, err)
+		json.ServeGRPCStatus(r.Context(), w, err)
 		return
 	}
 

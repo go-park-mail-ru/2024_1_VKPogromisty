@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	postpb "socio/internal/grpc/post/proto"
 	uspb "socio/internal/grpc/user/proto"
 	pgRepo "socio/internal/repository/postgres"
 	redisRepo "socio/internal/repository/redis"
@@ -19,7 +20,13 @@ import (
 )
 
 var (
-	DotenvPath = "../../.env"
+	DotenvPath    = "../../.env"
+	AppPortEnv    = "APP_PORT"
+	PgUserEnv     = "PG_USER"
+	PgDBNameEnv   = "PG_DBNAME"
+	PgPasswordEnv = "PG_PASSWORD"
+	PgHostEnv     = "PG_HOST"
+	PgPortEnv     = "PG_PORT"
 )
 
 func MountRootRouter(router *mux.Router) (err error) {
@@ -28,7 +35,14 @@ func MountRootRouter(router *mux.Router) (err error) {
 	}
 	rootRouter := router.PathPrefix("/api/v1/").Subrouter()
 
-	pgConnStr := fmt.Sprintf("user=%s dbname=%s password=%s host=%s port=%s sslmode=disable", os.Getenv("PG_USER"), os.Getenv("PG_DBNAME"), os.Getenv("PG_PASSWORD"), os.Getenv("PG_HOST"), os.Getenv("PG_PORT"))
+	pgConnStr := fmt.Sprintf(
+		"user=%s dbname=%s password=%s host=%s port=%s sslmode=disable",
+		os.Getenv(PgUserEnv),
+		os.Getenv(PgDBNameEnv),
+		os.Getenv(PgPasswordEnv),
+		os.Getenv(PgHostEnv),
+		os.Getenv(PgPortEnv),
+	)
 	db, err := pgRepo.NewPool(pgConnStr)
 	if err != nil {
 		return
@@ -36,7 +50,6 @@ func MountRootRouter(router *mux.Router) (err error) {
 	defer db.Close()
 
 	userStorage := pgRepo.NewUsers(db, customtime.RealTimeProvider{})
-	postStorage := pgRepo.NewPosts(db, customtime.RealTimeProvider{})
 	subStorage := pgRepo.NewSubscriptions(db, customtime.RealTimeProvider{})
 	personalMessageStorage := pgRepo.NewPersonalMessages(db, customtime.RealTimeProvider{})
 
@@ -57,11 +70,22 @@ func MountRootRouter(router *mux.Router) (err error) {
 
 	userClient := uspb.NewUserClient(userClientConn)
 
+	postClientConn, err := grpc.Dial(
+		os.Getenv("GRPC_POST_SERVICE_HOST")+os.Getenv("GRPC_POST_SERVICE_PORT"),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		return
+	}
+	defer postClientConn.Close()
+
+	postClient := postpb.NewPostClient(postClientConn)
+
 	MountAuthRouter(rootRouter, userStorage, sessionStorage)
 	MountCSRFRouter(rootRouter, sessionStorage)
 	MountChatRouter(rootRouter, chatPubSubRepository, personalMessageStorage, sessionStorage)
 	MountProfileRouter(rootRouter, userClient, sessionStorage)
-	MountPostsRouter(rootRouter, postStorage, userStorage, sessionStorage)
+	MountPostsRouter(rootRouter, postClient, userClient, sessionStorage)
 	MountSubscriptionsRouter(rootRouter, subStorage, userStorage, sessionStorage)
 	MountStaticRouter(rootRouter)
 
@@ -85,7 +109,7 @@ func MountRootRouter(router *mux.Router) (err error) {
 		AllowCredentials: true,
 	}).Handler(rootRouter)
 
-	appPort := os.Getenv("APP_PORT")
+	appPort := os.Getenv(AppPortEnv)
 	fmt.Printf("started on port %s\n", appPort)
 	http.ListenAndServe(appPort, handler)
 

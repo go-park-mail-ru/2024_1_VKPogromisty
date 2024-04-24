@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"socio/errors"
 	uspb "socio/internal/grpc/user/proto"
 	"socio/usecase/user"
 
@@ -33,6 +34,8 @@ func (u *UserManager) GetByID(ctx context.Context, in *uspb.GetByIDRequest) (res
 
 	user, err := u.UserService.GetUserByID(ctx, uint(userID))
 	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
 		return
 	}
 
@@ -50,6 +53,8 @@ func (u *UserManager) GetByIDWithSubsInfo(ctx context.Context, in *uspb.GetByIDW
 
 	userWithInfo, err := u.UserService.GetUserByIDWithSubsInfo(ctx, uint(userID), uint(authorizedUserID))
 	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
 		return
 	}
 
@@ -67,6 +72,8 @@ func (u *UserManager) Create(ctx context.Context, in *uspb.CreateRequest) (res *
 
 	user, err := u.UserService.CreateUser(ctx, *userInput)
 	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
 		return
 	}
 
@@ -77,9 +84,11 @@ func (u *UserManager) Create(ctx context.Context, in *uspb.CreateRequest) (res *
 	return
 }
 
-func (u *UserManager) UploadAvatar(stream uspb.User_UploadAvatarServer) (err error) {
+func (u *UserManager) Upload(stream uspb.User_UploadServer) (err error) {
 	file, err := os.Create(filepath.Join(staticFilePath, uuid.NewString()))
 	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
 		return
 	}
 
@@ -101,11 +110,15 @@ func (u *UserManager) UploadAvatar(stream uspb.User_UploadAvatarServer) (err err
 			break
 		}
 		if err != nil {
+			customErr := errors.NewCustomError(err)
+			err = customErr.GRPCStatus().Err()
 			return err
 		}
 		chunk := req.GetChunk()
 		fileSize += uint64(len(chunk))
 		if _, err = file.Write(chunk); err != nil {
+			customErr := errors.NewCustomError(err)
+			err = customErr.GRPCStatus().Err()
 			return err
 		}
 	}
@@ -113,10 +126,12 @@ func (u *UserManager) UploadAvatar(stream uspb.User_UploadAvatarServer) (err err
 	u.UserService.UploadAvatar(fileName, file.Name())
 
 	if err = os.Remove(file.Name()); err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
 		return
 	}
 
-	return stream.SendAndClose(&uspb.UploadAvatarResponse{
+	return stream.SendAndClose(&uspb.UploadResponse{
 		FileName: fileName,
 		Size:     fileSize,
 	})
@@ -127,6 +142,8 @@ func (u *UserManager) Update(ctx context.Context, in *uspb.UpdateRequest) (res *
 
 	user, err := u.UserService.UpdateUser(ctx, *userInput)
 	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
 		return
 	}
 
@@ -142,6 +159,8 @@ func (u *UserManager) Delete(ctx context.Context, in *uspb.DeleteRequest) (res *
 
 	err = u.UserService.DeleteUser(ctx, uint(userID))
 	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
 		return
 	}
 

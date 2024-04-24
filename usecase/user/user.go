@@ -20,8 +20,8 @@ type UserStorage interface {
 }
 
 type AvatarStorage interface {
-	StoreAvatar(fileName string, filePath string) (err error)
-	DeleteAvatar(fileName string) (err error)
+	Store(fileName string, filePath string) (err error)
+	Delete(fileName string) (err error)
 }
 
 type UserWithSubsInfo struct {
@@ -84,7 +84,7 @@ func (p *Service) GetUserByEmail(ctx context.Context, email string) (user *domai
 }
 
 func (p *Service) UploadAvatar(fileName string, filePath string) (err error) {
-	err = p.AvatarStorage.StoreAvatar(fileName, filePath)
+	err = p.AvatarStorage.Store(fileName, filePath)
 	if err != nil {
 		return
 	}
@@ -120,7 +120,13 @@ func (p *Service) CreateUser(ctx context.Context, userInput CreateUserInput) (us
 	return
 }
 
-func (p *Service) GetUserByIDWithSubsInfo(ctx context.Context, userID, authorizedUserID uint) (userWithInfo UserWithSubsInfo, err error) {
+func (p *Service) GetUserByIDWithSubsInfo(ctx context.Context, userID uint, authorizedUserID uint) (userWithInfo UserWithSubsInfo, err error) {
+	userWithInfo = UserWithSubsInfo{
+		User:           &domain.User{},
+		IsSubscriber:   false,
+		IsSubscribedTo: false,
+	}
+
 	userWithInfo.User, userWithInfo.IsSubscribedTo, userWithInfo.IsSubscriber, err = p.UserStorage.GetUserByIDWithSubsInfo(ctx, userID, authorizedUserID)
 	if err != nil {
 		return
@@ -167,7 +173,7 @@ func (p *Service) UpdateUser(ctx context.Context, input UpdateUserInput) (update
 	}
 
 	if len(input.Avatar) > 0 {
-		err = p.AvatarStorage.DeleteAvatar(updatedUser.Avatar)
+		err = p.AvatarStorage.Delete(updatedUser.Avatar)
 		if err != nil {
 			return
 		}
@@ -191,7 +197,7 @@ func (p *Service) DeleteUser(ctx context.Context, userID uint) (err error) {
 		return
 	}
 
-	err = p.AvatarStorage.DeleteAvatar(user.Avatar)
+	err = p.AvatarStorage.Delete(user.Avatar)
 	if err != nil {
 		return
 	}

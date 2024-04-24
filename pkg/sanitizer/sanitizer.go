@@ -37,6 +37,10 @@ func (s *Sanitizer) SanitizePost(post *domain.Post) {
 	}
 
 	post.Content = s.Sanitize(post.Content)
+
+	for i := range post.Attachments {
+		post.Attachments[i] = s.Sanitize(post.Attachments[i])
+	}
 }
 
 func (s *Sanitizer) SanitizePostWithAuthor(post *domain.PostWithAuthor) {

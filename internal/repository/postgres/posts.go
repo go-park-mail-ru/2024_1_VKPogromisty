@@ -2,12 +2,11 @@ package repository
 
 import (
 	"context"
-	"mime/multipart"
 	"socio/domain"
 	"socio/errors"
 	"socio/pkg/contextlogger"
-	"socio/pkg/static"
 	customtime "socio/pkg/time"
+	"socio/usecase/posts"
 
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
@@ -17,19 +16,21 @@ import (
 const (
 	GetPostByIDQuery = `
 	SELECT p.id,
-		p.author_id,
-		p.content,
-		p.created_at,
-		p.updated_at,
-		array_agg(pa.file_name) AS attachments
-	FROM public.post AS p
-		LEFT JOIN public.post_attachment AS pa ON p.id = pa.post_id
-	WHERE p.id = $1
-	GROUP BY p.id,
-		p.author_id,
-		p.content,
-		p.created_at,
-		p.updated_at;
+        p.author_id,
+        p.content,
+        p.created_at,
+        p.updated_at,
+        array_agg(DISTINCT pa.file_name) AS attachments,
+        array_agg(DISTINCT pl.user_id) AS liked_by_users
+    FROM public.post AS p
+        LEFT JOIN public.post_attachment AS pa ON p.id = pa.post_id
+        LEFT JOIN public.post_like AS pl ON p.id = pl.post_id
+    WHERE p.id = $1
+    GROUP BY p.id,
+        p.author_id,
+        p.content,
+        p.created_at,
+        p.updated_at;
 	`
 	getLastUserPostIDQuery = `
 	SELECT COALESCE(MAX(id), 0) AS last_post_id
@@ -38,22 +39,24 @@ const (
 	`
 	getUserPostsQuery = `
 	SELECT p.id,
-		p.author_id,
-		p.content,
-		p.created_at,
-		p.updated_at,
-		array_agg(pa.file_name) AS attachments
-	FROM public.post AS p
-		LEFT JOIN public.post_attachment AS pa ON p.id = pa.post_id
-	WHERE p.author_id = $1
-		AND p.id < $2
-	GROUP BY p.id,
-		p.author_id,
-		p.content,
-		p.created_at,
-		p.updated_at
-	ORDER BY p.created_at DESC
-	LIMIT $3;
+        p.author_id,
+        p.content,
+        p.created_at,
+        p.updated_at,
+        array_agg(DISTINCT pa.file_name) AS attachments,
+        array_agg(DISTINCT pl.user_id) AS liked_by_users
+    FROM public.post AS p
+        LEFT JOIN public.post_attachment AS pa ON p.id = pa.post_id
+        LEFT JOIN public.post_like AS pl ON p.id = pl.post_id
+    WHERE p.author_id = $1
+        AND p.id < $2
+    GROUP BY p.id,
+        p.author_id,
+        p.content,
+        p.created_at,
+        p.updated_at
+    ORDER BY p.created_at DESC
+    LIMIT $3;
 	`
 	getLastUserFriendsPostIDQuery = `
 	SELECT COALESCE(MAX(p.id), 0) AS last_post_id
@@ -63,40 +66,23 @@ const (
 	`
 	GetUserFriendsPostsQuery = `
 	SELECT p.id,
-		p.author_id,
-		p.content,
-		p.created_at,
-		p.updated_at,
-		array_agg(pa.file_name) AS attachments,
-		u.id AS user_id,
-		u.first_name,
-		u.last_name,
-		u.email,
-		u.avatar,
-		u.date_of_birth,
-		u.created_at AS user_created_at,
-		u.updated_at AS user_updated_at
-	FROM public.post AS p
-		LEFT JOIN public.post_attachment AS pa ON p.id = pa.post_id
-		INNER JOIN public.user AS u ON p.author_id = u.id
-		INNER JOIN public.subscription AS s ON u.id = s.subscribed_to_id
-	WHERE s.subscriber_id = $1
-		AND p.id < $2
-	GROUP BY p.id,
-		p.author_id,
-		p.content,
-		p.created_at,
-		p.updated_at,
-		u.id,
-		u.first_name,
-		u.last_name,
-		u.email,
-		u.avatar,
-		u.date_of_birth,
-		u.created_at,
-		u.updated_at
-	ORDER BY p.created_at DESC
-	LIMIT $3;
+        p.content,
+        p.created_at,
+        p.updated_at,
+        array_agg(DISTINCT pa.file_name) AS attachments,
+        array_agg(DISTINCT pl.user_id) AS liked_by_users
+    FROM public.post AS p
+        LEFT JOIN public.post_attachment AS pa ON p.id = pa.post_id
+        LEFT JOIN public.post_like AS pl ON p.id = pl.post_id
+        INNER JOIN public.subscription AS s ON p.author_id = s.subscribed_to_id
+    WHERE s.subscriber_id = $1
+        AND p.id < $2
+    GROUP BY p.id,
+        p.content,
+        p.created_at,
+        p.updated_at
+    ORDER BY p.created_at DESC
+    LIMIT $3;
 	`
 	StorePostQuery = `
 	INSERT INTO public.post (author_id, content)
@@ -131,6 +117,55 @@ const (
 	DELETE FROM public.post
 	WHERE id = $1;
 	`
+	createPostLikeQuery = `
+	INSERT INTO public.post_like (post_id, user_id)
+	VALUES ($1, $2)
+	RETURNING id,
+		post_id,
+		user_id,
+		created_at;
+	`
+	deletePostLikeQuery = `
+	DELETE FROM public.post_like
+	WHERE post_id = $1
+		AND user_id = $2;
+	`
+	getLikedPosts = `
+	SELECT
+		pl.id as like_id, 
+		pl.post_id,
+		pl.user_id,
+		pl.created_at,
+		p.author_id,
+		p.content,
+		p.created_at as post_created_at,
+		p.updated_at as post_updated_at,
+		array_agg(DISTINCT pa.file_name) AS attachments,
+		array_agg(DISTINCT pl1.user_id) AS liked_by_users
+	FROM public.post_like AS pl
+	JOIN public.post AS p ON pl.post_id = p.id
+	LEFT JOIN public.post_like AS pl1 ON p.id = pl1.post_id
+	LEFT JOIN public.post_attachment AS pa ON p.id = pa.post_id
+	WHERE p.author_id = $1
+		AND pl.id < $2
+	GROUP BY pl.id, 
+        p.id,
+		pl.post_id,
+		pl.user_id,
+		pl.created_at,
+		p.author_id,
+		p.content,
+		p.created_at,
+		p.updated_at
+	ORDER BY pl.created_at DESC
+	LIMIT $3;
+	`
+	getLastPostLikeIDQuery = `
+	SELECT COALESCE(MAX(pl.id), 0) AS last_like_id
+	FROM public.post_like AS pl
+	JOIN public.post AS p ON post_id = p.id
+	WHERE p.author_id = $1;
+	`
 )
 
 type Posts struct {
@@ -155,10 +190,21 @@ func textArrayIntoStringSlice(arr pgtype.TextArray) (res []string) {
 	return
 }
 
+func int8ArrayIntoUintSlice(arr pgtype.Int8Array) (res []uint64) {
+	for _, v := range arr.Elements {
+		if v.Status == pgtype.Present {
+			res = append(res, uint64(v.Int))
+		}
+	}
+
+	return
+}
+
 func (p *Posts) GetPostByID(ctx context.Context, postID uint) (post *domain.Post, err error) {
 	post = new(domain.Post)
 
 	var attachments pgtype.TextArray
+	var likedByUsers pgtype.Int8Array
 
 	contextlogger.LogSQL(ctx, GetPostByIDQuery, postID)
 
@@ -169,12 +215,18 @@ func (p *Posts) GetPostByID(ctx context.Context, postID uint) (post *domain.Post
 		&post.CreatedAt.Time,
 		&post.UpdatedAt.Time,
 		&attachments,
+		&likedByUsers,
 	)
 	if err != nil {
+		if err == pgx.ErrNoRows {
+			err = errors.ErrNotFound
+		}
+
 		return
 	}
 
 	post.Attachments = textArrayIntoStringSlice(attachments)
+	post.LikedByIDs = int8ArrayIntoUintSlice(likedByUsers)
 
 	return
 }
@@ -185,6 +237,10 @@ func (p *Posts) GetUserPosts(ctx context.Context, userID uint, lastPostID uint, 
 
 		err = p.db.QueryRow(context.Background(), getLastUserPostIDQuery, userID).Scan(&lastPostID)
 		if err != nil {
+			if err == pgx.ErrNoRows {
+				err = errors.ErrNotFound
+			}
+
 			return
 		}
 
@@ -195,13 +251,20 @@ func (p *Posts) GetUserPosts(ctx context.Context, userID uint, lastPostID uint, 
 
 	rows, err := p.db.Query(context.Background(), getUserPostsQuery, userID, lastPostID, postsAmount)
 	if err != nil {
+		if err == pgx.ErrNoRows {
+			err = errors.ErrNotFound
+		}
+
 		return
 	}
 	defer rows.Close()
 
 	for rows.Next() {
 		post := new(domain.Post)
+
 		var attachments pgtype.TextArray
+		var likedByUsers pgtype.Int8Array
+
 		err = rows.Scan(
 			&post.ID,
 			&post.AuthorID,
@@ -209,12 +272,14 @@ func (p *Posts) GetUserPosts(ctx context.Context, userID uint, lastPostID uint, 
 			&post.CreatedAt.Time,
 			&post.UpdatedAt.Time,
 			&attachments,
+			&likedByUsers,
 		)
 		if err != nil {
 			return
 		}
 
 		post.Attachments = textArrayIntoStringSlice(attachments)
+		post.LikedByIDs = int8ArrayIntoUintSlice(likedByUsers)
 
 		posts = append(posts, post)
 	}
@@ -222,7 +287,7 @@ func (p *Posts) GetUserPosts(ctx context.Context, userID uint, lastPostID uint, 
 	return
 }
 
-func (p *Posts) GetUserFriendsPosts(ctx context.Context, userID uint, lastPostID uint, postsAmount uint) (posts []domain.PostWithAuthor, err error) {
+func (p *Posts) GetUserFriendsPosts(ctx context.Context, userID uint, lastPostID uint, postsAmount uint) (posts []*domain.Post, err error) {
 	contextlogger.LogSQL(ctx, GetUserFriendsPostsQuery, userID, lastPostID, postsAmount)
 	if lastPostID == 0 {
 		contextlogger.LogSQL(ctx, getLastUserFriendsPostIDQuery, userID)
@@ -244,32 +309,26 @@ func (p *Posts) GetUserFriendsPosts(ctx context.Context, userID uint, lastPostID
 	defer rows.Close()
 
 	for rows.Next() {
-		post := domain.PostWithAuthor{
-			Post:   new(domain.Post),
-			Author: new(domain.User),
-		}
+		post := new(domain.Post)
+
 		var attachments pgtype.TextArray
+		var likedByUsers pgtype.Int8Array
+
 		err = rows.Scan(
-			&post.Post.ID,
-			&post.Post.AuthorID,
-			&post.Post.Content,
-			&post.Post.CreatedAt.Time,
-			&post.Post.UpdatedAt.Time,
+			&post.ID,
+			&post.AuthorID,
+			&post.Content,
+			&post.CreatedAt.Time,
+			&post.UpdatedAt.Time,
 			&attachments,
-			&post.Author.ID,
-			&post.Author.FirstName,
-			&post.Author.LastName,
-			&post.Author.Email,
-			&post.Author.Avatar,
-			&post.Author.DateOfBirth.Time,
-			&post.Author.CreatedAt.Time,
-			&post.Author.UpdatedAt.Time,
+			&likedByUsers,
 		)
 		if err != nil {
 			return
 		}
 
-		post.Post.Attachments = textArrayIntoStringSlice(attachments)
+		post.Attachments = textArrayIntoStringSlice(attachments)
+		post.LikedByIDs = int8ArrayIntoUintSlice(likedByUsers)
 
 		posts = append(posts, post)
 	}
@@ -277,7 +336,7 @@ func (p *Posts) GetUserFriendsPosts(ctx context.Context, userID uint, lastPostID
 	return
 }
 
-func (p *Posts) StorePost(ctx context.Context, post *domain.Post, attachments []*multipart.FileHeader) (newPost *domain.Post, err error) {
+func (p *Posts) StorePost(ctx context.Context, post *domain.Post) (newPost *domain.Post, err error) {
 	newPost = new(domain.Post)
 
 	tx, err := p.db.BeginTx(context.Background(), pgx.TxOptions{})
@@ -310,21 +369,15 @@ func (p *Posts) StorePost(ctx context.Context, post *domain.Post, attachments []
 		return
 	}
 
-	for _, attachment := range attachments {
-		var fileName string
-		fileName, err = static.SaveImage(attachment)
+	for _, attachment := range post.Attachments {
+		contextlogger.LogSQL(ctx, StoreAttachmentQuery, newPost.ID, attachment)
+
+		err = tx.QueryRow(context.Background(), StoreAttachmentQuery, newPost.ID, attachment).Scan(&attachment)
 		if err != nil {
 			return
 		}
 
-		contextlogger.LogSQL(ctx, StoreAttachmentQuery, newPost.ID, fileName)
-
-		err = tx.QueryRow(context.Background(), StoreAttachmentQuery, newPost.ID, fileName).Scan(&fileName)
-		if err != nil {
-			return
-		}
-
-		newPost.Attachments = append(newPost.Attachments, fileName)
+		newPost.Attachments = append(newPost.Attachments, attachment)
 	}
 
 	err = tx.Commit(context.Background())
@@ -355,43 +408,9 @@ func (p *Posts) UpdatePost(ctx context.Context, post *domain.Post) (updatedPost 
 }
 
 func (p *Posts) DeletePost(ctx context.Context, postID uint) (err error) {
-	tx, err := p.db.BeginTx(context.Background(), pgx.TxOptions{})
-	if err != nil {
-		return
-	}
-
-	defer func() {
-		if err != nil {
-			return
-		}
-		if err = tx.Rollback(context.Background()); err != nil && err != pgx.ErrTxClosed {
-			return
-		}
-
-		err = nil
-	}()
-
-	var attachments pgtype.TextArray
-
-	contextlogger.LogSQL(ctx, SelectAttachmentsQuery, postID)
-
-	err = tx.QueryRow(context.Background(), SelectAttachmentsQuery, postID).Scan(&attachments)
-	if err != nil && err != pgx.ErrNoRows {
-		return
-	}
-
-	for _, v := range attachments.Elements {
-		if v.Status == pgtype.Present {
-			err = static.RemoveImage(v.String)
-			if err != nil {
-				return
-			}
-		}
-	}
-
 	contextlogger.LogSQL(ctx, DeletePostQuery, postID)
 
-	result, err := tx.Exec(context.Background(), DeletePostQuery, postID)
+	result, err := p.db.Exec(context.Background(), DeletePostQuery, postID)
 	if err != nil {
 		return
 	}
@@ -400,9 +419,94 @@ func (p *Posts) DeletePost(ctx context.Context, postID uint) (err error) {
 		return errors.ErrRowsAffected
 	}
 
-	err = tx.Commit(context.Background())
+	return
+}
+
+func (p *Posts) GetLikedPosts(ctx context.Context, userID uint, lastLikeID uint, limit uint) (likedPosts []posts.LikeWithPost, err error) {
+	contextlogger.LogSQL(ctx, GetUserFriendsPostsQuery, userID, lastLikeID, limit)
+	if lastLikeID == 0 {
+		contextlogger.LogSQL(ctx, getLastPostLikeIDQuery, userID)
+
+		err = p.db.QueryRow(context.Background(), getLastPostLikeIDQuery, userID).Scan(&lastLikeID)
+		if err != nil {
+			return
+		}
+
+		lastLikeID += 1
+	}
+
+	contextlogger.LogSQL(ctx, getLikedPosts, userID, lastLikeID, limit)
+
+	rows, err := p.db.Query(context.Background(), getLikedPosts, userID, lastLikeID, limit)
 	if err != nil {
 		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		post := new(domain.Post)
+		like := new(domain.PostLike)
+
+		var attachments pgtype.TextArray
+		var likedByUsers pgtype.Int8Array
+
+		err = rows.Scan(
+			&like.ID,
+			&like.PostID,
+			&like.UserID,
+			&like.CreatedAt.Time,
+			&post.AuthorID,
+			&post.Content,
+			&post.CreatedAt.Time,
+			&post.UpdatedAt.Time,
+			&attachments,
+			&likedByUsers,
+		)
+		if err != nil {
+			return
+		}
+
+		post.ID = like.PostID
+		post.Attachments = textArrayIntoStringSlice(attachments)
+		post.LikedByIDs = int8ArrayIntoUintSlice(likedByUsers)
+
+		likedPosts = append(likedPosts, posts.LikeWithPost{
+			Like: like,
+			Post: post,
+		})
+	}
+
+	return
+}
+
+func (p *Posts) StorePostLike(ctx context.Context, likeData *domain.PostLike) (like *domain.PostLike, err error) {
+	like = new(domain.PostLike)
+
+	contextlogger.LogSQL(ctx, createPostLikeQuery, likeData.PostID, likeData.UserID)
+
+	err = p.db.QueryRow(context.Background(), createPostLikeQuery, likeData.PostID, likeData.UserID).Scan(
+		&like.ID,
+		&like.PostID,
+		&like.UserID,
+		&like.CreatedAt.Time,
+	)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (p *Posts) DeletePostLike(ctx context.Context, likeData *domain.PostLike) (err error) {
+	contextlogger.LogSQL(ctx, deletePostLikeQuery, likeData.PostID, likeData.UserID)
+
+	result, err := p.db.Exec(context.Background(), deletePostLikeQuery, likeData.PostID, likeData.UserID)
+	if err != nil {
+		return
+	}
+
+	if result.RowsAffected() != 1 {
+		return errors.ErrRowsAffected
 	}
 
 	return

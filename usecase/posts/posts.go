@@ -2,20 +2,22 @@ package posts
 
 import (
 	"context"
-	"mime/multipart"
 	"socio/domain"
 	"socio/errors"
 	"socio/pkg/sanitizer"
+
+	"github.com/microcosm-cc/bluemonday"
 )
 
 const (
-	defaultPostsAmount = 20
+	defaultPostsAmount      = 20
+	defaultLikedPostsAmount = 20
 )
 
 type PostInput struct {
-	Content     string                  `json:"content"`
-	AuthorID    uint                    `json:"authorId"`
-	Attachments []*multipart.FileHeader `json:"attachments"`
+	Content     string   `json:"content"`
+	AuthorID    uint     `json:"authorId"`
+	Attachments []string `json:"attachments"`
 }
 
 type ListUserPostsInput struct {
@@ -38,34 +40,48 @@ type DeletePostInput struct {
 	PostID uint `json:"postId"`
 }
 
-type UserStorage interface {
-	GetUserByID(ctx context.Context, userID uint) (user *domain.User, err error)
+type LikeWithPost struct {
+	Like *domain.PostLike `json:"like"`
+	Post *domain.Post     `json:"post"`
+}
+
+type LikeWithPostAndUser struct {
+	LikeWithPost
+	User *domain.User `json:"likedBy"`
 }
 
 type PostsStorage interface {
 	GetPostByID(ctx context.Context, postID uint) (post *domain.Post, err error)
 	GetUserPosts(ctx context.Context, userID uint, lastPostID uint, postsAmount uint) (posts []*domain.Post, err error)
-	GetUserFriendsPosts(ctx context.Context, userID uint, lastPostID uint, postsAmount uint) (posts []domain.PostWithAuthor, err error)
-	StorePost(ctx context.Context, post *domain.Post, attachments []*multipart.FileHeader) (newPost *domain.Post, err error)
+	GetUserFriendsPosts(ctx context.Context, userID uint, lastPostID uint, postsAmount uint) (posts []*domain.Post, err error)
+	StorePost(ctx context.Context, post *domain.Post) (newPost *domain.Post, err error)
 	UpdatePost(ctx context.Context, post *domain.Post) (updatedPost *domain.Post, err error)
 	DeletePost(ctx context.Context, postID uint) (err error)
+	GetLikedPosts(ctx context.Context, userID uint, lastLikeID uint, limit uint) (likedPosts []LikeWithPost, err error)
+	StorePostLike(ctx context.Context, likeData *domain.PostLike) (like *domain.PostLike, err error)
+	DeletePostLike(ctx context.Context, likeData *domain.PostLike) (err error)
+}
+
+type AttachmentStorage interface {
+	Store(fileName string, filePath string) (err error)
+	Delete(fileName string) (err error)
 }
 
 type Service struct {
-	PostsStorage PostsStorage
-	UserStorage  UserStorage
-	Sanitizer    *sanitizer.Sanitizer
+	PostsStorage      PostsStorage
+	AttachmentStorage AttachmentStorage
+	Sanitizer         *sanitizer.Sanitizer
 }
 
 type ListPostsResponse struct {
-	Posts []domain.PostWithAuthor `json:"posts"`
+	Posts []*domain.Post `json:"posts"`
 }
 
-func NewPostsService(postsStorage PostsStorage, userStorage UserStorage, sanitizer *sanitizer.Sanitizer) (postsService *Service) {
+func NewPostsService(postsStorage PostsStorage, attachmentStorage AttachmentStorage) (postsService *Service) {
 	postsService = &Service{
-		PostsStorage: postsStorage,
-		UserStorage:  userStorage,
-		Sanitizer:    sanitizer,
+		PostsStorage:      postsStorage,
+		AttachmentStorage: attachmentStorage,
+		Sanitizer:         sanitizer.NewSanitizer(bluemonday.UGCPolicy()),
 	}
 
 	return
@@ -82,12 +98,7 @@ func (s *Service) GetPostByID(ctx context.Context, postID uint) (post *domain.Po
 	return
 }
 
-func (s *Service) GetUserPosts(ctx context.Context, userID uint, lastPostID uint, postsAmount uint) (posts []*domain.Post, author *domain.User, err error) {
-	author, err = s.UserStorage.GetUserByID(ctx, userID)
-	if err != nil {
-		return
-	}
-
+func (s *Service) GetUserPosts(ctx context.Context, userID uint, lastPostID uint, postsAmount uint) (posts []*domain.Post, err error) {
 	if postsAmount == 0 {
 		postsAmount = defaultPostsAmount
 	}
@@ -104,7 +115,7 @@ func (s *Service) GetUserPosts(ctx context.Context, userID uint, lastPostID uint
 	return
 }
 
-func (s *Service) GetUserFriendsPosts(ctx context.Context, userID uint, lastPostID uint, postsAmount uint) (posts []domain.PostWithAuthor, err error) {
+func (s *Service) GetUserFriendsPosts(ctx context.Context, userID uint, lastPostID uint, postsAmount uint) (posts []*domain.Post, err error) {
 	if postsAmount == 0 {
 		postsAmount = defaultPostsAmount
 	}
@@ -115,34 +126,24 @@ func (s *Service) GetUserFriendsPosts(ctx context.Context, userID uint, lastPost
 	}
 
 	for _, post := range posts {
-		s.Sanitizer.SanitizePostWithAuthor(&post)
+		s.Sanitizer.SanitizePost(post)
 	}
 
 	return
 }
 
-func (s *Service) CreatePost(ctx context.Context, input PostInput) (postWithAuthor domain.PostWithAuthor, err error) {
+func (s *Service) CreatePost(ctx context.Context, input PostInput) (newPost *domain.Post, err error) {
 	if len(input.Content) == 0 && len(input.Attachments) == 0 {
 		err = errors.ErrInvalidBody
 		return
 	}
 
-	author, err := s.UserStorage.GetUserByID(ctx, input.AuthorID)
+	newPost, err = s.PostsStorage.StorePost(ctx, &domain.Post{AuthorID: input.AuthorID, Content: input.Content, Attachments: input.Attachments})
 	if err != nil {
 		return
 	}
 
-	newPost, err := s.PostsStorage.StorePost(ctx, &domain.Post{AuthorID: input.AuthorID, Content: input.Content}, input.Attachments)
-	if err != nil {
-		return
-	}
-
-	postWithAuthor = domain.PostWithAuthor{
-		Post:   newPost,
-		Author: author,
-	}
-
-	s.Sanitizer.SanitizePostWithAuthor(&postWithAuthor)
+	s.Sanitizer.SanitizePost(newPost)
 
 	return
 }
@@ -175,8 +176,66 @@ func (s *Service) UpdatePost(ctx context.Context, userID uint, input PostUpdateI
 	return
 }
 
-func (s *Service) DeletePost(ctx context.Context, postID uint) (err error) {
+func (s *Service) DeletePost(ctx context.Context, userID uint, postID uint) (err error) {
+	post, err := s.PostsStorage.GetPostByID(ctx, postID)
+	if err != nil {
+		return
+	}
+
+	if post.AuthorID != userID {
+		err = errors.ErrForbidden
+		return
+	}
+
+	for _, attachment := range post.Attachments {
+		s.AttachmentStorage.Delete(attachment)
+	}
+
 	err = s.PostsStorage.DeletePost(ctx, postID)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (s *Service) GetLikedPosts(ctx context.Context, userID uint, lastLikeID uint, limit uint) (likedPosts []LikeWithPost, err error) {
+	if limit == 0 {
+		limit = defaultLikedPostsAmount
+	}
+
+	likedPosts, err = s.PostsStorage.GetLikedPosts(ctx, userID, lastLikeID, limit)
+	if err != nil {
+		return
+	}
+
+	for _, likedPost := range likedPosts {
+		s.Sanitizer.SanitizePost(likedPost.Post)
+	}
+
+	return
+}
+
+func (s *Service) LikePost(ctx context.Context, likeData *domain.PostLike) (like *domain.PostLike, err error) {
+	like, err = s.PostsStorage.StorePostLike(ctx, likeData)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (s *Service) UnlikePost(ctx context.Context, likeData *domain.PostLike) (err error) {
+	err = s.PostsStorage.DeletePostLike(ctx, likeData)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (s *Service) UploadAttachment(fileName string, filePath string) (err error) {
+	err = s.AttachmentStorage.Store(fileName, filePath)
 	if err != nil {
 		return
 	}

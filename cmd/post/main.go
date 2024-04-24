@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"socio/internal/grpc/user"
-	uspb "socio/internal/grpc/user/proto"
+	"socio/internal/grpc/post"
+
+	postspb "socio/internal/grpc/post/proto"
 	minioRepo "socio/internal/repository/minio"
 	pgRepo "socio/internal/repository/postgres"
 	customtime "socio/pkg/time"
@@ -39,27 +40,27 @@ func main() {
 		return
 	}
 
-	avatarStorage, err := minioRepo.NewStaticStorage(minioClient, minioRepo.AvatarBucket)
+	attachmentStorage, err := minioRepo.NewStaticStorage(minioClient, minioRepo.AttachmentsBucket)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	port := os.Getenv("GRPC_USER_SERVICE_PORT")
+	port := os.Getenv("GRPC_POST_SERVICE_PORT")
 	lis, err := net.Listen("tcp", "0.0.0.0"+port)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	userStorage := pgRepo.NewUsers(db, customtime.RealTimeProvider{})
-	manager := user.NewUserManager(userStorage, avatarStorage)
+	postsStorage := pgRepo.NewPosts(db, customtime.RealTimeProvider{})
+	manager := post.NewPostManager(postsStorage, attachmentStorage)
 
 	server := grpc.NewServer()
 
-	uspb.RegisterUserServer(server, manager)
+	postspb.RegisterPostServer(server, manager)
 
-	fmt.Println("User service is running on port:", port)
+	fmt.Println("Post service is running on port:", port)
 	err = server.Serve(lis)
 	if err != nil {
 		fmt.Println(err)
