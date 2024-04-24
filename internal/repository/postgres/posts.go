@@ -200,6 +200,10 @@ func (p *Posts) GetUserPosts(ctx context.Context, userID uint, lastPostID uint, 
 
 		err = p.db.QueryRow(context.Background(), getLastUserPostIDQuery, userID).Scan(&lastPostID)
 		if err != nil {
+			if err == pgx.ErrNoRows {
+				err = errors.ErrNotFound
+			}
+
 			return
 		}
 
@@ -210,6 +214,10 @@ func (p *Posts) GetUserPosts(ctx context.Context, userID uint, lastPostID uint, 
 
 	rows, err := p.db.Query(context.Background(), getUserPostsQuery, userID, lastPostID, postsAmount)
 	if err != nil {
+		if err == pgx.ErrNoRows {
+			err = errors.ErrNotFound
+		}
+
 		return
 	}
 	defer rows.Close()

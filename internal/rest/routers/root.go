@@ -20,7 +20,13 @@ import (
 )
 
 var (
-	DotenvPath = "../../.env"
+	DotenvPath    = "../../.env"
+	AppPortEnv    = "APP_PORT"
+	PgUserEnv     = "PG_USER"
+	PgDBNameEnv   = "PG_DBNAME"
+	PgPasswordEnv = "PG_PASSWORD"
+	PgHostEnv     = "PG_HOST"
+	PgPortEnv     = "PG_PORT"
 )
 
 func MountRootRouter(router *mux.Router) (err error) {
@@ -29,7 +35,14 @@ func MountRootRouter(router *mux.Router) (err error) {
 	}
 	rootRouter := router.PathPrefix("/api/v1/").Subrouter()
 
-	pgConnStr := fmt.Sprintf("user=%s dbname=%s password=%s host=%s port=%s sslmode=disable", os.Getenv("PG_USER"), os.Getenv("PG_DBNAME"), os.Getenv("PG_PASSWORD"), os.Getenv("PG_HOST"), os.Getenv("PG_PORT"))
+	pgConnStr := fmt.Sprintf(
+		"user=%s dbname=%s password=%s host=%s port=%s sslmode=disable",
+		os.Getenv(PgUserEnv),
+		os.Getenv(PgDBNameEnv),
+		os.Getenv(PgPasswordEnv),
+		os.Getenv(PgHostEnv),
+		os.Getenv(PgPortEnv),
+	)
 	db, err := pgRepo.NewPool(pgConnStr)
 	if err != nil {
 		return
@@ -96,7 +109,7 @@ func MountRootRouter(router *mux.Router) (err error) {
 		AllowCredentials: true,
 	}).Handler(rootRouter)
 
-	appPort := os.Getenv("APP_PORT")
+	appPort := os.Getenv(AppPortEnv)
 	fmt.Printf("started on port %s\n", appPort)
 	http.ListenAndServe(appPort, handler)
 

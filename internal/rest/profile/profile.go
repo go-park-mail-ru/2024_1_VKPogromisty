@@ -1,7 +1,6 @@
 package rest
 
 import (
-	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -28,7 +27,9 @@ type ProfileHandler struct {
 }
 
 func NewProfileHandler(userClient uspb.UserClient) (h *ProfileHandler) {
-	return &ProfileHandler{}
+	return &ProfileHandler{
+		UserClient: userClient,
+	}
 }
 
 func (h *ProfileHandler) uploadAvatar(r *http.Request, avatarFH *multipart.FileHeader) (string, error) {
@@ -124,7 +125,7 @@ func (h *ProfileHandler) HandleGetProfile(w http.ResponseWriter, r *http.Request
 		AuthorizedUserId: uint64(authorizedUserID),
 	})
 	if err != nil {
-		json.ServeGRPCStatus(r.Context(), w, errors.NewCustomError(err))
+		json.ServeGRPCStatus(r.Context(), w, err)
 		return
 	}
 
@@ -193,8 +194,6 @@ func (h *ProfileHandler) HandleUpdateProfile(w http.ResponseWriter, r *http.Requ
 			return
 		}
 
-		fmt.Println(avatarFileName)
-
 		input.Avatar = avatarFileName
 	}
 
@@ -202,7 +201,7 @@ func (h *ProfileHandler) HandleUpdateProfile(w http.ResponseWriter, r *http.Requ
 
 	updatedUser, err := h.UserClient.Update(r.Context(), grpcInput)
 	if err != nil {
-		json.ServeGRPCStatus(r.Context(), w, errors.NewCustomError(err))
+		json.ServeGRPCStatus(r.Context(), w, err)
 		return
 	}
 
@@ -238,7 +237,7 @@ func (h *ProfileHandler) HandleDeleteProfile(w http.ResponseWriter, r *http.Requ
 		UserId: uint64(userID),
 	})
 	if err != nil {
-		json.ServeGRPCStatus(r.Context(), w, errors.NewCustomError(err))
+		json.ServeGRPCStatus(r.Context(), w, err)
 		return
 	}
 

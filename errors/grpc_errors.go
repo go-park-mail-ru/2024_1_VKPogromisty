@@ -7,28 +7,29 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-var GRPCErrors = map[CustomError]codes.Code{
-	ErrUnauthorized:         codes.Unauthenticated,
-	ErrInvalidLoginData:     codes.Unauthenticated,
-	ErrMissingFields:        codes.InvalidArgument,
-	ErrInvalidData:          codes.InvalidArgument,
-	ErrInvalidEmail:         codes.InvalidArgument,
-	ErrInvalidSlug:          codes.InvalidArgument,
-	ErrInvalidJWT:           codes.InvalidArgument,
-	ErrNotMatchingPasswords: codes.InvalidArgument,
-	ErrPasswordMinLength:    codes.InvalidArgument,
-	ErrEmailsDuplicate:      codes.InvalidArgument,
-	ErrInvalidDate:          codes.InvalidArgument,
-	ErrJSONUnmarshalling:    codes.InvalidArgument,
-	ErrInvalidFilePathGen:   codes.InvalidArgument,
-	ErrInvalidFileName:      codes.InvalidArgument,
-	ErrInvalidBody:          codes.InvalidArgument,
-	ErrRowsAffected:         codes.InvalidArgument,
-	ErrForbidden:            codes.PermissionDenied,
-	ErrNotFound:             codes.NotFound,
-	ErrNoRows:               codes.NotFound,
-	ErrJSONMarshalling:      codes.Internal,
-	ErrInternal:             codes.Internal,
+var GRPCErrors = map[string]codes.Code{
+	MissingFieldsMsg:        codes.InvalidArgument,
+	InvalidDataMsg:          codes.InvalidArgument,
+	InvalidEmailMsg:         codes.InvalidArgument,
+	InvalidLoginDataMsg:     codes.Unauthenticated,
+	UnauthorizedMsg:         codes.Unauthenticated,
+	NotMatchingPasswordsMsg: codes.InvalidArgument,
+	PasswordMinLengthMsg:    codes.InvalidArgument,
+	EmailsDuplicateMsg:      codes.InvalidArgument,
+	InvalidDateMsg:          codes.InvalidArgument,
+	JSONUnmarshallingMsg:    codes.InvalidArgument,
+	InvalidJWTMsg:           codes.InvalidArgument,
+	NoCookieMsg:             codes.Unauthenticated,
+	NoRowsMsg:               codes.NotFound,
+	InvalidFilePathGenMsg:   codes.InvalidArgument,
+	InvalidBodyMsg:          codes.InvalidArgument,
+	ForbiddenMsg:            codes.PermissionDenied,
+	NotFoundMsg:             codes.NotFound,
+	InternalMsg:             codes.Internal,
+	InvalidFileNameMsg:      codes.InvalidArgument,
+	InvalidSlugMsg:          codes.InvalidArgument,
+	RowsAffectedMsg:         codes.InvalidArgument,
+	JSONMarshallingMsg:      codes.Internal,
 }
 
 var GRPCStatuses = map[codes.Code]int{
@@ -39,8 +40,8 @@ var GRPCStatuses = map[codes.Code]int{
 	codes.Internal:         http.StatusInternalServerError,
 }
 
-func (e CustomError) GRPCStatus() (grpcStatus *status.Status) {
-	code, ok := GRPCErrors[e]
+func (e *CustomError) GRPCStatus() (grpcStatus *status.Status) {
+	code, ok := GRPCErrors[e.Error()]
 	if !ok {
 		code = codes.Internal
 	}
@@ -48,7 +49,7 @@ func (e CustomError) GRPCStatus() (grpcStatus *status.Status) {
 	return status.New(code, e.Error())
 }
 
-func ParseGRPCError(err CustomError) (msg string, code int) {
+func ParseGRPCError(err error) (msg string, code int) {
 	if err.Error() != "" {
 		st, ok := status.FromError(err)
 		if ok {

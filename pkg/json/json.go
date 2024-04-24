@@ -51,7 +51,7 @@ func ServeJSONBody(ctx context.Context, w http.ResponseWriter, value any, status
 	}
 }
 
-func ServeGRPCStatus(ctx context.Context, w http.ResponseWriter, err errors.CustomError) {
+func ServeGRPCStatus(ctx context.Context, w http.ResponseWriter, err error) {
 	contextlogger.LogErr(ctx, err)
 
 	msg, statusCode := errors.ParseGRPCError(err)

@@ -36,7 +36,8 @@ func (p *PostManager) GetPostByID(ctx context.Context, in *postspb.GetPostByIDRe
 
 	post, err := p.PostsService.GetPostByID(ctx, uint(postID))
 	if err != nil {
-		err = errors.NewCustomError(err)
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
 		return
 	}
 
@@ -54,7 +55,8 @@ func (p *PostManager) GetUserPosts(ctx context.Context, in *postspb.GetUserPosts
 
 	posts, err := p.PostsService.GetUserPosts(ctx, uint(userID), uint(lastPostID), uint(postsAmount))
 	if err != nil {
-		err = errors.NewCustomError(err)
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
 		return
 	}
 
@@ -72,7 +74,8 @@ func (p *PostManager) GetUserFriendsPosts(ctx context.Context, in *postspb.GetUs
 
 	posts, err := p.PostsService.GetUserFriendsPosts(ctx, uint(userID), uint(lastPostID), uint(postsAmount))
 	if err != nil {
-		err = errors.NewCustomError(err)
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
 		return
 	}
 
@@ -94,7 +97,8 @@ func (p *PostManager) CreatePost(ctx context.Context, in *postspb.CreatePostRequ
 		Attachments: attachments,
 	})
 	if err != nil {
-		err = errors.NewCustomError(err)
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
 		return
 	}
 
@@ -115,7 +119,8 @@ func (p *PostManager) UpdatePost(ctx context.Context, in *postspb.UpdatePostRequ
 		Content: content,
 	})
 	if err != nil {
-		err = errors.NewCustomError(err)
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
 		return
 	}
 
@@ -128,11 +133,12 @@ func (p *PostManager) UpdatePost(ctx context.Context, in *postspb.UpdatePostRequ
 
 func (p *PostManager) DeletePost(ctx context.Context, in *postspb.DeletePostRequest) (res *postspb.DeletePostResponse, err error) {
 	postID := in.GetPostId()
-	userId := in.GetUserId()
+	userID := in.GetUserId()
 
-	err = p.PostsService.DeletePost(ctx, uint(userId), uint(postID))
+	err = p.PostsService.DeletePost(ctx, uint(userID), uint(postID))
 	if err != nil {
-		err = errors.NewCustomError(err)
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
 		return
 	}
 
@@ -150,7 +156,8 @@ func (p *PostManager) LikePost(ctx context.Context, in *postspb.LikePostRequest)
 		UserID: uint(userID),
 	})
 	if err != nil {
-		err = errors.NewCustomError(err)
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
 		return
 	}
 
@@ -170,7 +177,8 @@ func (p *PostManager) UnlikePost(ctx context.Context, in *postspb.UnlikePostRequ
 		UserID: uint(userID),
 	})
 	if err != nil {
-		err = errors.NewCustomError(err)
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
 		return
 	}
 
@@ -182,7 +190,8 @@ func (p *PostManager) UnlikePost(ctx context.Context, in *postspb.UnlikePostRequ
 func (p *PostManager) Upload(stream postspb.Post_UploadServer) (err error) {
 	file, err := os.Create(filepath.Join(staticFilePath, uuid.NewString()))
 	if err != nil {
-		err = errors.NewCustomError(err)
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
 		return
 	}
 
@@ -193,7 +202,8 @@ func (p *PostManager) Upload(stream postspb.Post_UploadServer) (err error) {
 	defer func() {
 		if err = file.Close(); err != nil {
 			fmt.Println(err)
-			err = errors.NewCustomError(err)
+			customErr := errors.NewCustomError(err)
+			err = customErr.GRPCStatus().Err()
 		}
 	}()
 	for {
@@ -205,13 +215,15 @@ func (p *PostManager) Upload(stream postspb.Post_UploadServer) (err error) {
 			break
 		}
 		if err != nil {
-			err = errors.NewCustomError(err)
+			customErr := errors.NewCustomError(err)
+			err = customErr.GRPCStatus().Err()
 			return err
 		}
 		chunk := req.GetChunk()
 		fileSize += uint64(len(chunk))
 		if _, err = file.Write(chunk); err != nil {
-			err = errors.NewCustomError(err)
+			customErr := errors.NewCustomError(err)
+			err = customErr.GRPCStatus().Err()
 			return err
 		}
 	}

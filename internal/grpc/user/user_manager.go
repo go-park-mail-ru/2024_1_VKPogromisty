@@ -34,7 +34,8 @@ func (u *UserManager) GetByID(ctx context.Context, in *uspb.GetByIDRequest) (res
 
 	user, err := u.UserService.GetUserByID(ctx, uint(userID))
 	if err != nil {
-		err = errors.NewCustomError(err)
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
 		return
 	}
 
@@ -52,7 +53,8 @@ func (u *UserManager) GetByIDWithSubsInfo(ctx context.Context, in *uspb.GetByIDW
 
 	userWithInfo, err := u.UserService.GetUserByIDWithSubsInfo(ctx, uint(userID), uint(authorizedUserID))
 	if err != nil {
-		err = errors.NewCustomError(err)
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
 		return
 	}
 
@@ -70,7 +72,8 @@ func (u *UserManager) Create(ctx context.Context, in *uspb.CreateRequest) (res *
 
 	user, err := u.UserService.CreateUser(ctx, *userInput)
 	if err != nil {
-		err = errors.NewCustomError(err)
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
 		return
 	}
 
@@ -84,7 +87,8 @@ func (u *UserManager) Create(ctx context.Context, in *uspb.CreateRequest) (res *
 func (u *UserManager) Upload(stream uspb.User_UploadServer) (err error) {
 	file, err := os.Create(filepath.Join(staticFilePath, uuid.NewString()))
 	if err != nil {
-		err = errors.NewCustomError(err)
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
 		return
 	}
 
@@ -95,7 +99,6 @@ func (u *UserManager) Upload(stream uspb.User_UploadServer) (err error) {
 	defer func() {
 		if err = file.Close(); err != nil {
 			fmt.Println(err)
-			err = errors.NewCustomError(err)
 		}
 	}()
 	for {
@@ -107,13 +110,15 @@ func (u *UserManager) Upload(stream uspb.User_UploadServer) (err error) {
 			break
 		}
 		if err != nil {
-			err = errors.NewCustomError(err)
+			customErr := errors.NewCustomError(err)
+			err = customErr.GRPCStatus().Err()
 			return err
 		}
 		chunk := req.GetChunk()
 		fileSize += uint64(len(chunk))
 		if _, err = file.Write(chunk); err != nil {
-			err = errors.NewCustomError(err)
+			customErr := errors.NewCustomError(err)
+			err = customErr.GRPCStatus().Err()
 			return err
 		}
 	}
@@ -121,7 +126,8 @@ func (u *UserManager) Upload(stream uspb.User_UploadServer) (err error) {
 	u.UserService.UploadAvatar(fileName, file.Name())
 
 	if err = os.Remove(file.Name()); err != nil {
-		err = errors.NewCustomError(err)
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
 		return
 	}
 
@@ -136,7 +142,8 @@ func (u *UserManager) Update(ctx context.Context, in *uspb.UpdateRequest) (res *
 
 	user, err := u.UserService.UpdateUser(ctx, *userInput)
 	if err != nil {
-		err = errors.NewCustomError(err)
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
 		return
 	}
 
@@ -152,7 +159,8 @@ func (u *UserManager) Delete(ctx context.Context, in *uspb.DeleteRequest) (res *
 
 	err = u.UserService.DeleteUser(ctx, uint(userID))
 	if err != nil {
-		err = errors.NewCustomError(err)
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
 		return
 	}
 

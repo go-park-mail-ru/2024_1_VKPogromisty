@@ -120,7 +120,13 @@ func (p *Service) CreateUser(ctx context.Context, userInput CreateUserInput) (us
 	return
 }
 
-func (p *Service) GetUserByIDWithSubsInfo(ctx context.Context, userID, authorizedUserID uint) (userWithInfo UserWithSubsInfo, err error) {
+func (p *Service) GetUserByIDWithSubsInfo(ctx context.Context, userID uint, authorizedUserID uint) (userWithInfo UserWithSubsInfo, err error) {
+	userWithInfo = UserWithSubsInfo{
+		User:           &domain.User{},
+		IsSubscriber:   false,
+		IsSubscribedTo: false,
+	}
+
 	userWithInfo.User, userWithInfo.IsSubscribedTo, userWithInfo.IsSubscriber, err = p.UserStorage.GetUserByIDWithSubsInfo(ctx, userID, authorizedUserID)
 	if err != nil {
 		return

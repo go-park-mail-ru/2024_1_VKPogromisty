@@ -131,7 +131,7 @@ func (h *PostsHandler) HandleGetPostByID(w http.ResponseWriter, r *http.Request)
 		PostId: uint64(postIDData),
 	})
 	if err != nil {
-		json.ServeGRPCStatus(r.Context(), w, errors.NewCustomError(err))
+		json.ServeGRPCStatus(r.Context(), w, err)
 		return
 	}
 
@@ -207,7 +207,7 @@ func (h *PostsHandler) HandleGetUserPosts(w http.ResponseWriter, r *http.Request
 		PostsAmount: uint64(input.PostsAmount),
 	})
 	if err != nil {
-		json.ServeGRPCStatus(r.Context(), w, errors.NewCustomError(err))
+		json.ServeGRPCStatus(r.Context(), w, err)
 		return
 	}
 
@@ -215,7 +215,7 @@ func (h *PostsHandler) HandleGetUserPosts(w http.ResponseWriter, r *http.Request
 		UserId: uint64(input.UserID),
 	})
 	if err != nil {
-		json.ServeJSONError(r.Context(), w, err)
+		json.ServeGRPCStatus(r.Context(), w, err)
 		return
 	}
 
@@ -295,7 +295,7 @@ func (h *PostsHandler) HandleGetUserFriendsPosts(w http.ResponseWriter, r *http.
 		PostsAmount: uint64(input.PostsAmount),
 	})
 	if err != nil {
-		json.ServeGRPCStatus(r.Context(), w, errors.NewCustomError(err))
+		json.ServeGRPCStatus(r.Context(), w, err)
 		return
 	}
 
@@ -305,7 +305,7 @@ func (h *PostsHandler) HandleGetUserFriendsPosts(w http.ResponseWriter, r *http.
 			UserId: post.AuthorId,
 		})
 		if err != nil {
-			json.ServeJSONError(r.Context(), w, err)
+			json.ServeGRPCStatus(r.Context(), w, err)
 			return
 		}
 
@@ -373,7 +373,7 @@ func (h *PostsHandler) HandleCreatePost(w http.ResponseWriter, r *http.Request) 
 		Attachments: postInput.Attachments,
 	})
 	if err != nil {
-		json.ServeGRPCStatus(r.Context(), w, errors.NewCustomError(err))
+		json.ServeGRPCStatus(r.Context(), w, err)
 		return
 	}
 
@@ -383,7 +383,7 @@ func (h *PostsHandler) HandleCreatePost(w http.ResponseWriter, r *http.Request) 
 		UserId: uint64(post.AuthorID),
 	})
 	if err != nil {
-		json.ServeGRPCStatus(r.Context(), w, errors.NewCustomError(err))
+		json.ServeGRPCStatus(r.Context(), w, err)
 		return
 	}
 
@@ -441,7 +441,7 @@ func (h *PostsHandler) HandleUpdatePost(w http.ResponseWriter, r *http.Request) 
 		UserId:  uint64(userID),
 	})
 	if err != nil {
-		json.ServeGRPCStatus(r.Context(), w, errors.NewCustomError(err))
+		json.ServeGRPCStatus(r.Context(), w, err)
 		return
 	}
 
@@ -481,11 +481,18 @@ func (h *PostsHandler) HandleDeletePost(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	userID, err := requestcontext.GetUserID(r.Context())
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, err)
+		return
+	}
+
 	_, err = h.PostsClient.DeletePost(r.Context(), &postspb.DeletePostRequest{
 		PostId: uint64(input.PostID),
+		UserId: uint64(userID),
 	})
 	if err != nil {
-		json.ServeGRPCStatus(r.Context(), w, errors.NewCustomError(err))
+		json.ServeGRPCStatus(r.Context(), w, err)
 		return
 	}
 

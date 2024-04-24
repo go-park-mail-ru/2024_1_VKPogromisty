@@ -19,26 +19,51 @@ func NewCustomError(err error) CustomError {
 }
 
 var (
-	ErrMissingFields        = CustomError{errors.New("provided data missing required fields")}
-	ErrInvalidData          = CustomError{errors.New("invalid data")}
-	ErrInvalidEmail         = CustomError{errors.New("invalid email")}
-	ErrInvalidLoginData     = CustomError{errors.New("invalid login data")}
-	ErrUnauthorized         = CustomError{errors.New("unauthorized")}
-	ErrNotMatchingPasswords = CustomError{errors.New("password and repeated password are not equal")}
-	ErrPasswordMinLength    = CustomError{errors.New("password should contain at least 6 characters")}
-	ErrEmailsDuplicate      = CustomError{errors.New("user with such email already exists")}
-	ErrInvalidDate          = CustomError{errors.New("invalid date provided")}
-	ErrJSONUnmarshalling    = CustomError{errors.New("unable to unmarshal json")}
-	ErrJSONMarshalling      = CustomError{errors.New("unable to return json reponse")}
-	ErrInvalidJWT           = CustomError{errors.New("invalid JWT provided")}
-	ErrNoCookie             = CustomError{errors.New("no cookie provided")}
-	ErrNoRows               = CustomError{errors.New("no rows in result set")}
-	ErrInvalidFilePathGen   = CustomError{errors.New("unable to open file with generated filepath")}
-	ErrInvalidBody          = CustomError{errors.New("invalid request body provided")}
-	ErrForbidden            = CustomError{errors.New("forbidden")}
-	ErrNotFound             = CustomError{errors.New("not found")}
-	ErrInternal             = CustomError{errors.New("internal server error")}
-	ErrInvalidFileName      = CustomError{errors.New("invalid file name")}
-	ErrInvalidSlug          = CustomError{errors.New("invalid slug parameters")}
-	ErrRowsAffected         = CustomError{errors.New("wrong number of rows affected")}
+	MissingFieldsMsg        = "missing fields"
+	InvalidDataMsg          = "invalid data"
+	InvalidEmailMsg         = "invalid email"
+	InvalidLoginDataMsg     = "invalid login data"
+	UnauthorizedMsg         = "unauthorized"
+	NotMatchingPasswordsMsg = "password and repeated password are not equal"
+	PasswordMinLengthMsg    = "password should contain at least 6 characters"
+	EmailsDuplicateMsg      = "user with such email already exists"
+	InvalidDateMsg          = "invalid date provided"
+	JSONUnmarshallingMsg    = "unable to unmarshal json"
+	JSONMarshallingMsg      = "unable to return json reponse"
+	InvalidJWTMsg           = "invalid JWT provided"
+	NoCookieMsg             = "no cookie provided"
+	NoRowsMsg               = "no rows in result set"
+	InvalidFilePathGenMsg   = "unable to open file with generated filepath"
+	InvalidBodyMsg          = "invalid request body provided"
+	ForbiddenMsg            = "forbidden"
+	NotFoundMsg             = "not found"
+	InternalMsg             = "internal server error"
+	InvalidFileNameMsg      = "invalid file name"
+	InvalidSlugMsg          = "invalid slug parameters"
+	RowsAffectedMsg         = "wrong number of rows affected"
+)
+
+var (
+	ErrMissingFields        = NewCustomError(errors.New(MissingFieldsMsg))
+	ErrInvalidData          = NewCustomError(errors.New(InvalidDataMsg))
+	ErrInvalidEmail         = NewCustomError(errors.New(InvalidEmailMsg))
+	ErrInvalidLoginData     = NewCustomError(errors.New(InvalidLoginDataMsg))
+	ErrUnauthorized         = NewCustomError(errors.New(UnauthorizedMsg))
+	ErrNotMatchingPasswords = NewCustomError(errors.New(NotMatchingPasswordsMsg))
+	ErrPasswordMinLength    = NewCustomError(errors.New(PasswordMinLengthMsg))
+	ErrEmailsDuplicate      = NewCustomError(errors.New(EmailsDuplicateMsg))
+	ErrInvalidDate          = NewCustomError(errors.New(InvalidDateMsg))
+	ErrJSONUnmarshalling    = NewCustomError(errors.New(JSONUnmarshallingMsg))
+	ErrJSONMarshalling      = NewCustomError(errors.New(JSONMarshallingMsg))
+	ErrInvalidJWT           = NewCustomError(errors.New(InvalidJWTMsg))
+	ErrNoCookie             = NewCustomError(errors.New(NoCookieMsg))
+	ErrNoRows               = NewCustomError(errors.New(NoRowsMsg))
+	ErrInvalidFilePathGen   = NewCustomError(errors.New(InvalidFilePathGenMsg))
+	ErrInvalidBody          = NewCustomError(errors.New(InvalidBodyMsg))
+	ErrForbidden            = NewCustomError(errors.New(ForbiddenMsg))
+	ErrNotFound             = NewCustomError(errors.New(NotFoundMsg))
+	ErrInternal             = NewCustomError(errors.New(InternalMsg))
+	ErrInvalidFileName      = NewCustomError(errors.New(InvalidFileNameMsg))
+	ErrInvalidSlug          = NewCustomError(errors.New(InvalidSlugMsg))
+	ErrRowsAffected         = NewCustomError(errors.New(RowsAffectedMsg))
 )
