@@ -2,8 +2,8 @@ package middleware
 
 import (
 	"context"
-	"fmt"
 	"net/http"
+	"socio/errors"
 	"socio/pkg/json"
 	"socio/pkg/requestcontext"
 	"socio/usecase/auth"
@@ -14,8 +14,7 @@ func CreateCheckIsAuthorizedMiddleware(sessionStorage auth.SessionStorage) func(
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			session, err := r.Cookie("session_id")
 			if err == http.ErrNoCookie {
-				fmt.Println("no cookie")
-				json.ServeJSONError(r.Context(), w, err)
+				json.ServeJSONError(r.Context(), w, errors.ErrUnauthorized)
 				return
 			}
 
