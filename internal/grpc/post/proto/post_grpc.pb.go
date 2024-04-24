@@ -26,7 +26,7 @@ type PostClient interface {
 	DeletePost(ctx context.Context, in *DeletePostRequest, opts ...grpc.CallOption) (*DeletePostResponse, error)
 	LikePost(ctx context.Context, in *LikePostRequest, opts ...grpc.CallOption) (*LikePostResponse, error)
 	UnlikePost(ctx context.Context, in *UnlikePostRequest, opts ...grpc.CallOption) (*UnlikePostResponse, error)
-	UploadAttachment(ctx context.Context, opts ...grpc.CallOption) (Post_UploadAttachmentClient, error)
+	Upload(ctx context.Context, opts ...grpc.CallOption) (Post_UploadClient, error)
 }
 
 type postClient struct {
@@ -109,34 +109,34 @@ func (c *postClient) UnlikePost(ctx context.Context, in *UnlikePostRequest, opts
 	return out, nil
 }
 
-func (c *postClient) UploadAttachment(ctx context.Context, opts ...grpc.CallOption) (Post_UploadAttachmentClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Post_ServiceDesc.Streams[0], "/post.Post/UploadAttachment", opts...)
+func (c *postClient) Upload(ctx context.Context, opts ...grpc.CallOption) (Post_UploadClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Post_ServiceDesc.Streams[0], "/post.Post/Upload", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &postUploadAttachmentClient{stream}
+	x := &postUploadClient{stream}
 	return x, nil
 }
 
-type Post_UploadAttachmentClient interface {
-	Send(*UploadAttachmentRequest) error
-	CloseAndRecv() (*UploadAttachmentResponse, error)
+type Post_UploadClient interface {
+	Send(*UploadRequest) error
+	CloseAndRecv() (*UploadResponse, error)
 	grpc.ClientStream
 }
 
-type postUploadAttachmentClient struct {
+type postUploadClient struct {
 	grpc.ClientStream
 }
 
-func (x *postUploadAttachmentClient) Send(m *UploadAttachmentRequest) error {
+func (x *postUploadClient) Send(m *UploadRequest) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *postUploadAttachmentClient) CloseAndRecv() (*UploadAttachmentResponse, error) {
+func (x *postUploadClient) CloseAndRecv() (*UploadResponse, error) {
 	if err := x.ClientStream.CloseSend(); err != nil {
 		return nil, err
 	}
-	m := new(UploadAttachmentResponse)
+	m := new(UploadResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -155,7 +155,7 @@ type PostServer interface {
 	DeletePost(context.Context, *DeletePostRequest) (*DeletePostResponse, error)
 	LikePost(context.Context, *LikePostRequest) (*LikePostResponse, error)
 	UnlikePost(context.Context, *UnlikePostRequest) (*UnlikePostResponse, error)
-	UploadAttachment(Post_UploadAttachmentServer) error
+	Upload(Post_UploadServer) error
 	mustEmbedUnimplementedPostServer()
 }
 
@@ -187,8 +187,8 @@ func (UnimplementedPostServer) LikePost(context.Context, *LikePostRequest) (*Lik
 func (UnimplementedPostServer) UnlikePost(context.Context, *UnlikePostRequest) (*UnlikePostResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UnlikePost not implemented")
 }
-func (UnimplementedPostServer) UploadAttachment(Post_UploadAttachmentServer) error {
-	return status.Errorf(codes.Unimplemented, "method UploadAttachment not implemented")
+func (UnimplementedPostServer) Upload(Post_UploadServer) error {
+	return status.Errorf(codes.Unimplemented, "method Upload not implemented")
 }
 func (UnimplementedPostServer) mustEmbedUnimplementedPostServer() {}
 
@@ -347,26 +347,26 @@ func _Post_UnlikePost_Handler(srv interface{}, ctx context.Context, dec func(int
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Post_UploadAttachment_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(PostServer).UploadAttachment(&postUploadAttachmentServer{stream})
+func _Post_Upload_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(PostServer).Upload(&postUploadServer{stream})
 }
 
-type Post_UploadAttachmentServer interface {
-	SendAndClose(*UploadAttachmentResponse) error
-	Recv() (*UploadAttachmentRequest, error)
+type Post_UploadServer interface {
+	SendAndClose(*UploadResponse) error
+	Recv() (*UploadRequest, error)
 	grpc.ServerStream
 }
 
-type postUploadAttachmentServer struct {
+type postUploadServer struct {
 	grpc.ServerStream
 }
 
-func (x *postUploadAttachmentServer) SendAndClose(m *UploadAttachmentResponse) error {
+func (x *postUploadServer) SendAndClose(m *UploadResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *postUploadAttachmentServer) Recv() (*UploadAttachmentRequest, error) {
-	m := new(UploadAttachmentRequest)
+func (x *postUploadServer) Recv() (*UploadRequest, error) {
+	m := new(UploadRequest)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -415,8 +415,8 @@ var Post_ServiceDesc = grpc.ServiceDesc{
 	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "UploadAttachment",
-			Handler:       _Post_UploadAttachment_Handler,
+			StreamName:    "Upload",
+			Handler:       _Post_Upload_Handler,
 			ClientStreams: true,
 		},
 	},

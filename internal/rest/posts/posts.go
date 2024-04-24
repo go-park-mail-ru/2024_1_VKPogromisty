@@ -48,7 +48,7 @@ func NewPostsHandler(postsClient postspb.PostClient, userClient uspb.UserClient)
 
 func (h *PostsHandler) uploadAvatar(r *http.Request, fh *multipart.FileHeader) (string, error) {
 	fileName := uuid.NewString() + filepath.Ext(fh.Filename)
-	stream, err := h.PostsClient.UploadAttachment(r.Context())
+	stream, err := h.PostsClient.Upload(r.Context())
 	if err != nil {
 		return "", err
 	}
@@ -74,9 +74,9 @@ func (h *PostsHandler) uploadAvatar(r *http.Request, fh *multipart.FileHeader) (
 
 		chunk := buf[:num]
 
-		err = stream.Send(&postspb.UploadAttachmentRequest{
+		err = stream.Send(&postspb.UploadRequest{
 			FileName: fileName,
-			Data:     chunk,
+			Chunk:    chunk,
 		})
 
 		if err != nil {
@@ -131,7 +131,7 @@ func (h *PostsHandler) HandleGetPostByID(w http.ResponseWriter, r *http.Request)
 		PostId: uint64(postIDData),
 	})
 	if err != nil {
-		json.ServeJSONError(r.Context(), w, err)
+		json.ServeGRPCStatus(r.Context(), w, errors.NewCustomError(err))
 		return
 	}
 
@@ -207,7 +207,7 @@ func (h *PostsHandler) HandleGetUserPosts(w http.ResponseWriter, r *http.Request
 		PostsAmount: uint64(input.PostsAmount),
 	})
 	if err != nil {
-		json.ServeJSONError(r.Context(), w, err)
+		json.ServeGRPCStatus(r.Context(), w, errors.NewCustomError(err))
 		return
 	}
 
@@ -295,7 +295,7 @@ func (h *PostsHandler) HandleGetUserFriendsPosts(w http.ResponseWriter, r *http.
 		PostsAmount: uint64(input.PostsAmount),
 	})
 	if err != nil {
-		json.ServeJSONError(r.Context(), w, err)
+		json.ServeGRPCStatus(r.Context(), w, errors.NewCustomError(err))
 		return
 	}
 
@@ -354,7 +354,7 @@ func (h *PostsHandler) HandleCreatePost(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	postInput.Content = strings.Trim(r.PostFormValue("content"), " \n\r\t")
+	postInput.Content = strings.TrimSpace(r.PostFormValue("content"))
 
 	for _, fh := range r.MultipartForm.File {
 		for _, f := range fh {
@@ -373,7 +373,7 @@ func (h *PostsHandler) HandleCreatePost(w http.ResponseWriter, r *http.Request) 
 		Attachments: postInput.Attachments,
 	})
 	if err != nil {
-		json.ServeJSONError(r.Context(), w, err)
+		json.ServeGRPCStatus(r.Context(), w, errors.NewCustomError(err))
 		return
 	}
 
@@ -383,7 +383,7 @@ func (h *PostsHandler) HandleCreatePost(w http.ResponseWriter, r *http.Request) 
 		UserId: uint64(post.AuthorID),
 	})
 	if err != nil {
-		json.ServeJSONError(r.Context(), w, err)
+		json.ServeGRPCStatus(r.Context(), w, errors.NewCustomError(err))
 		return
 	}
 
@@ -441,7 +441,7 @@ func (h *PostsHandler) HandleUpdatePost(w http.ResponseWriter, r *http.Request) 
 		UserId:  uint64(userID),
 	})
 	if err != nil {
-		json.ServeJSONError(r.Context(), w, err)
+		json.ServeGRPCStatus(r.Context(), w, errors.NewCustomError(err))
 		return
 	}
 
@@ -485,7 +485,7 @@ func (h *PostsHandler) HandleDeletePost(w http.ResponseWriter, r *http.Request) 
 		PostId: uint64(input.PostID),
 	})
 	if err != nil {
-		json.ServeJSONError(r.Context(), w, err)
+		json.ServeGRPCStatus(r.Context(), w, errors.NewCustomError(err))
 		return
 	}
 

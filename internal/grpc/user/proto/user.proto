@@ -11,9 +11,9 @@ service User {
     rpc GetByID(GetByIDRequest) returns (GetByIDResponse) {}
     rpc GetByIDWithSubsInfo(GetByIDWithSubsInfoRequest) returns (GetByIDWithSubsInfoResponse) {}
     rpc Create(CreateRequest) returns (CreateResponse) {}
-    rpc UploadAvatar(stream UploadAvatarRequest) returns (UploadAvatarResponse) {}
     rpc Update(UpdateRequest) returns (UpdateResponse) {}
     rpc Delete(DeleteRequest) returns (DeleteResponse) {}
+    rpc Upload(stream UploadRequest) returns (UploadResponse) {}
 }
 
 message GetByIDRequest {
@@ -60,16 +60,6 @@ message CreateResponse {
     UserResponse user = 1;
 }
 
-message UploadAvatarRequest {
-    string file_name = 1;
-    bytes chunk = 2;
-}
-
-message UploadAvatarResponse {
-    string file_name = 1;
-    uint64 size = 2;
-}
-
 message UpdateRequest {
     uint64 user_id = 1;
     string first_name = 2;
@@ -91,3 +81,14 @@ message DeleteRequest {
 
 message DeleteResponse {
 }
+
+message UploadRequest {
+    string file_name = 1;
+    bytes chunk = 2;
+}
+
+message UploadResponse {
+    string file_name = 1;
+    uint64 size = 2;
+}
+

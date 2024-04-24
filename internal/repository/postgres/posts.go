@@ -181,6 +181,10 @@ func (p *Posts) GetPostByID(ctx context.Context, postID uint) (post *domain.Post
 		&likedByUsers,
 	)
 	if err != nil {
+		if err == pgx.ErrNoRows {
+			err = errors.ErrNotFound
+		}
+
 		return
 	}
 
