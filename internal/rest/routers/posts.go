@@ -23,6 +23,8 @@ func MountPostsRouter(rootRouter *mux.Router, postsClient post.PostClient, userC
 	r.HandleFunc("/", h.HandleCreatePost).Methods("POST", "OPTIONS")
 	r.HandleFunc("/", h.HandleUpdatePost).Methods("PUT", "OPTIONS")
 	r.HandleFunc("/", h.HandleDeletePost).Methods("DELETE", "OPTIONS")
+	r.HandleFunc("/like", h.HandleLikePost).Methods("POST", "OPTIONS")
+	r.HandleFunc("/unlike", h.HandleUnlikePost).Methods("DELETE", "OPTIONS")
 	r.Use(middleware.CreateCheckIsAuthorizedMiddleware(sessionStorage))
 	r.Use(middleware.CreateCSRFMiddleware(csrf.NewCSRFService(customtime.RealTimeProvider{})))
 }

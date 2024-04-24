@@ -498,3 +498,63 @@ func (h *PostsHandler) HandleDeletePost(w http.ResponseWriter, r *http.Request) 
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (h *PostsHandler) HandleLikePost(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	var input *domain.PostLike
+
+	decoder := defJSON.NewDecoder(r.Body)
+	err := decoder.Decode(&input)
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, errors.ErrJSONUnmarshalling)
+		return
+	}
+
+	userID, err := requestcontext.GetUserID(r.Context())
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, err)
+		return
+	}
+
+	res, err := h.PostsClient.LikePost(r.Context(), &postspb.LikePostRequest{
+		PostId: uint64(input.PostID),
+		UserId: uint64(userID),
+	})
+	if err != nil {
+		json.ServeGRPCStatus(r.Context(), w, err)
+		return
+	}
+
+	json.ServeJSONBody(r.Context(), w, res, http.StatusCreated)
+}
+
+func (h *PostsHandler) HandleUnlikePost(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	var input *domain.PostLike
+
+	decoder := defJSON.NewDecoder(r.Body)
+	err := decoder.Decode(&input)
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, errors.ErrJSONUnmarshalling)
+		return
+	}
+
+	userID, err := requestcontext.GetUserID(r.Context())
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, err)
+		return
+	}
+
+	_, err = h.PostsClient.UnlikePost(r.Context(), &postspb.UnlikePostRequest{
+		PostId: uint64(input.PostID),
+		UserId: uint64(userID),
+	})
+	if err != nil {
+		json.ServeGRPCStatus(r.Context(), w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
