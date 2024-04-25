@@ -36,6 +36,7 @@ func ToUser(user *UserResponse) *domain.User {
 		FirstName: user.FirstName,
 		LastName:  user.LastName,
 		Email:     user.Email,
+		Avatar:    user.Avatar,
 		DateOfBirth: customtime.CustomTime{
 			Time: user.DateOfBirth.AsTime(),
 		},
@@ -77,5 +78,13 @@ func ToUpdateUserInput(req *UpdateRequest) (userInput *user.UpdateUserInput) {
 		Password:       req.GetPassword(),
 		RepeatPassword: req.GetRepeatPassword(),
 		DateOfBirth:    req.GetDateOfBirth(),
+	}
+}
+
+func ToUserWithInfo(res *GetByIDWithSubsInfoResponse) (userWithInfo *user.UserWithSubsInfo) {
+	return &user.UserWithSubsInfo{
+		User:           ToUser(res.GetUser()),
+		IsSubscriber:   res.GetIsSubscriber(),
+		IsSubscribedTo: res.GetIsSubscribed(),
 	}
 }

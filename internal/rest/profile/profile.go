@@ -129,7 +129,7 @@ func (h *ProfileHandler) HandleGetProfile(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	json.ServeJSONBody(r.Context(), w, userWithInfo, http.StatusOK)
+	json.ServeJSONBody(r.Context(), w, uspb.ToUserWithInfo(userWithInfo), http.StatusOK)
 }
 
 // HandleUpdateProfile godoc
@@ -205,7 +205,7 @@ func (h *ProfileHandler) HandleUpdateProfile(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	json.ServeJSONBody(r.Context(), w, updatedUser, http.StatusOK)
+	json.ServeJSONBody(r.Context(), w, uspb.ToUser(updatedUser.User), http.StatusOK)
 }
 
 // HandleDeleteProfile godoc

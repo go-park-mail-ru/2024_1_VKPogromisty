@@ -136,7 +136,7 @@ func (h *PostsHandler) HandleGetPostByID(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	json.ServeJSONBody(r.Context(), w, post, http.StatusOK)
+	json.ServeJSONBody(r.Context(), w, postspb.ToPost(post.Post), http.StatusOK)
 }
 
 // HandleGetUserPosts godoc
@@ -595,7 +595,7 @@ func (h *PostsHandler) HandleLikePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.ServeJSONBody(r.Context(), w, res, http.StatusCreated)
+	json.ServeJSONBody(r.Context(), w, postspb.ToPostLike(res.Like), http.StatusCreated)
 }
 
 func (h *PostsHandler) HandleUnlikePost(w http.ResponseWriter, r *http.Request) {
