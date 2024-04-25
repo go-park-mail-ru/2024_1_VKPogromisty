@@ -66,6 +66,7 @@ const (
 	`
 	GetUserFriendsPostsQuery = `
 	SELECT p.id,
+		p.author_id,
         p.content,
         p.created_at,
         p.updated_at,
