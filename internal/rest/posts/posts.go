@@ -602,7 +602,7 @@ func (h *PostsHandler) HandleGetLikedPosts(w http.ResponseWriter, r *http.Reques
 //
 //	@Param			Cookie	header	string	true	"session_id=some_session"
 //	@Param			X-CSRF-Token	header	string	true	"CSRF token"
-//	@Param			post_id	body	uint	true	"ID of the post"
+//	@Param			postId	body	uint	true	"ID of the post"
 //
 //	@Produce		json
 //	@Success		201	{object}	domain.PostLike
@@ -653,7 +653,7 @@ func (h *PostsHandler) HandleLikePost(w http.ResponseWriter, r *http.Request) {
 //
 //	@Param			Cookie	header	string	true	"session_id=some_session"
 //	@Param			X-CSRF-Token	header	string	true	"CSRF token"
-//	@Param			post_id	body	uint	true	"ID of the post"
+//	@Param			postId	body	uint	true	"ID of the post"
 //
 //	@Produce		json
 //	@Success		204	{object}	json.JSONResponse

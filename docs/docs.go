@@ -989,7 +989,7 @@ const docTemplate = `{
                     },
                     {
                         "description": "ID of the post",
-                        "name": "post_id",
+                        "name": "postId",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -1153,7 +1153,7 @@ const docTemplate = `{
                     },
                     {
                         "description": "ID of the post",
-                        "name": "post_id",
+                        "name": "postId",
                         "in": "body",
                         "required": true,
                         "schema": {
