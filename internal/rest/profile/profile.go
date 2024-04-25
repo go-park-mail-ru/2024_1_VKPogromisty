@@ -93,7 +93,7 @@ func (h *ProfileHandler) uploadAvatar(r *http.Request, avatarFH *multipart.FileH
 //	@Param			userID	path	string	false	"User ID, if empty - get authorized user profile"
 //
 //	@Produce		json
-//	@Success		200	{object}	json.JSONResponse{body=profile.UserWithSubsInfo}
+//	@Success		200	{object}	json.JSONResponse{body=user.UserWithSubsInfo}
 //	@Failure		401	{object}	errors.HTTPError
 //	@Failure		403	{object}	errors.HTTPError
 //	@Failure		404	{object}	errors.HTTPError

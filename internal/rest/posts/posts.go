@@ -114,7 +114,7 @@ func (h *PostsHandler) uploadAvatar(r *http.Request, fh *multipart.FileHeader) (
 //	@Failure		401	{object}	errors.HTTPError
 //	@Failure		403	{object}	errors.HTTPError
 //	@Failure		500	{object}	errors.HTTPError
-//	@Router			/posts/ [get]
+//	@Router			/posts/{id} [get]
 func (h *PostsHandler) HandleGetPostByID(w http.ResponseWriter, r *http.Request) {
 	postID, ok := mux.Vars(r)["postID"]
 	if !ok {
@@ -500,6 +500,29 @@ func (h *PostsHandler) HandleDeletePost(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// HandleGetLikedPosts godoc
+//
+//	@Summary		get liked posts
+//	@Description	get posts that are authored by authorized user and liked by some people,
+//	@Description	for every like it returns post and user that liked that post
+//	@Tags			posts
+//	@license.name	Apache 2.0
+//	@ID				posts/get_liked_posts
+//	@Accept			json
+//
+//	@Param			Cookie		header	string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
+//	@Param			lastLikeId	query	uint	false	"ID of the last like, if 0 - get first likes"
+//	@Param			postsAmount	query	uint	false	"Amount of liked posts to get, if 0 - get 20 liked posts"
+//
+//	@Produce		json
+//	@Success		200	{object}	[]posts.LikeWithPostAndUser
+//	@Failure		400	{object}	errors.HTTPError
+//	@Failure		401	{object}	errors.HTTPError
+//	@Failure		403	{object}	errors.HTTPError
+//	@Failure		404	{object}	errors.HTTPError
+//	@Failure		500	{object}	errors.HTTPError
+//	@Router			/posts/liked [get]
 func (h *PostsHandler) HandleGetLikedPosts(w http.ResponseWriter, r *http.Request) {
 	authorizedUserID, err := requestcontext.GetUserID(r.Context())
 	if err != nil {
@@ -568,6 +591,27 @@ func (h *PostsHandler) HandleGetLikedPosts(w http.ResponseWriter, r *http.Reques
 	json.ServeJSONBody(r.Context(), w, likedPostsWithUsers, http.StatusOK)
 }
 
+// HandleLikePost godoc
+//
+//	@Summary		like post
+//	@Description	like post
+//	@Tags			posts
+//	@license.name	Apache 2.0
+//	@ID				posts/like
+//	@Accept			json
+//
+//	@Param			Cookie	header	string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
+//	@Param			post_id	body	uint	true	"ID of the post"
+//
+//	@Produce		json
+//	@Success		201	{object}	domain.PostLike
+//	@Failure		400	{object}	errors.HTTPError
+//	@Failure		401	{object}	errors.HTTPError
+//	@Failure		403	{object}	errors.HTTPError
+//	@Failure		404	{object}	errors.HTTPError
+//	@Failure		500	{object}	errors.HTTPError
+//	@Router			/posts/like [post]
 func (h *PostsHandler) HandleLikePost(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
@@ -598,6 +642,27 @@ func (h *PostsHandler) HandleLikePost(w http.ResponseWriter, r *http.Request) {
 	json.ServeJSONBody(r.Context(), w, postspb.ToPostLike(res.Like), http.StatusCreated)
 }
 
+// HandleUnlikePost godoc
+//
+//	@Summary		unlike post
+//	@Description	unlike post
+//	@Tags			posts
+//	@license.name	Apache 2.0
+//	@ID				posts/unlike
+//	@Accept			json
+//
+//	@Param			Cookie	header	string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
+//	@Param			post_id	body	uint	true	"ID of the post"
+//
+//	@Produce		json
+//	@Success		204	{object}	json.JSONResponse
+//	@Failure		400	{object}	errors.HTTPError
+//	@Failure		401	{object}	errors.HTTPError
+//	@Failure		403	{object}	errors.HTTPError
+//	@Failure		404	{object}	errors.HTTPError
+//	@Failure		500	{object}	errors.HTTPError
+//	@Router			/posts/unlike [delete]
 func (h *PostsHandler) HandleUnlikePost(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 

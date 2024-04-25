@@ -47,12 +47,29 @@ definitions:
         example: "2021-01-01T00:00:00Z"
         format: date-time
         type: string
+      likedBy:
+        items:
+          type: integer
+        type: array
       postId:
         type: integer
       updatedAt:
         example: "2021-01-01T00:00:00Z"
         format: date-time
         type: string
+    type: object
+  domain.PostLike:
+    properties:
+      createdAt:
+        example: "2021-01-01T00:00:00Z"
+        format: date-time
+        type: string
+      likeId:
+        type: integer
+      postId:
+        type: integer
+      userId:
+        type: integer
     type: object
   domain.PostWithAuthor:
     properties:
@@ -113,14 +130,14 @@ definitions:
     properties:
       body: {}
     type: object
-  profile.UserWithSubsInfo:
+  posts.LikeWithPostAndUser:
     properties:
-      isSubscribedTo:
-        type: boolean
-      isSubscriber:
-        type: boolean
-      user:
+      like:
+        $ref: '#/definitions/domain.PostLike'
+      likedBy:
         $ref: '#/definitions/domain.User'
+      post:
+        $ref: '#/definitions/domain.Post'
     type: object
   rest.CSRFTokenResponse:
     properties:
@@ -156,6 +173,15 @@ definitions:
         items:
           $ref: '#/definitions/domain.User'
         type: array
+    type: object
+  user.UserWithSubsInfo:
+    properties:
+      isSubscribedTo:
+        type: boolean
+      isSubscriber:
+        type: boolean
+      user:
+        $ref: '#/definitions/domain.User'
     type: object
 host: localhost:8080
 info:
@@ -598,12 +624,10 @@ paths:
       - description: ID of the last post, if 0 - get first posts
         in: query
         name: lastPostId
-        required: true
         type: integer
       - description: Amount of posts to get, if 0 - get 20 posts
         in: query
         name: postsAmount
-        required: true
         type: integer
       produces:
       - application/json
@@ -750,6 +774,54 @@ paths:
       summary: update post
       tags:
       - posts
+  /posts/{id}:
+    get:
+      consumes:
+      - application/json
+      description: get post by id
+      operationId: posts/get_post_by_id
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: ID of the post
+        in: query
+        name: postId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Post'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: get post by id
+      tags:
+      - posts
   /posts/friends:
     get:
       consumes:
@@ -770,12 +842,10 @@ paths:
       - description: ID of the last post
         in: query
         name: lastPostId
-        required: true
         type: integer
       - description: Amount of posts to get, if 0 - get 20 posts
         in: query
         name: postsAmount
-        required: true
         type: integer
       produces:
       - application/json
@@ -808,6 +878,171 @@ paths:
           schema:
             $ref: '#/definitions/errors.HTTPError'
       summary: get user friends posts
+      tags:
+      - posts
+  /posts/like:
+    post:
+      consumes:
+      - application/json
+      description: like post
+      operationId: posts/like
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: ID of the post
+        in: body
+        name: post_id
+        required: true
+        schema:
+          type: integer
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.PostLike'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: like post
+      tags:
+      - posts
+  /posts/liked:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        get posts that are authored by authorized user and liked by some people,
+        for every like it returns post and user that liked that post
+      operationId: posts/get_liked_posts
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: ID of the last like, if 0 - get first likes
+        in: query
+        name: lastLikeId
+        type: integer
+      - description: Amount of liked posts to get, if 0 - get 20 liked posts
+        in: query
+        name: postsAmount
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/posts.LikeWithPostAndUser'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: get liked posts
+      tags:
+      - posts
+  /posts/unlike:
+    delete:
+      consumes:
+      - application/json
+      description: unlike post
+      operationId: posts/unlike
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: ID of the post
+        in: body
+        name: post_id
+        required: true
+        schema:
+          type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            $ref: '#/definitions/json.JSONResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: unlike post
       tags:
       - posts
   /profile/:
@@ -959,7 +1194,7 @@ paths:
             - $ref: '#/definitions/json.JSONResponse'
             - properties:
                 body:
-                  $ref: '#/definitions/profile.UserWithSubsInfo'
+                  $ref: '#/definitions/user.UserWithSubsInfo'
               type: object
         "401":
           description: Unauthorized
