@@ -6,8 +6,10 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"socio/domain"
 	"socio/errors"
 	uspb "socio/internal/grpc/user/proto"
+	"socio/usecase/subscriptions"
 	"socio/usecase/user"
 
 	"github.com/google/uuid"
@@ -20,12 +22,14 @@ const (
 type UserManager struct {
 	uspb.UnimplementedUserServer
 
-	UserService *user.Service
+	UserService          *user.Service
+	SubscriptionsService *subscriptions.Service
 }
 
-func NewUserManager(userStorage user.UserStorage, avatarStorage user.AvatarStorage) *UserManager {
+func NewUserManager(userStorage user.UserStorage, subscriptionsStorage subscriptions.SubscriptionsStorage, avatarStorage user.AvatarStorage) *UserManager {
 	return &UserManager{
-		UserService: user.NewUserService(userStorage, avatarStorage),
+		UserService:          user.NewUserService(userStorage, avatarStorage),
+		SubscriptionsService: subscriptions.NewService(subscriptionsStorage, userStorage),
 	}
 }
 
@@ -165,6 +169,97 @@ func (u *UserManager) Delete(ctx context.Context, in *uspb.DeleteRequest) (res *
 	}
 
 	res = &uspb.DeleteResponse{}
+
+	return
+}
+
+func (u *UserManager) Subscribe(ctx context.Context, in *uspb.SubscribeRequest) (res *uspb.SubscribeResponse, err error) {
+	subscriberID := in.GetSubscriberId()
+	subscribedToID := in.GetSubscribedToId()
+
+	sub, err := u.SubscriptionsService.Subscribe(ctx, &domain.Subscription{
+		SubscriberID:   uint(subscriberID),
+		SubscribedToID: uint(subscribedToID),
+	})
+	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
+		return
+	}
+
+	res = &uspb.SubscribeResponse{
+		Subscription: uspb.ToSubscriptionResponse(sub),
+	}
+
+	return
+}
+
+func (u *UserManager) Unsubscribe(ctx context.Context, in *uspb.UnsubscribeRequest) (res *uspb.UnsubscribeResponse, err error) {
+	subscriberID := in.GetSubscriberId()
+	subscribedToID := in.GetSubscribedToId()
+
+	err = u.SubscriptionsService.Unsubscribe(ctx, &domain.Subscription{
+		SubscriberID:   uint(subscriberID),
+		SubscribedToID: uint(subscribedToID),
+	})
+	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
+		return
+	}
+
+	res = &uspb.UnsubscribeResponse{}
+
+	return
+}
+
+func (u *UserManager) GetSubscriptions(ctx context.Context, in *uspb.GetSubscriptionsRequest) (res *uspb.GetSubscriptionsResponse, err error) {
+	userID := in.GetUserId()
+
+	subs, err := u.SubscriptionsService.GetSubscriptions(ctx, uint(userID))
+	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
+		return
+	}
+
+	res = &uspb.GetSubscriptionsResponse{
+		Subscriptions: uspb.ToSubscriptionsResponse(subs),
+	}
+
+	return
+}
+
+func (u *UserManager) GetSubscribers(ctx context.Context, in *uspb.GetSubscribersRequest) (res *uspb.GetSubscribersResponse, err error) {
+	userID := in.GetUserId()
+
+	subs, err := u.SubscriptionsService.GetSubscribers(ctx, uint(userID))
+	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
+		return
+	}
+
+	res = &uspb.GetSubscribersResponse{
+		Subscribers: uspb.ToSubscriptionsResponse(subs),
+	}
+
+	return
+}
+
+func (u *UserManager) GetFriends(ctx context.Context, in *uspb.GetFriendsRequest) (res *uspb.GetFriendsResponse, err error) {
+	userID := in.GetUserId()
+
+	friends, err := u.SubscriptionsService.GetFriends(ctx, uint(userID))
+	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
+		return
+	}
+
+	res = &uspb.GetFriendsResponse{
+		Friends: uspb.ToSubscriptionsResponse(friends),
+	}
 
 	return
 }

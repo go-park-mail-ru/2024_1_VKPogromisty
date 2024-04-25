@@ -50,7 +50,6 @@ func MountRootRouter(router *mux.Router) (err error) {
 	defer db.Close()
 
 	userStorage := pgRepo.NewUsers(db, customtime.RealTimeProvider{})
-	subStorage := pgRepo.NewSubscriptions(db, customtime.RealTimeProvider{})
 	personalMessageStorage := pgRepo.NewPersonalMessages(db, customtime.RealTimeProvider{})
 
 	redisPool := redisRepo.NewPool(os.Getenv("REDIS_PROTOCOL"), os.Getenv("REDIS_HOST")+":"+os.Getenv("REDIS_PORT"), os.Getenv("REDIS_PASSWORD"))
@@ -86,7 +85,7 @@ func MountRootRouter(router *mux.Router) (err error) {
 	MountChatRouter(rootRouter, chatPubSubRepository, personalMessageStorage, sessionStorage)
 	MountProfileRouter(rootRouter, userClient, sessionStorage)
 	MountPostsRouter(rootRouter, postClient, userClient, sessionStorage)
-	MountSubscriptionsRouter(rootRouter, subStorage, userStorage, sessionStorage)
+	MountSubscriptionsRouter(rootRouter, userClient, sessionStorage)
 	MountStaticRouter(rootRouter)
 
 	prodLogger, err := middleware.NewZapLogger()

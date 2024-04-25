@@ -53,7 +53,9 @@ func main() {
 	}
 
 	userStorage := pgRepo.NewUsers(db, customtime.RealTimeProvider{})
-	manager := user.NewUserManager(userStorage, avatarStorage)
+	subsciptionsStorage := pgRepo.NewSubscriptions(db, customtime.RealTimeProvider{})
+
+	manager := user.NewUserManager(userStorage, subsciptionsStorage, avatarStorage)
 
 	server := grpc.NewServer()
 

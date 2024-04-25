@@ -6,14 +6,15 @@ import (
 	customtime "socio/pkg/time"
 	"socio/usecase/auth"
 	"socio/usecase/csrf"
-	"socio/usecase/subscriptions"
+
+	uspb "socio/internal/grpc/user/proto"
 
 	"github.com/gorilla/mux"
 )
 
-func MountSubscriptionsRouter(rootRouter *mux.Router, subStorage subscriptions.SubscriptionsStorage, userStorage subscriptions.UserStorage, sessionStorage auth.SessionStorage) {
+func MountSubscriptionsRouter(rootRouter *mux.Router, userService uspb.UserClient, sessionStorage auth.SessionStorage) {
 	r := rootRouter.PathPrefix("/subscriptions").Subrouter()
-	h := rest.NewSubscriptionsHandler(subStorage, userStorage)
+	h := rest.NewSubscriptionsHandler(userService)
 
 	r.HandleFunc("/", h.HandleSubscription).Methods("POST", "OPTIONS")
 	r.HandleFunc("/", h.HandleUnsubscription).Methods("DELETE", "OPTIONS")
