@@ -55,7 +55,6 @@ func MountRootRouter(router *mux.Router) (err error) {
 	redisPool := redisRepo.NewPool(os.Getenv("REDIS_PROTOCOL"), os.Getenv("REDIS_HOST")+":"+os.Getenv("REDIS_PORT"), os.Getenv("REDIS_PASSWORD"))
 	defer redisPool.Close()
 
-	sessionStorage := redisRepo.NewSession(redisPool)
 	chatPubSubRepository := redisRepo.NewChatPubSub(redisPool)
 
 	userClientConn, err := grpc.Dial(
@@ -92,11 +91,11 @@ func MountRootRouter(router *mux.Router) (err error) {
 	authClient := authpb.NewAuthClient(authClientConn)
 
 	MountAuthRouter(rootRouter, authClient, userClient)
-	MountCSRFRouter(rootRouter, sessionStorage)
-	MountChatRouter(rootRouter, chatPubSubRepository, personalMessageStorage, sessionStorage)
-	MountProfileRouter(rootRouter, userClient, sessionStorage)
-	MountPostsRouter(rootRouter, postClient, userClient, sessionStorage)
-	MountSubscriptionsRouter(rootRouter, userClient, sessionStorage)
+	MountCSRFRouter(rootRouter, authClient)
+	MountChatRouter(rootRouter, chatPubSubRepository, personalMessageStorage, authClient)
+	MountProfileRouter(rootRouter, userClient, authClient)
+	MountPostsRouter(rootRouter, postClient, userClient, authClient)
+	MountSubscriptionsRouter(rootRouter, userClient, authClient)
 	MountStaticRouter(rootRouter)
 
 	prodLogger, err := middleware.NewZapLogger()
