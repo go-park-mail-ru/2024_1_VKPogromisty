@@ -48,7 +48,23 @@ func (u *UserManager) GetByID(ctx context.Context, in *uspb.GetByIDRequest) (res
 	}
 
 	return
+}
 
+func (u *UserManager) GetByEmail(ctx context.Context, in *uspb.GetByEmailRequest) (res *uspb.GetByEmailResponse, err error) {
+	email := in.GetEmail()
+
+	user, err := u.UserService.GetUserByEmail(ctx, email)
+	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
+		return
+	}
+
+	res = &uspb.GetByEmailResponse{
+		User: uspb.ToUserResponse(user),
+	}
+
+	return
 }
 
 func (u *UserManager) GetByIDWithSubsInfo(ctx context.Context, in *uspb.GetByIDWithSubsInfoRequest) (res *uspb.GetByIDWithSubsInfoResponse, err error) {

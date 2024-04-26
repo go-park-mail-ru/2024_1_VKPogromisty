@@ -27,6 +27,8 @@ func ToUserResponse(user *domain.User) *UserResponse {
 			Seconds: user.UpdatedAt.Unix(),
 			Nanos:   int32(user.UpdatedAt.Nanosecond()),
 		},
+		HashedPassword: user.Password,
+		Salt:           user.Salt,
 	}
 }
 
@@ -40,6 +42,8 @@ func ToUser(user *UserResponse) *domain.User {
 		DateOfBirth: customtime.CustomTime{
 			Time: user.DateOfBirth.AsTime(),
 		},
+		Salt:     user.Salt,
+		Password: user.HashedPassword,
 	}
 }
 
@@ -52,6 +56,18 @@ func ToCreateUserInput(req *CreateRequest) (userInput *user.CreateUserInput) {
 		Password:       req.GetPassword(),
 		RepeatPassword: req.GetRepeatPassword(),
 		DateOfBirth:    req.GetDateOfBirth(),
+	}
+}
+
+func ToCreateRequest(input *user.CreateUserInput) *CreateRequest {
+	return &CreateRequest{
+		FirstName:      input.FirstName,
+		LastName:       input.LastName,
+		Email:          input.Email,
+		Password:       input.Password,
+		RepeatPassword: input.RepeatPassword,
+		Avatar:         input.Avatar,
+		DateOfBirth:    input.DateOfBirth,
 	}
 }
 

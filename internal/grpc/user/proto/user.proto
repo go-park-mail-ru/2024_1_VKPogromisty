@@ -9,6 +9,7 @@ import "google/protobuf/timestamp.proto";
 
 service User {
     rpc GetByID(GetByIDRequest) returns (GetByIDResponse) {}
+    rpc GetByEmail(GetByEmailRequest) returns (GetByEmailResponse) {}
     rpc GetByIDWithSubsInfo(GetByIDWithSubsInfoRequest) returns (GetByIDWithSubsInfoResponse) {}
     rpc Create(CreateRequest) returns (CreateResponse) {}
     rpc Update(UpdateRequest) returns (UpdateResponse) {}
@@ -38,6 +39,16 @@ message UserResponse {
     google.protobuf.Timestamp date_of_birth = 6;
     google.protobuf.Timestamp created_at = 7;
     google.protobuf.Timestamp updated_at = 8;
+    string hashed_password = 9;
+    string salt = 10;
+}
+
+message GetByEmailRequest {
+   string email = 1; 
+}
+
+message GetByEmailResponse {
+    UserResponse user = 1;
 }
 
 message GetByIDWithSubsInfoRequest {

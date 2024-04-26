@@ -115,12 +115,6 @@ const (
 		created_at,
 		updated_at;
 	`
-	refreshSaltAndRehashPasswordQuery = `
-	UPDATE public.user
-	SET hashed_password = $1,
-		salt = $2
-	WHERE id = $3;
-	`
 	deleteUserPostsQuery = `
 	DELETE FROM public.post
 	WHERE author_id=$1;
@@ -314,31 +308,6 @@ func (s *Users) UpdateUser(ctx context.Context, user *domain.User, prevPassword 
 	)
 	if err != nil {
 		return
-	}
-
-	return
-}
-
-func (s *Users) RefreshSaltAndRehashPassword(ctx context.Context, user *domain.User, password string) (err error) {
-	salt := uuid.NewString()
-	user.Password = hash.HashPassword(password, []byte(salt))
-	user.Salt = salt
-
-	contextlogger.LogSQL(ctx, refreshSaltAndRehashPasswordQuery,
-		user.ID,
-	)
-
-	result, err := s.db.Exec(context.Background(), refreshSaltAndRehashPasswordQuery,
-		user.Password,
-		user.Salt,
-		user.ID,
-	)
-	if err != nil {
-		return
-	}
-
-	if result.RowsAffected() != 1 {
-		return errors.ErrRowsAffected
 	}
 
 	return
