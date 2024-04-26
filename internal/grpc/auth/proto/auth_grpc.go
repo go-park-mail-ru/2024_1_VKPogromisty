@@ -25,23 +25,14 @@ func ToUser(user *UserResponse) *domain.User {
 
 func ToUserResponse(user *domain.User) *UserResponse {
 	return &UserResponse{
-		Id:        uint64(user.ID),
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Email:     user.Email,
-		Avatar:    user.Avatar,
-		DateOfBirth: &timestamppb.Timestamp{
-			Seconds: user.DateOfBirth.Unix(),
-			Nanos:   0,
-		},
-		CreatedAt: &timestamppb.Timestamp{
-			Seconds: user.CreatedAt.Unix(),
-			Nanos:   int32(user.CreatedAt.Nanosecond()),
-		},
-		UpdatedAt: &timestamppb.Timestamp{
-			Seconds: user.UpdatedAt.Unix(),
-			Nanos:   int32(user.UpdatedAt.Nanosecond()),
-		},
+		Id:             uint64(user.ID),
+		FirstName:      user.FirstName,
+		LastName:       user.LastName,
+		Email:          user.Email,
+		Avatar:         user.Avatar,
+		DateOfBirth:    timestamppb.New(user.DateOfBirth.Time),
+		CreatedAt:      timestamppb.New(user.CreatedAt.Time),
+		UpdatedAt:      timestamppb.New(user.UpdatedAt.Time),
 		HashedPassword: user.Password,
 		Salt:           user.Salt,
 	}

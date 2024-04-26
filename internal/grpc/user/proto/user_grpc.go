@@ -8,28 +8,19 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func ToUserResponse(user *domain.User) *UserResponse {
-	return &UserResponse{
-		Id:        uint64(user.ID),
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Email:     user.Email,
-		Avatar:    user.Avatar,
-		DateOfBirth: &timestamppb.Timestamp{
-			Seconds: user.DateOfBirth.Unix(),
-			Nanos:   0,
-		},
-		CreatedAt: &timestamppb.Timestamp{
-			Seconds: user.CreatedAt.Unix(),
-			Nanos:   int32(user.CreatedAt.Nanosecond()),
-		},
-		UpdatedAt: &timestamppb.Timestamp{
-			Seconds: user.UpdatedAt.Unix(),
-			Nanos:   int32(user.UpdatedAt.Nanosecond()),
-		},
-		HashedPassword: user.Password,
-		Salt:           user.Salt,
+func ToUserResponse(user *domain.User) (res *UserResponse) {
+	res = &UserResponse{
+		Id:          uint64(user.ID),
+		FirstName:   user.FirstName,
+		LastName:    user.LastName,
+		Email:       user.Email,
+		Avatar:      user.Avatar,
+		DateOfBirth: timestamppb.New(user.DateOfBirth.Time),
+		CreatedAt:   timestamppb.New(user.CreatedAt.Time),
+		UpdatedAt:   timestamppb.New(user.UpdatedAt.Time),
 	}
+
+	return
 }
 
 func ToUser(user *UserResponse) *domain.User {
@@ -42,8 +33,12 @@ func ToUser(user *UserResponse) *domain.User {
 		DateOfBirth: customtime.CustomTime{
 			Time: user.DateOfBirth.AsTime(),
 		},
-		Salt:     user.Salt,
-		Password: user.HashedPassword,
+		CreatedAt: customtime.CustomTime{
+			Time: user.CreatedAt.AsTime(),
+		},
+		UpdatedAt: customtime.CustomTime{
+			Time: user.UpdatedAt.AsTime(),
+		},
 	}
 }
 
