@@ -101,6 +101,7 @@ func MountRootRouter(router *mux.Router) (err error) {
 	MountStaticRouter(rootRouter)
 	MountAdminRouter(rootRouter, userClient, sessionStorage)
 	MountCSATRouter(rootRouter, CSATClient, userClient, sessionStorage)
+	MountCSATPublicRouter(rootRouter, CSATClient, sessionStorage)
 
 	prodLogger, err := middleware.NewZapLogger()
 	if err != nil {

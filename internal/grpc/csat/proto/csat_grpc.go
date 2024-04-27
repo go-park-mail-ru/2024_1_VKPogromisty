@@ -85,6 +85,7 @@ func ToCSATQuestions(res []*QuestionResponse) (questions []*domain.CSATQuestion)
 
 func ToCSATReply(res *ReplyResponse) (reply *domain.CSATReply) {
 	return &domain.CSATReply{
+		ID:         reply.ID,
 		QuestionID: uint(res.QuestionId),
 		UserID:     uint(res.UserId),
 		Score:      int(res.Score),
