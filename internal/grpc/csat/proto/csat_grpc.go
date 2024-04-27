@@ -31,6 +31,7 @@ func ToCSATPoolResponse(pool *domain.CSATPool) (res *PoolResponse) {
 
 func ToCSATQuestion(question *QuestionResponse) (res *domain.CSATQuestion) {
 	return &domain.CSATQuestion{
+		ID:        uint(question.Id),
 		PoolID:    uint(question.PoolId),
 		Question:  question.Question,
 		BestCase:  question.BestCase,
