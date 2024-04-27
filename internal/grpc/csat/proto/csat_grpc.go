@@ -49,3 +49,57 @@ func ToCSATPool(pool *PoolResponse) (res *domain.CSATPool) {
 		UpdatedAt: customtime.CustomTime{Time: pool.UpdatedAt.AsTime()},
 	}
 }
+
+func ToCSATReplyResponse(reply *domain.CSATReply) (res *ReplyResponse) {
+	return &ReplyResponse{
+		Id:         uint64(reply.ID),
+		QuestionId: uint64(reply.QuestionID),
+		UserId:     uint64(reply.UserID),
+		Score:      int64(reply.Score),
+		CreatedAt:  timestamppb.New(reply.CreatedAt.Time),
+		UpdatedAt:  timestamppb.New(reply.UpdatedAt.Time),
+	}
+}
+
+func ToCSATStatsResponse(stats *domain.CSATStat) (res *StatsResponse) {
+	return &StatsResponse{
+		Question:     ToCSATQuestionResponse(stats.Question),
+		TotalReplies: uint64(stats.TotalReplies),
+		AvgScore:     float32(stats.AvgScore),
+	}
+}
+
+func ToCSATPools(res []*PoolResponse) (pools []*domain.CSATPool) {
+	for _, pool := range pools {
+		res = append(res, ToCSATPoolResponse(pool))
+	}
+	return
+}
+
+func ToCSATQuestions(res []*QuestionResponse) (questions []*domain.CSATQuestion) {
+	for _, question := range res {
+		questions = append(questions, ToCSATQuestion(question))
+	}
+	return
+}
+
+func ToCSATReply(res *ReplyResponse) (reply *domain.CSATReply) {
+	return &domain.CSATReply{
+		QuestionID: uint(res.QuestionId),
+		UserID:     uint(res.UserId),
+		Score:      int(res.Score),
+		CreatedAt:  customtime.CustomTime{Time: res.CreatedAt.AsTime()},
+		UpdatedAt:  customtime.CustomTime{Time: res.UpdatedAt.AsTime()},
+	}
+}
+
+func ToCSATStats(res []*StatsResponse) (stats []*domain.CSATStat) {
+	for _, stat := range res {
+		stats = append(stats, &domain.CSATStat{
+			Question:     ToCSATQuestion(stat.Question),
+			TotalReplies: int(stat.TotalReplies),
+			AvgScore:     float64(stat.AvgScore),
+		})
+	}
+	return
+}

@@ -45,10 +45,14 @@ const (
 	DELETE FROM csat_pool
 	WHERE id = $1;
 	`
-	getActivePoolsQuery = `
+	getPoolsQuery = `
 	SELECT id, name, is_active, created_at, updated_at
-	FROM csat_pool
-	WHERE is_active = true;
+	FROM csat_pool;
+	`
+	getQuestionsByPoolIDQuery = `
+	SELECT id, pool_id, question, best_case, worst_case, created_at, updated_at
+	FROM csat_question
+	WHERE pool_id = $1;
 	`
 	getUnansweredQuestionsByPoolIDQuery = `
 	SELECT q.id, q.pool_id, q.question, q.best_case, q.worst_case, q.created_at, q.updated_at
@@ -60,6 +64,18 @@ const (
 	SELECT id, name, is_active, created_at, updated_at
 	FROM csat_pool
 	WHERE id = $1;
+	`
+	createReplyQuery = `
+		INSERT INTO csat_reply (user_id, question_id, score)
+		VALUES ($1, $2, $3)
+		RETURNING id, user_id, question_id, score, created_at, updated_at;
+	`
+	getStatsByPoolQuery = `
+	SELECT COUNT(a.id) as total_replies, AVG(a.score) as avg_score, q.id, q.pool_id, q.question, q.best_case, q.worst_case, q.created_at, q.updated_at
+	FROM csat_reply a
+	JOIN csat_question q ON a.question_id = q.id
+	WHERE q.pool_id = $1
+	GROUP BY q.id, q.pool_id, q.question, q.best_case, q.worst_case, q.created_at, q.updated_at;
 	`
 )
 
@@ -211,8 +227,8 @@ func (s *CSAT) DeletePool(ctx context.Context, poolID uint) (err error) {
 	return
 }
 
-func (s *CSAT) GetActivePools(ctx context.Context) (pools []*domain.CSATPool, err error) {
-	rows, err := s.db.Query(context.Background(), getActivePoolsQuery)
+func (s *CSAT) GetPools(ctx context.Context) (pools []*domain.CSATPool, err error) {
+	rows, err := s.db.Query(context.Background(), getPoolsQuery)
 	if err != nil {
 		return
 	}
@@ -259,8 +275,36 @@ func (s *CSAT) GetPoolByID(ctx context.Context, poolID uint) (pool *domain.CSATP
 	return
 }
 
-func (s *CSAT) GetUnansweredQuestionsByPoolID(ctx context.Context, poolID uint) (questions []*domain.CSATQuestion, err error) {
-	rows, err := s.db.Query(context.Background(), getUnansweredQuestionsByPoolIDQuery, poolID)
+func (s *CSAT) GetQuestionsByPoolID(ctx context.Context, poolID uint) (questions []*domain.CSATQuestion, err error) {
+	rows, err := s.db.Query(context.Background(), getQuestionsByPoolIDQuery, poolID)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		question := new(domain.CSATQuestion)
+		err = rows.Scan(
+			&question.ID,
+			&question.PoolID,
+			&question.Question,
+			&question.BestCase,
+			&question.WorstCase,
+			&question.CreatedAt.Time,
+			&question.UpdatedAt.Time,
+		)
+		if err != nil {
+			return
+		}
+
+		questions = append(questions, question)
+	}
+
+	return
+}
+
+func (s *CSAT) GetUnansweredQuestionsByPoolID(ctx context.Context, userID uint, poolID uint) (questions []*domain.CSATQuestion, err error) {
+	rows, err := s.db.Query(context.Background(), getUnansweredQuestionsByPoolIDQuery, poolID, userID)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			err = errors.ErrNotFound
@@ -287,6 +331,57 @@ func (s *CSAT) GetUnansweredQuestionsByPoolID(ctx context.Context, poolID uint) 
 		}
 
 		questions = append(questions, question)
+	}
+
+	return
+}
+
+func (c *CSAT) CreateReply(ctx context.Context, reply *domain.CSATReply) (newReply *domain.CSATReply, err error) {
+	newReply = new(domain.CSATReply)
+
+	err = c.db.QueryRow(ctx, createReplyQuery, reply.UserID, reply.QuestionID, reply.Score).Scan(
+		&newReply.ID,
+		&newReply.UserID,
+		&newReply.QuestionID,
+		&newReply.Score,
+		&newReply.CreatedAt.Time,
+		&newReply.UpdatedAt.Time,
+	)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (c *CSAT) GetStatsByPool(ctx context.Context, poolID uint) (stats []*domain.CSATStat, err error) {
+	rows, err := c.db.Query(ctx, getStatsByPoolQuery, poolID)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		stat := new(domain.CSATStat)
+		question := new(domain.CSATQuestion)
+		stat.Question = question
+
+		err = rows.Scan(
+			&stat.TotalReplies,
+			&stat.AvgScore,
+			&stat.Question.ID,
+			&stat.Question.PoolID,
+			&stat.Question.Question,
+			&stat.Question.BestCase,
+			&stat.Question.WorstCase,
+			&stat.Question.CreatedAt.Time,
+			&stat.Question.UpdatedAt.Time,
+		)
+		if err != nil {
+			return
+		}
+
+		stats = append(stats, stat)
 	}
 
 	return

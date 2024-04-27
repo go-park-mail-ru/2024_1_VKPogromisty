@@ -13,8 +13,11 @@ service CSAT {
     rpc CreatePool(CreatePoolRequest) returns (CreatePoolResponse) {}
     rpc UpdatePool(UpdatePoolRequest) returns (UpdatePoolResponse) {}
     rpc DeletePool(DeletePoolRequest) returns (DeletePoolResponse) {}
-    rpc GetActivePools(GetActivePoolsRequest) returns (GetActivePoolsResponse) {}
+    rpc GetPools(GetPoolsRequest) returns (GetPoolsResponse) {}
+    rpc GetQuestionsByPoolID(GetQuestionsByPoolIDRequest) returns (GetQuestionsByPoolIDResponse) {}
     rpc GetUnansweredQuestionsByPoolID(GetUnansweredQuestionsByPoolIDRequest) returns (GetUnansweredQuestionsByPoolIDResponse) {}
+    rpc CreateReply(CreateReplyRequest) returns (CreateReplyResponse) {}
+    rpc GetStatsByPoolID(GetStatsByPoolIDRequest) returns (GetStatsByPoolIDResponse) {}
 }
 
 message QuestionResponse {
@@ -88,17 +91,59 @@ message DeletePoolRequest {
 
 message DeletePoolResponse {}
 
-message GetActivePoolsRequest {}
-
-message GetActivePoolsResponse {
-    repeated PoolResponse pools = 1;
-}
-
 message GetUnansweredQuestionsByPoolIDRequest {
     uint64 pool_id = 1;
+    uint64 user_id = 2;
 }
 
 message GetUnansweredQuestionsByPoolIDResponse {
     PoolResponse pool = 1;
     repeated QuestionResponse questions = 2;
+}
+
+message GetPoolsRequest {}
+
+message GetPoolsResponse {
+    repeated PoolResponse pools = 1;
+}
+
+message GetQuestionsByPoolIDRequest {
+    uint64 pool_id = 1;
+}
+
+message GetQuestionsByPoolIDResponse {
+    repeated QuestionResponse questions = 2;
+}
+
+message ReplyResponse {
+    uint64 id = 1;
+    uint64 question_id = 2;
+    uint64 user_id = 3;
+    int64 score = 4;
+    google.protobuf.Timestamp created_at = 5;
+    google.protobuf.Timestamp updated_at = 6;
+}
+
+message CreateReplyRequest {
+    uint64 question_id = 1;
+    uint64 user_id = 2;
+    int64 score = 3;
+}
+
+message CreateReplyResponse {
+    ReplyResponse reply = 1;
+}
+
+message GetStatsByPoolIDRequest {
+    uint64 pool_id = 1;
+}
+
+message StatsResponse {
+    QuestionResponse question = 1;
+    uint64 total_replies = 2;
+    float avg_score = 3;
+}
+
+message GetStatsByPoolIDResponse {
+    repeated StatsResponse stats = 3;
 }

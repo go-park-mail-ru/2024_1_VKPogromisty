@@ -6,6 +6,10 @@ import (
 	"socio/errors"
 	csatpb "socio/internal/grpc/csat/proto"
 	"socio/pkg/json"
+	"socio/pkg/requestcontext"
+	"strconv"
+
+	"github.com/gorilla/mux"
 )
 
 type CreateQuestionInput struct {
@@ -43,6 +47,12 @@ type DeletePoolInput struct {
 
 type CSATHandler struct {
 	CSATClient csatpb.CSATClient
+}
+
+type CreateReplyInput struct {
+	QuestionID uint `json:"questionId"`
+	UserID     uint `json:"userId"`
+	Score      int  `json:"score"`
 }
 
 func NewCSATHandler(csatClient csatpb.CSATClient) (c *CSATHandler) {
@@ -196,4 +206,127 @@ func (c *CSATHandler) DeletePool(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// here
+func (h *CSATHandler) GetPools(w http.ResponseWriter, r *http.Request) {
+	res, err := h.CSATClient.GetPools(r.Context(), &csatpb.GetPoolsRequest{})
+	if err != nil {
+		json.ServeGRPCStatus(r.Context(), w, err)
+		return
+	}
+
+	json.ServeJSONBody(r.Context(), w, csatpb.ToCSATPools(res.Pools), http.StatusOK)
+}
+
+func (h *CSATHandler) GetQuestionsByPoolID(w http.ResponseWriter, r *http.Request) {
+	poolIDData := mux.Vars(r)["poolID"]
+	var poolID uint64
+	var err error
+
+	if len(poolIDData) != 0 {
+		poolID, err = strconv.ParseUint(poolIDData, 10, 0)
+		if err != nil {
+			json.ServeJSONError(r.Context(), w, errors.ErrInvalidSlug)
+			return
+		}
+	} else {
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidSlug)
+		return
+	}
+	res, err := h.CSATClient.GetQuestionsByPoolID(r.Context(), &csatpb.GetQuestionsByPoolIDRequest{
+		PoolId: poolID,
+	})
+	if err != nil {
+		json.ServeGRPCStatus(r.Context(), w, err)
+		return
+	}
+
+	json.ServeJSONBody(r.Context(), w, csatpb.ToCSATQuestions(res.Questions), http.StatusOK)
+}
+
+func (h *CSATHandler) GetUnansweredQuestionsByPoolID(w http.ResponseWriter, r *http.Request) {
+	poolIDData := mux.Vars(r)["poolID"]
+	var poolID uint64
+	var err error
+
+	if len(poolIDData) != 0 {
+		poolID, err = strconv.ParseUint(poolIDData, 10, 0)
+		if err != nil {
+			json.ServeJSONError(r.Context(), w, errors.ErrInvalidSlug)
+			return
+		}
+	} else {
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidSlug)
+		return
+	}
+
+	authorizedUserID, err := requestcontext.GetUserID(r.Context())
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, err)
+		return
+	}
+
+	res, err := h.CSATClient.GetUnansweredQuestionsByPoolID(r.Context(), &csatpb.GetUnansweredQuestionsByPoolIDRequest{
+		PoolId: poolID,
+		UserId: uint64(authorizedUserID),
+	})
+	if err != nil {
+		json.ServeGRPCStatus(r.Context(), w, err)
+		return
+	}
+
+	json.ServeJSONBody(r.Context(), w, csatpb.ToCSATQuestions(res.Questions), http.StatusOK)
+}
+
+func (h *CSATHandler) CreateReply(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	input := new(CreateReplyInput)
+
+	decoder := defJSON.NewDecoder(r.Body)
+	err := decoder.Decode(&input)
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, errors.ErrJSONUnmarshalling)
+		return
+	}
+
+	res, err := h.CSATClient.CreateReply(r.Context(), &csatpb.CreateReplyRequest{
+		QuestionId: uint64(input.QuestionID),
+		UserId:     uint64(input.UserID),
+		Score:      int64(input.Score),
+	})
+	if err != nil {
+		json.ServeGRPCStatus(r.Context(), w, err)
+		return
+	}
+
+	json.ServeJSONBody(r.Context(), w, csatpb.ToCSATReply(res.Reply), http.StatusCreated)
+}
+
+func (h *CSATHandler) GetStatsByPoolID(w http.ResponseWriter, r *http.Request) {
+	poolIDData := mux.Vars(r)["poolID"]
+	var poolID uint64
+	var err error
+
+	if len(poolIDData) != 0 {
+		poolID, err = strconv.ParseUint(poolIDData, 10, 0)
+		if err != nil {
+			json.ServeJSONError(r.Context(), w, errors.ErrInvalidSlug)
+			return
+		}
+	} else {
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidSlug)
+		return
+	}
+
+	res, err := h.CSATClient.GetStatsByPoolID(r.Context(), &csatpb.GetStatsByPoolIDRequest{
+		PoolId: poolID,
+	})
+	if err != nil {
+		json.ServeGRPCStatus(r.Context(), w, err)
+		return
+	}
+
+	json.ServeJSONBody(r.Context(), w, csatpb.ToCSATStats(res.Stats), http.StatusOK)
 }

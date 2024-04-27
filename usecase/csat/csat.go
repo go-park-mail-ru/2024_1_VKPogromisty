@@ -17,9 +17,12 @@ type CSATStorage interface {
 	CreatePool(ctx context.Context, pool *domain.CSATPool) (newPool *domain.CSATPool, err error)
 	UpdatePool(ctx context.Context, pool *domain.CSATPool) (updatedPool *domain.CSATPool, err error)
 	DeletePool(ctx context.Context, poolID uint) (err error)
-	GetActivePools(ctx context.Context) (pools []*domain.CSATPool, err error)
 	GetPoolByID(ctx context.Context, poolID uint) (pool *domain.CSATPool, err error)
-	GetUnansweredQuestionsByPoolID(ctx context.Context, poolID uint) (questions []*domain.CSATQuestion, err error)
+	GetPools(ctx context.Context) (pools []*domain.CSATPool, err error)
+	GetQuestionsByPoolID(ctx context.Context, poolID uint) (questions []*domain.CSATQuestion, err error)
+	GetUnansweredQuestionsByPoolID(ctx context.Context, userID uint, poolID uint) (questions []*domain.CSATQuestion, err error)
+	CreateReply(ctx context.Context, reply *domain.CSATReply) (newReply *domain.CSATReply, err error)
+	GetStatsByPool(ctx context.Context, poolID uint) (stats []*domain.CSATStat, err error)
 }
 
 type Service struct {
@@ -139,8 +142,9 @@ func (s *Service) DeletePool(ctx context.Context, poolID uint) (err error) {
 	return
 }
 
-func (s *Service) GetActivePools(ctx context.Context) (pools []*domain.CSATPool, err error) {
-	pools, err = s.CSATStorage.GetActivePools(ctx)
+// here
+func (s *Service) GetPools(ctx context.Context) (pools []*domain.CSATPool, err error) {
+	pools, err = s.CSATStorage.GetPools(ctx)
 	if err != nil {
 		return
 	}
@@ -148,13 +152,51 @@ func (s *Service) GetActivePools(ctx context.Context) (pools []*domain.CSATPool,
 	return
 }
 
-func (s *Service) GetUnansweredQuestionsByPoolID(ctx context.Context, poolID uint) (pool *domain.CSATPool, questions []*domain.CSATQuestion, err error) {
+func (s *Service) GetQuestionsByPoolID(ctx context.Context, poolID uint) (questions []*domain.CSATQuestion, err error) {
+	questions, err = s.CSATStorage.GetQuestionsByPoolID(ctx, poolID)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (s *Service) GetUnansweredQuestionsByPoolID(ctx context.Context, userID uint, poolID uint) (pool *domain.CSATPool, questions []*domain.CSATQuestion, err error) {
 	pool, err = s.CSATStorage.GetPoolByID(ctx, poolID)
 	if err != nil {
 		return
 	}
 
-	questions, err = s.CSATStorage.GetUnansweredQuestionsByPoolID(ctx, poolID)
+	questions, err = s.CSATStorage.GetUnansweredQuestionsByPoolID(ctx, userID, poolID)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (s *Service) CreateReply(ctx context.Context, reply *domain.CSATReply) (newReply *domain.CSATReply, err error) {
+	_, err = s.CSATStorage.GetQuestionByID(ctx, reply.QuestionID)
+	if err != nil {
+		err = errors.ErrInvalidBody
+		return
+	}
+
+	newReply, err = s.CSATStorage.CreateReply(ctx, reply)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (s *Service) GetStatsByPool(ctx context.Context, poolID uint) (stats []*domain.CSATStat, err error) {
+	_, err = s.CSATStorage.GetPoolByID(ctx, poolID)
+	if err != nil {
+		return
+	}
+
+	stats, err = s.CSATStorage.GetStatsByPool(ctx, poolID)
 	if err != nil {
 		return
 	}

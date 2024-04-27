@@ -24,8 +24,11 @@ type CSATClient interface {
 	CreatePool(ctx context.Context, in *CreatePoolRequest, opts ...grpc.CallOption) (*CreatePoolResponse, error)
 	UpdatePool(ctx context.Context, in *UpdatePoolRequest, opts ...grpc.CallOption) (*UpdatePoolResponse, error)
 	DeletePool(ctx context.Context, in *DeletePoolRequest, opts ...grpc.CallOption) (*DeletePoolResponse, error)
-	GetActivePools(ctx context.Context, in *GetActivePoolsRequest, opts ...grpc.CallOption) (*GetActivePoolsResponse, error)
+	GetPools(ctx context.Context, in *GetPoolsRequest, opts ...grpc.CallOption) (*GetPoolsResponse, error)
+	GetQuestionsByPoolID(ctx context.Context, in *GetQuestionsByPoolIDRequest, opts ...grpc.CallOption) (*GetQuestionsByPoolIDResponse, error)
 	GetUnansweredQuestionsByPoolID(ctx context.Context, in *GetUnansweredQuestionsByPoolIDRequest, opts ...grpc.CallOption) (*GetUnansweredQuestionsByPoolIDResponse, error)
+	CreateReply(ctx context.Context, in *CreateReplyRequest, opts ...grpc.CallOption) (*CreateReplyResponse, error)
+	GetStatsByPoolID(ctx context.Context, in *GetStatsByPoolIDRequest, opts ...grpc.CallOption) (*GetStatsByPoolIDResponse, error)
 }
 
 type cSATClient struct {
@@ -90,9 +93,18 @@ func (c *cSATClient) DeletePool(ctx context.Context, in *DeletePoolRequest, opts
 	return out, nil
 }
 
-func (c *cSATClient) GetActivePools(ctx context.Context, in *GetActivePoolsRequest, opts ...grpc.CallOption) (*GetActivePoolsResponse, error) {
-	out := new(GetActivePoolsResponse)
-	err := c.cc.Invoke(ctx, "/csat.CSAT/GetActivePools", in, out, opts...)
+func (c *cSATClient) GetPools(ctx context.Context, in *GetPoolsRequest, opts ...grpc.CallOption) (*GetPoolsResponse, error) {
+	out := new(GetPoolsResponse)
+	err := c.cc.Invoke(ctx, "/csat.CSAT/GetPools", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cSATClient) GetQuestionsByPoolID(ctx context.Context, in *GetQuestionsByPoolIDRequest, opts ...grpc.CallOption) (*GetQuestionsByPoolIDResponse, error) {
+	out := new(GetQuestionsByPoolIDResponse)
+	err := c.cc.Invoke(ctx, "/csat.CSAT/GetQuestionsByPoolID", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -102,6 +114,24 @@ func (c *cSATClient) GetActivePools(ctx context.Context, in *GetActivePoolsReque
 func (c *cSATClient) GetUnansweredQuestionsByPoolID(ctx context.Context, in *GetUnansweredQuestionsByPoolIDRequest, opts ...grpc.CallOption) (*GetUnansweredQuestionsByPoolIDResponse, error) {
 	out := new(GetUnansweredQuestionsByPoolIDResponse)
 	err := c.cc.Invoke(ctx, "/csat.CSAT/GetUnansweredQuestionsByPoolID", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cSATClient) CreateReply(ctx context.Context, in *CreateReplyRequest, opts ...grpc.CallOption) (*CreateReplyResponse, error) {
+	out := new(CreateReplyResponse)
+	err := c.cc.Invoke(ctx, "/csat.CSAT/CreateReply", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cSATClient) GetStatsByPoolID(ctx context.Context, in *GetStatsByPoolIDRequest, opts ...grpc.CallOption) (*GetStatsByPoolIDResponse, error) {
+	out := new(GetStatsByPoolIDResponse)
+	err := c.cc.Invoke(ctx, "/csat.CSAT/GetStatsByPoolID", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -118,8 +148,11 @@ type CSATServer interface {
 	CreatePool(context.Context, *CreatePoolRequest) (*CreatePoolResponse, error)
 	UpdatePool(context.Context, *UpdatePoolRequest) (*UpdatePoolResponse, error)
 	DeletePool(context.Context, *DeletePoolRequest) (*DeletePoolResponse, error)
-	GetActivePools(context.Context, *GetActivePoolsRequest) (*GetActivePoolsResponse, error)
+	GetPools(context.Context, *GetPoolsRequest) (*GetPoolsResponse, error)
+	GetQuestionsByPoolID(context.Context, *GetQuestionsByPoolIDRequest) (*GetQuestionsByPoolIDResponse, error)
 	GetUnansweredQuestionsByPoolID(context.Context, *GetUnansweredQuestionsByPoolIDRequest) (*GetUnansweredQuestionsByPoolIDResponse, error)
+	CreateReply(context.Context, *CreateReplyRequest) (*CreateReplyResponse, error)
+	GetStatsByPoolID(context.Context, *GetStatsByPoolIDRequest) (*GetStatsByPoolIDResponse, error)
 	mustEmbedUnimplementedCSATServer()
 }
 
@@ -145,11 +178,20 @@ func (UnimplementedCSATServer) UpdatePool(context.Context, *UpdatePoolRequest) (
 func (UnimplementedCSATServer) DeletePool(context.Context, *DeletePoolRequest) (*DeletePoolResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeletePool not implemented")
 }
-func (UnimplementedCSATServer) GetActivePools(context.Context, *GetActivePoolsRequest) (*GetActivePoolsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetActivePools not implemented")
+func (UnimplementedCSATServer) GetPools(context.Context, *GetPoolsRequest) (*GetPoolsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetPools not implemented")
+}
+func (UnimplementedCSATServer) GetQuestionsByPoolID(context.Context, *GetQuestionsByPoolIDRequest) (*GetQuestionsByPoolIDResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetQuestionsByPoolID not implemented")
 }
 func (UnimplementedCSATServer) GetUnansweredQuestionsByPoolID(context.Context, *GetUnansweredQuestionsByPoolIDRequest) (*GetUnansweredQuestionsByPoolIDResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUnansweredQuestionsByPoolID not implemented")
+}
+func (UnimplementedCSATServer) CreateReply(context.Context, *CreateReplyRequest) (*CreateReplyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateReply not implemented")
+}
+func (UnimplementedCSATServer) GetStatsByPoolID(context.Context, *GetStatsByPoolIDRequest) (*GetStatsByPoolIDResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetStatsByPoolID not implemented")
 }
 func (UnimplementedCSATServer) mustEmbedUnimplementedCSATServer() {}
 
@@ -272,20 +314,38 @@ func _CSAT_DeletePool_Handler(srv interface{}, ctx context.Context, dec func(int
 	return interceptor(ctx, in, info, handler)
 }
 
-func _CSAT_GetActivePools_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetActivePoolsRequest)
+func _CSAT_GetPools_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPoolsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(CSATServer).GetActivePools(ctx, in)
+		return srv.(CSATServer).GetPools(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/csat.CSAT/GetActivePools",
+		FullMethod: "/csat.CSAT/GetPools",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CSATServer).GetActivePools(ctx, req.(*GetActivePoolsRequest))
+		return srv.(CSATServer).GetPools(ctx, req.(*GetPoolsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CSAT_GetQuestionsByPoolID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetQuestionsByPoolIDRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CSATServer).GetQuestionsByPoolID(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/csat.CSAT/GetQuestionsByPoolID",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CSATServer).GetQuestionsByPoolID(ctx, req.(*GetQuestionsByPoolIDRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -304,6 +364,42 @@ func _CSAT_GetUnansweredQuestionsByPoolID_Handler(srv interface{}, ctx context.C
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(CSATServer).GetUnansweredQuestionsByPoolID(ctx, req.(*GetUnansweredQuestionsByPoolIDRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CSAT_CreateReply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateReplyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CSATServer).CreateReply(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/csat.CSAT/CreateReply",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CSATServer).CreateReply(ctx, req.(*CreateReplyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CSAT_GetStatsByPoolID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetStatsByPoolIDRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CSATServer).GetStatsByPoolID(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/csat.CSAT/GetStatsByPoolID",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CSATServer).GetStatsByPoolID(ctx, req.(*GetStatsByPoolIDRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -340,12 +436,24 @@ var CSAT_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _CSAT_DeletePool_Handler,
 		},
 		{
-			MethodName: "GetActivePools",
-			Handler:    _CSAT_GetActivePools_Handler,
+			MethodName: "GetPools",
+			Handler:    _CSAT_GetPools_Handler,
+		},
+		{
+			MethodName: "GetQuestionsByPoolID",
+			Handler:    _CSAT_GetQuestionsByPoolID_Handler,
 		},
 		{
 			MethodName: "GetUnansweredQuestionsByPoolID",
 			Handler:    _CSAT_GetUnansweredQuestionsByPoolID_Handler,
+		},
+		{
+			MethodName: "CreateReply",
+			Handler:    _CSAT_CreateReply_Handler,
+		},
+		{
+			MethodName: "GetStatsByPoolID",
+			Handler:    _CSAT_GetStatsByPoolID_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

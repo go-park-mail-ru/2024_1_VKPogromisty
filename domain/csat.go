@@ -29,9 +29,16 @@ type CSATQuestion struct {
 }
 
 type CSATReply struct {
-	ID         uint
-	QuestionID uint
-	Score      int
+	ID         uint                  `json:"id"`
+	QuestionID uint                  `json:"questionId"`
+	UserID     uint                  `json:"userId"`
+	Score      int                   `json:"score"`
 	CreatedAt  customtime.CustomTime `json:"createdAt,omitempty" swaggertype:"string" example:"2021-01-01T00:00:00Z" format:"date-time"`
 	UpdatedAt  customtime.CustomTime `json:"updatedAt,omitempty" swaggertype:"string" example:"2021-01-01T00:00:00Z" format:"date-time"`
+}
+
+type CSATStat struct {
+	Question     *CSATQuestion `json:"question"`
+	TotalReplies int           `json:"totalReplies"`
+	AvgScore     float64       `json:"avgScore"`
 }

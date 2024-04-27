@@ -131,8 +131,8 @@ func (c *CSATManager) DeletePool(ctx context.Context, in *csatspb.DeletePoolRequ
 	return
 }
 
-func (c *CSATManager) GetActivePools(ctx context.Context, in *csatspb.GetActivePoolsRequest) (res *csatspb.GetActivePoolsResponse, err error) {
-	csatPools, err := c.CSATService.GetActivePools(ctx)
+func (c *CSATManager) GetPools(ctx context.Context, in *csatspb.GetPoolsRequest) (res *csatspb.GetPoolsResponse, err error) {
+	csatPools, err := c.CSATService.GetPools(ctx)
 	if err != nil {
 		return
 	}
@@ -142,8 +142,28 @@ func (c *CSATManager) GetActivePools(ctx context.Context, in *csatspb.GetActiveP
 		pools = append(pools, csatspb.ToCSATPoolResponse(csatPool))
 	}
 
-	res = &csatspb.GetActivePoolsResponse{
+	res = &csatspb.GetPoolsResponse{
 		Pools: pools,
+	}
+
+	return
+}
+
+func (c *CSATManager) GetQuestionsByPoolID(ctx context.Context, in *csatspb.GetQuestionsByPoolIDRequest) (res *csatspb.GetQuestionsByPoolIDResponse, err error) {
+	poolID := in.GetPoolId()
+
+	csatQuestions, err := c.CSATService.GetQuestionsByPoolID(ctx, uint(poolID))
+	if err != nil {
+		return
+	}
+
+	questions := make([]*csatspb.QuestionResponse, 0)
+	for _, csatQuestion := range csatQuestions {
+		questions = append(questions, csatspb.ToCSATQuestionResponse(csatQuestion))
+	}
+
+	res = &csatspb.GetQuestionsByPoolIDResponse{
+		Questions: questions,
 	}
 
 	return
@@ -151,8 +171,9 @@ func (c *CSATManager) GetActivePools(ctx context.Context, in *csatspb.GetActiveP
 
 func (c *CSATManager) GetUnansweredQuestionsByPoolID(ctx context.Context, in *csatspb.GetUnansweredQuestionsByPoolIDRequest) (res *csatspb.GetUnansweredQuestionsByPoolIDResponse, err error) {
 	poolID := in.GetPoolId()
+	userID := in.GetUserId()
 
-	pool, csatQuestions, err := c.CSATService.GetUnansweredQuestionsByPoolID(ctx, uint(poolID))
+	pool, csatQuestions, err := c.CSATService.GetUnansweredQuestionsByPoolID(ctx, uint(userID), uint(poolID))
 	if err != nil {
 		return
 	}
@@ -165,6 +186,48 @@ func (c *CSATManager) GetUnansweredQuestionsByPoolID(ctx context.Context, in *cs
 	res = &csatspb.GetUnansweredQuestionsByPoolIDResponse{
 		Pool:      csatspb.ToCSATPoolResponse(pool),
 		Questions: questions,
+	}
+
+	return
+}
+
+func (c *CSATManager) CreateReply(ctx context.Context, in *csatspb.CreateReplyRequest) (res *csatspb.CreateReplyResponse, err error) {
+	questionID := in.GetQuestionId()
+	userID := in.GetUserId()
+	score := in.GetScore()
+
+	csatReply, err := c.CSATService.CreateReply(ctx, &domain.CSATReply{
+		QuestionID: uint(questionID),
+		UserID:     uint(userID),
+		Score:      int(score),
+	})
+	if err != nil {
+		return
+	}
+
+	res = &csatspb.CreateReplyResponse{
+		Reply: csatspb.ToCSATReplyResponse(csatReply),
+	}
+
+	return
+}
+
+func (c *CSATManager) GetStatsByPoolID(ctx context.Context, in *csatspb.GetStatsByPoolIDRequest) (res *csatspb.GetStatsByPoolIDResponse, err error) {
+	poolID := in.GetPoolId()
+
+	stats, err := c.CSATService.GetStatsByPool(ctx, uint(poolID))
+	if err != nil {
+		return
+	}
+
+	statsRes := make([]*csatspb.StatsResponse, 0)
+
+	for _, stat := range stats {
+		statsRes = append(statsRes, csatspb.ToCSATStatsResponse(stat))
+	}
+
+	res = &csatspb.GetStatsByPoolIDResponse{
+		Stats: statsRes,
 	}
 
 	return
