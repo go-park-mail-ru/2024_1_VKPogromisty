@@ -13,7 +13,7 @@ type AdminWithUser struct {
 }
 
 func (s *Service) GetAdminByUserID(ctx context.Context, userID uint) (admin *domain.Admin, err error) {
-	admin, err = s.UserStorage.GetAdminByUserID(userID)
+	admin, err = s.UserStorage.GetAdminByUserID(ctx, userID)
 	if err != nil {
 		return
 	}
@@ -22,7 +22,7 @@ func (s *Service) GetAdminByUserID(ctx context.Context, userID uint) (admin *dom
 }
 
 func (s *Service) GetAdmins(ctx context.Context) (admins []AdminWithUser, err error) {
-	admins, err = s.UserStorage.GetAdmins()
+	admins, err = s.UserStorage.GetAdmins(ctx)
 	if err != nil {
 		return
 	}
@@ -30,7 +30,7 @@ func (s *Service) GetAdmins(ctx context.Context) (admins []AdminWithUser, err er
 	return
 }
 
-func (s *Service) CreateAdmin(ctx context.Context, admin *domain.Admin) (newAdmin *domain.Admin, err error) {
+func (s *Service) CreateAdmin(ctx context.Context, admin *domain.Admin) (newAdmin *AdminWithUser, err error) {
 	fmt.Println(admin)
 
 	_, err = s.UserStorage.GetUserByID(ctx, admin.UserID)
@@ -39,7 +39,7 @@ func (s *Service) CreateAdmin(ctx context.Context, admin *domain.Admin) (newAdmi
 		return
 	}
 
-	newAdmin, err = s.UserStorage.StoreAdmin(admin)
+	newAdmin, err = s.UserStorage.StoreAdmin(ctx, admin)
 	if err != nil {
 		return
 	}
@@ -48,7 +48,7 @@ func (s *Service) CreateAdmin(ctx context.Context, admin *domain.Admin) (newAdmi
 }
 
 func (s *Service) DeleteAdmin(ctx context.Context, adminID uint) (err error) {
-	err = s.UserStorage.DeleteAdmin(adminID)
+	err = s.UserStorage.DeleteAdmin(ctx, adminID)
 	if err != nil {
 		return
 	}

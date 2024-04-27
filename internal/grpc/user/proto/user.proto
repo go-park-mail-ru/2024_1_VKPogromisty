@@ -190,7 +190,7 @@ message CreateAdminRequest {
 }
 
 message CreateAdminResponse {
-    AdminResponse admin = 1;
+    AdminWithUserResponse admin = 1;
 }
 
 message DeleteAdminRequest {

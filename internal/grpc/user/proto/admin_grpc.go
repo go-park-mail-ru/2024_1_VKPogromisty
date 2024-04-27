@@ -37,6 +37,13 @@ func ToAdminsResponse(admins []user.AdminWithUser) (res []*AdminWithUserResponse
 	return
 }
 
+func ToAdminWithUser(res *AdminWithUserResponse) (admin user.AdminWithUser) {
+	return user.AdminWithUser{
+		Admin: ToAdmin(res.Admin),
+		User:  ToUser(res.User),
+	}
+}
+
 func ToAdminsWithUsers(res []*AdminWithUserResponse) (admins []user.AdminWithUser) {
 	if res == nil {
 		return nil
@@ -44,10 +51,7 @@ func ToAdminsWithUsers(res []*AdminWithUserResponse) (admins []user.AdminWithUse
 
 	admins = make([]user.AdminWithUser, 0)
 	for _, admin := range res {
-		admins = append(admins, user.AdminWithUser{
-			Admin: ToAdmin(admin.Admin),
-			User:  ToUser(admin.User),
-		})
+		admins = append(admins, ToAdminWithUser(admin))
 	}
 
 	return

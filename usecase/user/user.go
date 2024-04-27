@@ -17,10 +17,10 @@ type UserStorage interface {
 	StoreUser(ctx context.Context, user *domain.User) (err error)
 	UpdateUser(ctx context.Context, user *domain.User, prevPassword string) (updatedUser *domain.User, err error)
 	DeleteUser(ctx context.Context, userID uint) (err error)
-	GetAdmins() (admins []AdminWithUser, err error)
-	GetAdminByUserID(userID uint) (admin *domain.Admin, err error)
-	StoreAdmin(admin *domain.Admin) (newAdmin *domain.Admin, err error)
-	DeleteAdmin(adminID uint) (err error)
+	GetAdmins(ctx context.Context) (admins []AdminWithUser, err error)
+	GetAdminByUserID(ctx context.Context, userID uint) (admin *domain.Admin, err error)
+	StoreAdmin(ctx context.Context, admin *domain.Admin) (newAdmin *AdminWithUser, err error)
+	DeleteAdmin(ctx context.Context, adminID uint) (err error)
 }
 
 type AvatarStorage interface {

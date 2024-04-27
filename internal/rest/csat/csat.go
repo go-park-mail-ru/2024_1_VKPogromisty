@@ -208,7 +208,6 @@ func (c *CSATHandler) DeletePool(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// here
 func (h *CSATHandler) GetPools(w http.ResponseWriter, r *http.Request) {
 	res, err := h.CSATClient.GetPools(r.Context(), &csatpb.GetPoolsRequest{})
 	if err != nil {

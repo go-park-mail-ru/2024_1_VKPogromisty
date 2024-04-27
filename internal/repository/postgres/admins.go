@@ -31,7 +31,7 @@ const (
 	`
 )
 
-func (c *Users) GetAdmins() (admins []user.AdminWithUser, err error) {
+func (c *Users) GetAdmins(ctx context.Context) (admins []user.AdminWithUser, err error) {
 	rows, err := c.db.Query(context.Background(), getAdminsQuery)
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -73,23 +73,33 @@ func (c *Users) GetAdmins() (admins []user.AdminWithUser, err error) {
 	return
 }
 
-func (c *Users) StoreAdmin(admin *domain.Admin) (newAdmin *domain.Admin, err error) {
-	newAdmin = new(domain.Admin)
+func (c *Users) StoreAdmin(ctx context.Context, admin *domain.Admin) (newAdmin user.AdminWithUser, err error) {
+	newAdminData := new(domain.Admin)
 	err = c.db.QueryRow(context.Background(), storeAdminQuery, admin.UserID).Scan(
-		&newAdmin.ID,
-		&newAdmin.UserID,
-		&newAdmin.CreatedAt.Time,
-		&newAdmin.UpdatedAt.Time,
+		&newAdminData.ID,
+		&newAdminData.UserID,
+		&newAdminData.CreatedAt.Time,
+		&newAdminData.UpdatedAt.Time,
 	)
 
 	if err != nil {
 		return
 	}
 
+	adminUser, err := c.GetUserByID(ctx, newAdminData.UserID)
+	if err != nil {
+		return
+	}
+
+	newAdmin = user.AdminWithUser{
+		Admin: newAdminData,
+		User:  adminUser,
+	}
+
 	return
 }
 
-func (c *Users) GetAdminByUserID(userID uint) (admin *domain.Admin, err error) {
+func (c *Users) GetAdminByUserID(ctx context.Context, userID uint) (admin *domain.Admin, err error) {
 	admin = new(domain.Admin)
 	err = c.db.QueryRow(context.Background(), getAdminByUserIDQuery, userID).Scan(
 		&admin.ID,
@@ -111,7 +121,7 @@ func (c *Users) GetAdminByUserID(userID uint) (admin *domain.Admin, err error) {
 
 }
 
-func (c *Users) DeleteAdmin(adminID uint) (err error) {
+func (c *Users) DeleteAdmin(ctx context.Context, adminID uint) (err error) {
 	_, err = c.db.Exec(context.Background(), deleteAdminQuery, adminID)
 	if err != nil {
 		return
