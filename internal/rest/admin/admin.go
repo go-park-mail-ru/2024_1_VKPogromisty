@@ -93,7 +93,7 @@ func (h *AdminHandler) HandleCreateAdmin(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	json.ServeJSONBody(r.Context(), w, uspb.ToAdmin(admin.Admin), http.StatusCreated)
+	json.ServeJSONBody(r.Context(), w, uspb.ToAdminWithUser(admin.Admin), http.StatusCreated)
 }
 
 func (h *AdminHandler) HandleDeleteAdmin(w http.ResponseWriter, r *http.Request) {

@@ -37,6 +37,17 @@ func ToAdminsResponse(admins []user.AdminWithUser) (res []*AdminWithUserResponse
 	return
 }
 
+func ToAdminWithUserResponse(admin *user.AdminWithUser) (res *AdminWithUserResponse) {
+	if admin.Admin == nil {
+		return nil
+	}
+
+	return &AdminWithUserResponse{
+		Admin: ToAdminResponse(admin.Admin),
+		User:  ToUserResponse(admin.User),
+	}
+}
+
 func ToAdminWithUser(res *AdminWithUserResponse) (admin user.AdminWithUser) {
 	return user.AdminWithUser{
 		Admin: ToAdmin(res.Admin),

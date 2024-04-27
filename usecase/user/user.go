@@ -19,7 +19,7 @@ type UserStorage interface {
 	DeleteUser(ctx context.Context, userID uint) (err error)
 	GetAdmins(ctx context.Context) (admins []AdminWithUser, err error)
 	GetAdminByUserID(ctx context.Context, userID uint) (admin *domain.Admin, err error)
-	StoreAdmin(ctx context.Context, admin *domain.Admin) (newAdmin *AdminWithUser, err error)
+	StoreAdmin(ctx context.Context, admin *domain.Admin) (newAdmin AdminWithUser, err error)
 	DeleteAdmin(ctx context.Context, adminID uint) (err error)
 }
 

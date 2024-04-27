@@ -30,7 +30,7 @@ func (s *Service) GetAdmins(ctx context.Context) (admins []AdminWithUser, err er
 	return
 }
 
-func (s *Service) CreateAdmin(ctx context.Context, admin *domain.Admin) (newAdmin *AdminWithUser, err error) {
+func (s *Service) CreateAdmin(ctx context.Context, admin *domain.Admin) (newAdmin AdminWithUser, err error) {
 	fmt.Println(admin)
 
 	_, err = s.UserStorage.GetUserByID(ctx, admin.UserID)

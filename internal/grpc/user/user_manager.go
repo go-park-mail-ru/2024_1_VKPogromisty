@@ -326,7 +326,7 @@ func (u *UserManager) CreateAdmin(ctx context.Context, in *uspb.CreateAdminReque
 	}
 
 	res = &uspb.CreateAdminResponse{
-		Admin: uspb.ToAdminWithUser(admin),
+		Admin: uspb.ToAdminWithUserResponse(&admin),
 	}
 
 	return
