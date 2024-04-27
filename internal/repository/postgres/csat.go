@@ -234,6 +234,8 @@ func (s *CSAT) GetPools(ctx context.Context) (pools []*domain.CSATPool, err erro
 	}
 	defer rows.Close()
 
+	pools = make([]*domain.CSATPool, 0)
+
 	for rows.Next() {
 		pool := new(domain.CSATPool)
 		err = rows.Scan(

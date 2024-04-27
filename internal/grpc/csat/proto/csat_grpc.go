@@ -71,9 +71,10 @@ func ToCSATStatsResponse(stats *domain.CSATStat) (res *StatsResponse) {
 }
 
 func ToCSATPools(res []*PoolResponse) (pools []*domain.CSATPool) {
-	for _, pool := range pools {
-		res = append(res, ToCSATPoolResponse(pool))
+	for _, pool := range res {
+		pools = append(pools, ToCSATPool(pool))
 	}
+
 	return
 }
 

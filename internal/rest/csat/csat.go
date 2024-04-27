@@ -216,7 +216,9 @@ func (h *CSATHandler) GetPools(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.ServeJSONBody(r.Context(), w, csatpb.ToCSATPools(res.Pools), http.StatusOK)
+	pools := csatpb.ToCSATPools(res.Pools)
+
+	json.ServeJSONBody(r.Context(), w, pools, http.StatusOK)
 }
 
 func (h *CSATHandler) GetQuestionsByPoolID(w http.ResponseWriter, r *http.Request) {
