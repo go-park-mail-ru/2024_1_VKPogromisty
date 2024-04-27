@@ -87,6 +87,7 @@ func MountRootRouter(router *mux.Router) (err error) {
 	MountPostsRouter(rootRouter, postClient, userClient, sessionStorage)
 	MountSubscriptionsRouter(rootRouter, userClient, sessionStorage)
 	MountStaticRouter(rootRouter)
+	MountAdminRouter(rootRouter, userClient, sessionStorage)
 
 	prodLogger, err := middleware.NewZapLogger()
 	if err != nil {
