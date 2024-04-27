@@ -70,7 +70,7 @@ func (h *AdminHandler) HandleGetAdmins(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.ServeJSONBody(r.Context(), w, uspb.ToAdmins(admins.Admins), http.StatusOK)
+	json.ServeJSONBody(r.Context(), w, uspb.ToAdminsWithUsers(admins.Admins), http.StatusOK)
 }
 
 func (h *AdminHandler) HandleCreateAdmin(w http.ResponseWriter, r *http.Request) {

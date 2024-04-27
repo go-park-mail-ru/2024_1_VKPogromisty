@@ -7,6 +7,11 @@ import (
 	"socio/errors"
 )
 
+type AdminWithUser struct {
+	Admin *domain.Admin `json:"admin"`
+	User  *domain.User  `json:"user"`
+}
+
 func (s *Service) GetAdminByUserID(ctx context.Context, userID uint) (admin *domain.Admin, err error) {
 	admin, err = s.UserStorage.GetAdminByUserID(userID)
 	if err != nil {
@@ -16,7 +21,7 @@ func (s *Service) GetAdminByUserID(ctx context.Context, userID uint) (admin *dom
 	return
 }
 
-func (s *Service) GetAdmins(ctx context.Context) (admins []*domain.Admin, err error) {
+func (s *Service) GetAdmins(ctx context.Context) (admins []AdminWithUser, err error) {
 	admins, err = s.UserStorage.GetAdmins()
 	if err != nil {
 		return

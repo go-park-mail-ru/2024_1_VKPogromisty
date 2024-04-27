@@ -3,6 +3,7 @@ package user
 import (
 	"socio/domain"
 	customtime "socio/pkg/time"
+	"socio/usecase/user"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -20,17 +21,37 @@ func ToAdminResponse(admin *domain.Admin) (res *AdminResponse) {
 	}
 }
 
-func ToAdminsResponse(admins []*domain.Admin) (res []*AdminResponse) {
+func ToAdminsResponse(admins []user.AdminWithUser) (res []*AdminWithUserResponse) {
 	if admins == nil {
 		return nil
 	}
 
-	res = make([]*AdminResponse, 0, len(admins))
+	res = make([]*AdminWithUserResponse, 0, len(admins))
 	for _, admin := range admins {
-		res = append(res, ToAdminResponse(admin))
+		res = append(res, &AdminWithUserResponse{
+			Admin: ToAdminResponse(admin.Admin),
+			User:  ToUserResponse(admin.User),
+		})
 	}
 
 	return
+}
+
+func ToAdminsWithUsers(res []*AdminWithUserResponse) (admins []user.AdminWithUser) {
+	if res == nil {
+		return nil
+	}
+
+	admins = make([]user.AdminWithUser, 0)
+	for _, admin := range res {
+		admins = append(admins, user.AdminWithUser{
+			Admin: ToAdmin(admin.Admin),
+			User:  ToUser(admin.User),
+		})
+	}
+
+	return
+
 }
 
 func ToAdmin(res *AdminResponse) (admin *domain.Admin) {

@@ -176,8 +176,13 @@ message GetAdminByUserIDResponse {
 
 message GetAdminsRequest {}
 
+message AdminWithUserResponse {
+    AdminResponse admin = 1;
+    UserResponse user = 2;
+}
+
 message GetAdminsResponse {
-    repeated AdminResponse admins = 1;
+    repeated AdminWithUserResponse admins = 1;
 }
 
 message CreateAdminRequest {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"socio/domain"
 	"socio/errors"
+	"socio/usecase/user"
 
 	"github.com/jackc/pgx/v4"
 )
@@ -24,12 +25,13 @@ const (
 	WHERE user_id = $1;
 	`
 	getAdminsQuery = `
-	SELECT id, user_id, created_at, updated_at
-	FROM public.admin;
+	SELECT a.id, a.user_id, a.created_at, a.updated_at, u.first_name, u.last_name, u.email, u.avatar, u.date_of_birth, u.created_at, u.updated_at
+	FROM public.admin a
+	JOIN public.user u ON a.user_id = u.id;
 	`
 )
 
-func (c *Users) GetAdmins() (admins []*domain.Admin, err error) {
+func (c *Users) GetAdmins() (admins []user.AdminWithUser, err error) {
 	rows, err := c.db.Query(context.Background(), getAdminsQuery)
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -42,17 +44,30 @@ func (c *Users) GetAdmins() (admins []*domain.Admin, err error) {
 
 	for rows.Next() {
 		admin := new(domain.Admin)
+		adminUser := new(domain.User)
 		err = rows.Scan(
 			&admin.ID,
 			&admin.UserID,
 			&admin.CreatedAt.Time,
 			&admin.UpdatedAt.Time,
+			&adminUser.FirstName,
+			&adminUser.LastName,
+			&adminUser.Email,
+			&adminUser.Avatar,
+			&adminUser.DateOfBirth.Time,
+			&adminUser.CreatedAt.Time,
+			&adminUser.UpdatedAt.Time,
 		)
 		if err != nil {
 			return
 		}
 
-		admins = append(admins, admin)
+		adminUser.ID = admin.UserID
+
+		admins = append(admins, user.AdminWithUser{
+			Admin: admin,
+			User:  adminUser,
+		})
 	}
 
 	return
