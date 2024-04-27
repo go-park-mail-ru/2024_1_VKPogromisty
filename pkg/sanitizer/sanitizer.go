@@ -69,3 +69,13 @@ func (s *Sanitizer) SanitizeDialog(dialog *domain.Dialog) {
 	s.SanitizeUser(dialog.User2)
 	s.SanitizePersonalMessage(dialog.LastMessage)
 }
+
+func (s *Sanitizer) SanitizeCSATQuestion(question *domain.CSATQuestion) {
+	if question == nil {
+		return
+	}
+
+	question.Question = s.Sanitize(question.Question)
+	question.BestCase = s.Sanitize(question.BestCase)
+	question.WorstCase = s.Sanitize(question.WorstCase)
+}

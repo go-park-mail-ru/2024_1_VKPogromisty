@@ -16,8 +16,8 @@ func MountAdminRouter(rootRouter *mux.Router, userClient uspb.UserClient, sessio
 
 	h := rest.NewAdminHandler(userClient)
 
-	r.HandleFunc("/{userID}", h.HandleGetAdminByUserID).Methods("GET", "OPTIONS")
 	r.HandleFunc("/all", h.HandleGetAdmins).Methods("GET", "OPTIONS")
+	r.HandleFunc("/{userID}", h.HandleGetAdminByUserID).Methods("GET", "OPTIONS")
 	r.HandleFunc("/", h.HandleCreateAdmin).Methods("POST", "OPTIONS")
 	r.HandleFunc("/", h.HandleDeleteAdmin).Methods("DELETE", "OPTIONS")
 	r.Use(middleware.CreateCheckIsAuthorizedMiddleware(sessionStorage))

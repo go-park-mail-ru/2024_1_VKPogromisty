@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	csatpb "socio/internal/grpc/csat/proto"
 	postpb "socio/internal/grpc/post/proto"
 	uspb "socio/internal/grpc/user/proto"
 	pgRepo "socio/internal/repository/postgres"
@@ -80,6 +81,17 @@ func MountRootRouter(router *mux.Router) (err error) {
 
 	postClient := postpb.NewPostClient(postClientConn)
 
+	CSATClientConn, err := grpc.Dial(
+		os.Getenv("GRPC_CSAT_SERVICE_HOST")+os.Getenv("GRPC_CSAT_SERVICE_PORT"),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		return
+	}
+	defer CSATClientConn.Close()
+
+	CSATClient := csatpb.NewCSATClient(CSATClientConn)
+
 	MountAuthRouter(rootRouter, userStorage, sessionStorage)
 	MountCSRFRouter(rootRouter, sessionStorage)
 	MountChatRouter(rootRouter, chatPubSubRepository, personalMessageStorage, sessionStorage)
@@ -88,6 +100,7 @@ func MountRootRouter(router *mux.Router) (err error) {
 	MountSubscriptionsRouter(rootRouter, userClient, sessionStorage)
 	MountStaticRouter(rootRouter)
 	MountAdminRouter(rootRouter, userClient, sessionStorage)
+	MountCSATRouter(rootRouter, CSATClient, userClient, sessionStorage)
 
 	prodLogger, err := middleware.NewZapLogger()
 	if err != nil {

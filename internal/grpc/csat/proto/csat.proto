@@ -1,0 +1,104 @@
+syntax="proto3";
+
+option go_package = "./;csat";
+
+package csat;
+
+import "google/protobuf/timestamp.proto";
+
+service CSAT {
+    rpc CreateQuestion(CreateQuestionRequest) returns (CreateQuestionResponse) {}
+    rpc UpdateQuestion(UpdateQuestionRequest) returns (UpdateQuestionResponse) {}
+    rpc DeleteQuestion(DeleteQuestionRequest) returns (DeleteQuestionResponse) {}
+    rpc CreatePool(CreatePoolRequest) returns (CreatePoolResponse) {}
+    rpc UpdatePool(UpdatePoolRequest) returns (UpdatePoolResponse) {}
+    rpc DeletePool(DeletePoolRequest) returns (DeletePoolResponse) {}
+    rpc GetActivePools(GetActivePoolsRequest) returns (GetActivePoolsResponse) {}
+    rpc GetUnansweredQuestionsByPoolID(GetUnansweredQuestionsByPoolIDRequest) returns (GetUnansweredQuestionsByPoolIDResponse) {}
+}
+
+message QuestionResponse {
+    uint64 id = 1;
+    uint64 pool_id = 2;
+    string question = 3;
+    string best_case = 4;
+    string worst_case = 5;
+    google.protobuf.Timestamp created_at = 6;
+    google.protobuf.Timestamp updated_at = 7;
+}
+
+message CreateQuestionRequest {
+    uint64 pool_id = 1;
+    string question = 2;
+    string best_case = 3;
+    string worst_case = 4;
+}
+
+message CreateQuestionResponse {
+    QuestionResponse question = 1;
+}
+
+message UpdateQuestionRequest {
+    uint64 id = 1;
+    string question = 2;
+    string best_case = 3;
+    string worst_case = 4;
+}
+
+message UpdateQuestionResponse {
+    QuestionResponse question = 1;
+}
+
+message DeleteQuestionRequest {
+    uint64 id = 1;
+}
+
+message DeleteQuestionResponse {}
+
+message PoolResponse {
+    uint64 id = 1;
+    string name = 2;
+    bool is_active = 3;
+    google.protobuf.Timestamp created_at = 4;
+    google.protobuf.Timestamp updated_at = 5;
+}
+
+message CreatePoolRequest {
+    string name = 1;
+    bool is_active = 2;
+}
+
+message CreatePoolResponse {
+    PoolResponse pool = 1;
+}
+
+message UpdatePoolRequest {
+    uint64 id = 1;
+    string name = 2;
+    bool is_active = 3;
+}
+
+message UpdatePoolResponse {
+    PoolResponse pool = 1;
+}
+
+message DeletePoolRequest {
+    uint64 id = 1;
+}
+
+message DeletePoolResponse {}
+
+message GetActivePoolsRequest {}
+
+message GetActivePoolsResponse {
+    repeated PoolResponse pools = 1;
+}
+
+message GetUnansweredQuestionsByPoolIDRequest {
+    uint64 pool_id = 1;
+}
+
+message GetUnansweredQuestionsByPoolIDResponse {
+    PoolResponse pool = 1;
+    repeated QuestionResponse questions = 2;
+}

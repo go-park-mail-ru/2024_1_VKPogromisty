@@ -23,12 +23,16 @@ post-build:
 user-build:
 	docker build -t socio/user-service -f cmd/user/Dockerfile . --no-cache
 
+csat-build:
+	docker build -t socio/csat-service -f cmd/csat/Dockerfile . --no-cache
+
 app-build:
 	docker build -t socio/app-service -f cmd/app/Dockerfile . --no-cache
 
 docker-build:
 	make user-build
 	make post-build
+	make csat-build
 	make app-build
 
 docker-run:

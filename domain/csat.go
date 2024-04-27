@@ -12,7 +12,6 @@ type Admin struct {
 type CSATPool struct {
 	ID        uint                  `json:"id"`
 	Name      string                `json:"name"`
-	AuthorID  uint                  `json:"authorId"`
 	IsActive  bool                  `json:"isActive"`
 	Questions []*CSATQuestion       `json:"questions"`
 	CreatedAt customtime.CustomTime `json:"createdAt,omitempty" swaggertype:"string" example:"2021-01-01T00:00:00Z" format:"date-time"`
