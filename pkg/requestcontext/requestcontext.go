@@ -14,6 +14,7 @@ const (
 	SessionIDKey ContextKey = "sessionID"
 	RequestIDKey ContextKey = "requestID"
 	LoggerKey    ContextKey = "logger"
+	AdminIDKey   ContextKey = "adminID"
 )
 
 func GetUserID(ctx context.Context) (userID uint, err error) {

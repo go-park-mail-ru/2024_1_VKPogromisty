@@ -279,3 +279,69 @@ func (u *UserManager) GetFriends(ctx context.Context, in *uspb.GetFriendsRequest
 
 	return
 }
+
+func (u *UserManager) GetAdminByUserID(ctx context.Context, in *uspb.GetAdminByUserIDRequest) (res *uspb.GetAdminByUserIDResponse, err error) {
+	userID := in.GetUserId()
+
+	admin, err := u.UserService.GetAdminByUserID(ctx, uint(userID))
+	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
+		return
+	}
+
+	res = &uspb.GetAdminByUserIDResponse{
+		Admin: uspb.ToAdminResponse(admin),
+	}
+
+	return
+}
+
+func (u *UserManager) GetAdmins(ctx context.Context, in *uspb.GetAdminsRequest) (res *uspb.GetAdminsResponse, err error) {
+	admins, err := u.UserService.GetAdmins(ctx)
+	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
+		return
+	}
+
+	res = &uspb.GetAdminsResponse{
+		Admins: uspb.ToAdminsResponse(admins),
+	}
+
+	return
+}
+
+func (u *UserManager) CreateAdmin(ctx context.Context, in *uspb.CreateAdminRequest) (res *uspb.CreateAdminResponse, err error) {
+	adminInput := &domain.Admin{
+		UserID: uint(in.GetUserId()),
+	}
+
+	admin, err := u.UserService.CreateAdmin(ctx, adminInput)
+	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
+		return
+	}
+
+	res = &uspb.CreateAdminResponse{
+		Admin: uspb.ToAdminResponse(admin),
+	}
+
+	return
+}
+
+func (u *UserManager) DeleteAdmin(ctx context.Context, in *uspb.DeleteAdminRequest) (res *uspb.DeleteAdminResponse, err error) {
+	adminID := in.GetAdminId()
+
+	err = u.UserService.DeleteAdmin(ctx, uint(adminID))
+	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
+		return
+	}
+
+	res = &uspb.DeleteAdminResponse{}
+
+	return
+}

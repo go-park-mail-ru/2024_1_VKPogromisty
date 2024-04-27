@@ -1,0 +1,9 @@
+syntax="proto3";
+
+option go_package = "./;csat";
+
+package csat;
+
+import "google/protobuf/timestamp.proto";
+
+service CSAT {}
