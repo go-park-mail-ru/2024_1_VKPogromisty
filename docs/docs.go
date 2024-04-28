@@ -65,7 +65,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "body": {
-                                            "$ref": "#/definitions/auth.LoginResponse"
+                                            "$ref": "#/definitions/domain.User"
                                         }
                                     }
                                 }
@@ -1452,6 +1452,98 @@ const docTemplate = `{
                 }
             }
         },
+        "/profile/search": {
+            "get": {
+                "description": "search users by name",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "profile"
+                ],
+                "summary": "search users by name",
+                "operationId": "profile/search",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "session_id=some_session",
+                        "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "CSRF token",
+                        "name": "X-CSRF-Token",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search query",
+                        "name": "query",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/json.JSONResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/domain.User"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/profile/{userID}": {
             "get": {
                 "description": "get user profile with subscriptions info",
@@ -1929,14 +2021,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "auth.LoginResponse": {
-            "type": "object",
-            "properties": {
-                "user": {
-                    "$ref": "#/definitions/domain.User"
-                }
-            }
-        },
         "domain.Dialog": {
             "type": "object",
             "properties": {

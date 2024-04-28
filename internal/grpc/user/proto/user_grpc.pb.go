@@ -30,6 +30,7 @@ type UserClient interface {
 	GetSubscriptions(ctx context.Context, in *GetSubscriptionsRequest, opts ...grpc.CallOption) (*GetSubscriptionsResponse, error)
 	GetSubscribers(ctx context.Context, in *GetSubscribersRequest, opts ...grpc.CallOption) (*GetSubscribersResponse, error)
 	GetFriends(ctx context.Context, in *GetFriendsRequest, opts ...grpc.CallOption) (*GetFriendsResponse, error)
+	SearchByName(ctx context.Context, in *SearchByNameRequest, opts ...grpc.CallOption) (*SearchByNameResponse, error)
 }
 
 type userClient struct {
@@ -173,6 +174,15 @@ func (c *userClient) GetFriends(ctx context.Context, in *GetFriendsRequest, opts
 	return out, nil
 }
 
+func (c *userClient) SearchByName(ctx context.Context, in *SearchByNameRequest, opts ...grpc.CallOption) (*SearchByNameResponse, error) {
+	out := new(SearchByNameResponse)
+	err := c.cc.Invoke(ctx, "/user.User/SearchByName", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserServer is the server API for User service.
 // All implementations must embed UnimplementedUserServer
 // for forward compatibility
@@ -189,6 +199,7 @@ type UserServer interface {
 	GetSubscriptions(context.Context, *GetSubscriptionsRequest) (*GetSubscriptionsResponse, error)
 	GetSubscribers(context.Context, *GetSubscribersRequest) (*GetSubscribersResponse, error)
 	GetFriends(context.Context, *GetFriendsRequest) (*GetFriendsResponse, error)
+	SearchByName(context.Context, *SearchByNameRequest) (*SearchByNameResponse, error)
 	mustEmbedUnimplementedUserServer()
 }
 
@@ -231,6 +242,9 @@ func (UnimplementedUserServer) GetSubscribers(context.Context, *GetSubscribersRe
 }
 func (UnimplementedUserServer) GetFriends(context.Context, *GetFriendsRequest) (*GetFriendsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetFriends not implemented")
+}
+func (UnimplementedUserServer) SearchByName(context.Context, *SearchByNameRequest) (*SearchByNameResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SearchByName not implemented")
 }
 func (UnimplementedUserServer) mustEmbedUnimplementedUserServer() {}
 
@@ -469,6 +483,24 @@ func _User_GetFriends_Handler(srv interface{}, ctx context.Context, dec func(int
 	return interceptor(ctx, in, info, handler)
 }
 
+func _User_SearchByName_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchByNameRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServer).SearchByName(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/user.User/SearchByName",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServer).SearchByName(ctx, req.(*SearchByNameRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // User_ServiceDesc is the grpc.ServiceDesc for User service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -519,6 +551,10 @@ var User_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetFriends",
 			Handler:    _User_GetFriends_Handler,
+		},
+		{
+			MethodName: "SearchByName",
+			Handler:    _User_SearchByName_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

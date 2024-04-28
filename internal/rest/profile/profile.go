@@ -189,3 +189,42 @@ func (h *ProfileHandler) HandleDeleteProfile(w http.ResponseWriter, r *http.Requ
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+// HandleSearchByName godoc
+//
+//	@Summary		search users by name
+//	@Description	search users by name
+//	@Tags			profile
+//	@license.name	Apache 2.0
+//	@ID				profile/search
+//	@Accept			json
+//
+//	@Param			Cookie	header	string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
+//	@Param			query	query	string	true	"Search query"
+//
+//	@Produce		json
+//	@Success		200	{object}	json.JSONResponse{body=[]domain.User}
+//	@Failure		400	{object}	errors.HTTPError
+//	@Failure		401	{object}	errors.HTTPError
+//	@Failure		403	{object}	errors.HTTPError
+//	@Failure		404	{object}	errors.HTTPError
+//	@Failure		500	{object}	errors.HTTPError
+//	@Router			/profile/search [get]
+func (h *ProfileHandler) HandleSearchByName(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query().Get("query")
+	if query == "" {
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
+		return
+	}
+
+	users, err := h.UserClient.SearchByName(r.Context(), &uspb.SearchByNameRequest{
+		Query: query,
+	})
+	if err != nil {
+		json.ServeGRPCStatus(r.Context(), w, err)
+		return
+	}
+
+	json.ServeJSONBody(r.Context(), w, uspb.ToUsers(users.Users), http.StatusOK)
+}

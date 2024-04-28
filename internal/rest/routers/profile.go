@@ -16,7 +16,8 @@ func MountProfileRouter(rootRouter *mux.Router, userClient uspb.UserClient, auth
 
 	h := rest.NewProfileHandler(userClient)
 
-	r.HandleFunc("/{userID}", h.HandleGetProfile).Methods("GET", "OPTIONS")
+	r.HandleFunc("/search", h.HandleSearchByName).Methods("GET", "OPTIONS")
+	r.HandleFunc("/{userID:[0-9]+}", h.HandleGetProfile).Methods("GET", "OPTIONS")
 	r.HandleFunc("/", h.HandleGetProfile).Methods("GET", "OPTIONS")
 	r.HandleFunc("/", h.HandleUpdateProfile).Methods("PUT", "OPTIONS")
 	r.HandleFunc("/", h.HandleDeleteProfile).Methods("DELETE", "OPTIONS")

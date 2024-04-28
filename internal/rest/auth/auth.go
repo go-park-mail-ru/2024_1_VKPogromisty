@@ -135,7 +135,7 @@ func (api *AuthHandler) HandleRegistration(w http.ResponseWriter, r *http.Reques
 //	@Param			email		body	string	true	"Email of the user"
 //	@Param			password	body	string	true	"Password of the user"
 //	@Produce		json
-//	@Success		200	{object}	json.JSONResponse{body=auth.LoginResponse}
+//	@Success		200	{object}	json.JSONResponse{body=domain.User}
 //	@Failure		400	{object}	errors.HTTPError
 //	@Failure		401	{object}	errors.HTTPError
 //	@Failure		500	{object}	errors.HTTPError
