@@ -2,7 +2,6 @@ package rest
 
 import (
 	defJSON "encoding/json"
-	"fmt"
 	"net/http"
 	"socio/domain"
 	"socio/errors"
@@ -160,8 +159,6 @@ func (api *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		json.ServeJSONError(r.Context(), w, errors.ErrJSONUnmarshalling)
 		return
 	}
-
-	fmt.Println(loginInput)
 
 	res, err := api.AuthClient.Login(r.Context(), &authpb.LoginRequest{
 		Email:    loginInput.Email,

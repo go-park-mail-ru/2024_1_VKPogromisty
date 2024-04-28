@@ -20,10 +20,6 @@ service User {
     rpc GetSubscriptions(GetSubscriptionsRequest) returns (GetSubscriptionsResponse) {}
     rpc GetSubscribers(GetSubscribersRequest) returns (GetSubscribersResponse) {} 
     rpc GetFriends(GetFriendsRequest) returns (GetFriendsResponse) {}
-    rpc GetAdminByUserID(GetAdminByUserIDRequest) returns (GetAdminByUserIDResponse) {}
-    rpc GetAdmins(GetAdminsRequest) returns (GetAdminsResponse) {}
-    rpc CreateAdmin(CreateAdminRequest) returns (CreateAdminResponse) {}
-    rpc DeleteAdmin(DeleteAdminRequest) returns (DeleteAdminResponse) {}
 }
 
 message GetByIDRequest {
@@ -158,38 +154,3 @@ message GetFriendsRequest {
 message GetFriendsResponse {
     repeated UserResponse friends = 1;
 }
-
-message AdminResponse {
-    uint64 id = 1;
-    uint64 user_id = 2;
-    google.protobuf.Timestamp created_at = 3;
-    google.protobuf.Timestamp updated_at = 4;
-}
-
-message GetAdminByUserIDRequest {
-    uint64 user_id = 1;
-}
-
-message GetAdminByUserIDResponse {
-    AdminResponse admin = 1;
-}
-
-message GetAdminsRequest {}
-
-message GetAdminsResponse {
-    repeated AdminResponse admins = 1;
-}
-
-message CreateAdminRequest {
-    uint64 user_id = 1;
-}
-
-message CreateAdminResponse {
-    AdminResponse admin = 1;
-}
-
-message DeleteAdminRequest {
-    uint64 admin_id = 1;
-}
-
-message DeleteAdminResponse {}
