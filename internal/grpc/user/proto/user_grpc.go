@@ -33,6 +33,17 @@ func ToUsersResponse(users []*domain.User) (res []*UserResponse) {
 	return
 }
 
+func ToUsers(users []*UserResponse) (res []*domain.User) {
+	res = make([]*domain.User, 0)
+
+	for _, user := range users {
+		res = append(res, ToUser(user))
+	}
+
+	return
+
+}
+
 func ToUser(user *UserResponse) *domain.User {
 	return &domain.User{
 		ID:        uint(user.Id),

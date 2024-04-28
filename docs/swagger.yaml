@@ -1,10 +1,5 @@
 basePath: /api/v1
 definitions:
-  auth.LoginResponse:
-    properties:
-      user:
-        $ref: '#/definitions/domain.User'
-    type: object
   domain.Dialog:
     properties:
       lastMessage:
@@ -226,7 +221,7 @@ paths:
             - $ref: '#/definitions/json.JSONResponse'
             - properties:
                 body:
-                  $ref: '#/definitions/auth.LoginResponse'
+                  $ref: '#/definitions/domain.User'
               type: object
         "400":
           description: Bad Request
@@ -1213,6 +1208,65 @@ paths:
           schema:
             $ref: '#/definitions/errors.HTTPError'
       summary: get user profile with subscriptions info
+      tags:
+      - profile
+  /profile/search:
+    get:
+      consumes:
+      - application/json
+      description: search users by name
+      operationId: profile/search
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: Search query
+        in: query
+        name: query
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/domain.User'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: search users by name
       tags:
       - profile
   /subscriptions/:
