@@ -1,10 +1,7 @@
 package rest
 
 import (
-	"io"
-	"mime/multipart"
 	"net/http"
-	"path/filepath"
 	"socio/errors"
 	"socio/pkg/json"
 	"socio/pkg/requestcontext"
@@ -13,13 +10,9 @@ import (
 	"strings"
 
 	uspb "socio/internal/grpc/user/proto"
+	"socio/internal/rest/uploaders"
 
-	"github.com/google/uuid"
 	"github.com/gorilla/mux"
-)
-
-const (
-	BatchSize = 1 << 23
 )
 
 type ProfileHandler struct {
@@ -30,53 +23,6 @@ func NewProfileHandler(userClient uspb.UserClient) (h *ProfileHandler) {
 	return &ProfileHandler{
 		UserClient: userClient,
 	}
-}
-
-func (h *ProfileHandler) uploadAvatar(r *http.Request, avatarFH *multipart.FileHeader) (string, error) {
-	fileName := uuid.NewString() + filepath.Ext(avatarFH.Filename)
-	stream, err := h.UserClient.Upload(r.Context())
-	if err != nil {
-		return "", err
-	}
-
-	file, err := avatarFH.Open()
-	if err != nil {
-		return "", err
-	}
-	defer file.Close()
-
-	buf := make([]byte, BatchSize)
-	batchNumber := 1
-
-	for {
-		num, err := file.Read(buf)
-		if err == io.EOF {
-			break
-		}
-
-		if err != nil {
-			return "", err
-		}
-
-		chunk := buf[:num]
-
-		err = stream.Send(&uspb.UploadRequest{
-			FileName: fileName,
-			Chunk:    chunk,
-		})
-
-		if err != nil {
-			return "", err
-		}
-		batchNumber += 1
-	}
-
-	res, err := stream.CloseAndRecv()
-	if err != nil {
-		return "", err
-	}
-
-	return res.FileName, nil
 }
 
 // HandleGetProfile godoc
@@ -188,7 +134,7 @@ func (h *ProfileHandler) HandleUpdateProfile(w http.ResponseWriter, r *http.Requ
 	}
 
 	if avatarFH != nil {
-		avatarFileName, err := h.uploadAvatar(r, avatarFH)
+		avatarFileName, err := uploaders.UploadAvatar(r, h.UserClient, avatarFH)
 		if err != nil {
 			json.ServeJSONError(r.Context(), w, err)
 			return

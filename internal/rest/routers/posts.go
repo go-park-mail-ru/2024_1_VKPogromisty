@@ -1,18 +1,18 @@
 package routers
 
 import (
+	authpb "socio/internal/grpc/auth/proto"
 	post "socio/internal/grpc/post/proto"
 	user "socio/internal/grpc/user/proto"
 	"socio/internal/rest/middleware"
 	rest "socio/internal/rest/posts"
 	customtime "socio/pkg/time"
-	"socio/usecase/auth"
 	"socio/usecase/csrf"
 
 	"github.com/gorilla/mux"
 )
 
-func MountPostsRouter(rootRouter *mux.Router, postsClient post.PostClient, userClient user.UserClient, sessionStorage auth.SessionStorage) {
+func MountPostsRouter(rootRouter *mux.Router, postsClient post.PostClient, userClient user.UserClient, authManager authpb.AuthClient) {
 	r := rootRouter.PathPrefix("/posts").Subrouter()
 
 	h := rest.NewPostsHandler(postsClient, userClient)
@@ -26,6 +26,6 @@ func MountPostsRouter(rootRouter *mux.Router, postsClient post.PostClient, userC
 	r.HandleFunc("/liked", h.HandleGetLikedPosts).Methods("GET", "OPTIONS")
 	r.HandleFunc("/like", h.HandleLikePost).Methods("POST", "OPTIONS")
 	r.HandleFunc("/unlike", h.HandleUnlikePost).Methods("DELETE", "OPTIONS")
-	r.Use(middleware.CreateCheckIsAuthorizedMiddleware(sessionStorage))
+	r.Use(middleware.CreateCheckIsAuthorizedMiddleware(authManager))
 	r.Use(middleware.CreateCSRFMiddleware(csrf.NewCSRFService(customtime.RealTimeProvider{})))
 }

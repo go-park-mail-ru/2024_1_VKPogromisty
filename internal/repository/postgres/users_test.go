@@ -239,30 +239,6 @@ func TestUpdateUser(t *testing.T) {
 	}
 }
 
-func TestRefreshSaltAndRehashPassword(t *testing.T) {
-	t.Parallel()
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	pool := pgxpoolmock.NewMockPgxIface(ctrl)
-
-	tag := pgconn.CommandTag("DELETE 1")
-
-	pool.EXPECT().Exec(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(tag, nil)
-
-	repo := repository.NewUsers(pool, customtime.MockTimeProvider{})
-
-	err := repo.RefreshSaltAndRehashPassword(context.Background(), &domain.User{
-		ID:       1,
-		Password: "password",
-		Salt:     "salt",
-	}, "new_password")
-
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-}
-
 func TestDeleteUser(t *testing.T) {
 	t.Parallel()
 	ctrl := gomock.NewController(t)

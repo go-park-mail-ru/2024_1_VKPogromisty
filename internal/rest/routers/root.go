@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	authpb "socio/internal/grpc/auth/proto"
 	postpb "socio/internal/grpc/post/proto"
 	uspb "socio/internal/grpc/user/proto"
 	pgRepo "socio/internal/repository/postgres"
@@ -49,13 +50,11 @@ func MountRootRouter(router *mux.Router) (err error) {
 	}
 	defer db.Close()
 
-	userStorage := pgRepo.NewUsers(db, customtime.RealTimeProvider{})
 	personalMessageStorage := pgRepo.NewPersonalMessages(db, customtime.RealTimeProvider{})
 
 	redisPool := redisRepo.NewPool(os.Getenv("REDIS_PROTOCOL"), os.Getenv("REDIS_HOST")+":"+os.Getenv("REDIS_PORT"), os.Getenv("REDIS_PASSWORD"))
 	defer redisPool.Close()
 
-	sessionStorage := redisRepo.NewSession(redisPool)
 	chatPubSubRepository := redisRepo.NewChatPubSub(redisPool)
 
 	userClientConn, err := grpc.Dial(
@@ -80,12 +79,23 @@ func MountRootRouter(router *mux.Router) (err error) {
 
 	postClient := postpb.NewPostClient(postClientConn)
 
-	MountAuthRouter(rootRouter, userStorage, sessionStorage)
-	MountCSRFRouter(rootRouter, sessionStorage)
-	MountChatRouter(rootRouter, chatPubSubRepository, personalMessageStorage, sessionStorage)
-	MountProfileRouter(rootRouter, userClient, sessionStorage)
-	MountPostsRouter(rootRouter, postClient, userClient, sessionStorage)
-	MountSubscriptionsRouter(rootRouter, userClient, sessionStorage)
+	authClientConn, err := grpc.Dial(
+		os.Getenv("GRPC_AUTH_SERVICE_HOST")+os.Getenv("GRPC_AUTH_SERVICE_PORT"),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		return
+	}
+	defer authClientConn.Close()
+
+	authClient := authpb.NewAuthClient(authClientConn)
+
+	MountAuthRouter(rootRouter, authClient, userClient)
+	MountCSRFRouter(rootRouter, authClient)
+	MountChatRouter(rootRouter, chatPubSubRepository, personalMessageStorage, authClient)
+	MountProfileRouter(rootRouter, userClient, authClient)
+	MountPostsRouter(rootRouter, postClient, userClient, authClient)
+	MountSubscriptionsRouter(rootRouter, userClient, authClient)
 	MountStaticRouter(rootRouter)
 
 	prodLogger, err := middleware.NewZapLogger()

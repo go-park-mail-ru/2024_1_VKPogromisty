@@ -10,14 +10,16 @@ import (
 
 func ToUserResponse(user *domain.User) (res *UserResponse) {
 	res = &UserResponse{
-		Id:          uint64(user.ID),
-		FirstName:   user.FirstName,
-		LastName:    user.LastName,
-		Email:       user.Email,
-		Avatar:      user.Avatar,
-		DateOfBirth: timestamppb.New(user.DateOfBirth.Time),
-		CreatedAt:   timestamppb.New(user.CreatedAt.Time),
-		UpdatedAt:   timestamppb.New(user.UpdatedAt.Time),
+		Id:             uint64(user.ID),
+		FirstName:      user.FirstName,
+		LastName:       user.LastName,
+		Email:          user.Email,
+		HashedPassword: user.Password,
+		Salt:           user.Salt,
+		Avatar:         user.Avatar,
+		DateOfBirth:    timestamppb.New(user.DateOfBirth.Time),
+		CreatedAt:      timestamppb.New(user.CreatedAt.Time),
+		UpdatedAt:      timestamppb.New(user.UpdatedAt.Time),
 	}
 
 	return
@@ -29,6 +31,8 @@ func ToUser(user *UserResponse) *domain.User {
 		FirstName: user.FirstName,
 		LastName:  user.LastName,
 		Email:     user.Email,
+		Password:  user.HashedPassword,
+		Salt:      user.Salt,
 		Avatar:    user.Avatar,
 		DateOfBirth: customtime.CustomTime{
 			Time: user.DateOfBirth.AsTime(),
@@ -51,6 +55,18 @@ func ToCreateUserInput(req *CreateRequest) (userInput *user.CreateUserInput) {
 		Password:       req.GetPassword(),
 		RepeatPassword: req.GetRepeatPassword(),
 		DateOfBirth:    req.GetDateOfBirth(),
+	}
+}
+
+func ToCreateRequest(input *user.CreateUserInput) *CreateRequest {
+	return &CreateRequest{
+		FirstName:      input.FirstName,
+		LastName:       input.LastName,
+		Email:          input.Email,
+		Password:       input.Password,
+		RepeatPassword: input.RepeatPassword,
+		Avatar:         input.Avatar,
+		DateOfBirth:    input.DateOfBirth,
 	}
 }
 

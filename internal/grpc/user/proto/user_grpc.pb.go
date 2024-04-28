@@ -19,6 +19,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type UserClient interface {
 	GetByID(ctx context.Context, in *GetByIDRequest, opts ...grpc.CallOption) (*GetByIDResponse, error)
+	GetByEmail(ctx context.Context, in *GetByEmailRequest, opts ...grpc.CallOption) (*GetByEmailResponse, error)
 	GetByIDWithSubsInfo(ctx context.Context, in *GetByIDWithSubsInfoRequest, opts ...grpc.CallOption) (*GetByIDWithSubsInfoResponse, error)
 	Create(ctx context.Context, in *CreateRequest, opts ...grpc.CallOption) (*CreateResponse, error)
 	Update(ctx context.Context, in *UpdateRequest, opts ...grpc.CallOption) (*UpdateResponse, error)
@@ -42,6 +43,15 @@ func NewUserClient(cc grpc.ClientConnInterface) UserClient {
 func (c *userClient) GetByID(ctx context.Context, in *GetByIDRequest, opts ...grpc.CallOption) (*GetByIDResponse, error) {
 	out := new(GetByIDResponse)
 	err := c.cc.Invoke(ctx, "/user.User/GetByID", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userClient) GetByEmail(ctx context.Context, in *GetByEmailRequest, opts ...grpc.CallOption) (*GetByEmailResponse, error) {
+	out := new(GetByEmailResponse)
+	err := c.cc.Invoke(ctx, "/user.User/GetByEmail", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -168,6 +178,7 @@ func (c *userClient) GetFriends(ctx context.Context, in *GetFriendsRequest, opts
 // for forward compatibility
 type UserServer interface {
 	GetByID(context.Context, *GetByIDRequest) (*GetByIDResponse, error)
+	GetByEmail(context.Context, *GetByEmailRequest) (*GetByEmailResponse, error)
 	GetByIDWithSubsInfo(context.Context, *GetByIDWithSubsInfoRequest) (*GetByIDWithSubsInfoResponse, error)
 	Create(context.Context, *CreateRequest) (*CreateResponse, error)
 	Update(context.Context, *UpdateRequest) (*UpdateResponse, error)
@@ -187,6 +198,9 @@ type UnimplementedUserServer struct {
 
 func (UnimplementedUserServer) GetByID(context.Context, *GetByIDRequest) (*GetByIDResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetByID not implemented")
+}
+func (UnimplementedUserServer) GetByEmail(context.Context, *GetByEmailRequest) (*GetByEmailResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetByEmail not implemented")
 }
 func (UnimplementedUserServer) GetByIDWithSubsInfo(context.Context, *GetByIDWithSubsInfoRequest) (*GetByIDWithSubsInfoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetByIDWithSubsInfo not implemented")
@@ -245,6 +259,24 @@ func _User_GetByID_Handler(srv interface{}, ctx context.Context, dec func(interf
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(UserServer).GetByID(ctx, req.(*GetByIDRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _User_GetByEmail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetByEmailRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServer).GetByEmail(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/user.User/GetByEmail",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServer).GetByEmail(ctx, req.(*GetByEmailRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -447,6 +479,10 @@ var User_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetByID",
 			Handler:    _User_GetByID_Handler,
+		},
+		{
+			MethodName: "GetByEmail",
+			Handler:    _User_GetByEmail_Handler,
 		},
 		{
 			MethodName: "GetByIDWithSubsInfo",

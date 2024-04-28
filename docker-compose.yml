@@ -82,6 +82,29 @@ services:
       - redis
       - minio
       - user_service
+    
+  auth_service:
+    image: socio/auth-service:latest
+    container_name: auth_service_container
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - PG_USER=${PG_USER}
+      - PG_PASSWORD=${PG_PASSWORD}
+      - PG_DBNAME=${PG_DBNAME}
+      - PG_HOST=postgresdb
+      - PG_PORT=${PG_PORT}
+    tty: true
+    ports:
+      - 8084:8084
+    restart: on-failure
+    volumes:
+      - ./volumes/logs/:/var/log/socio/
+    depends_on:
+      - postgresdb
+      - redis
+      - user_service
 
   app:
     image: socio/app-service:latest
@@ -109,6 +132,7 @@ services:
       - redis
       - user_service
       - post_service
+      - auth_service
   
   nginx:
     image: nginx:1.25.4
