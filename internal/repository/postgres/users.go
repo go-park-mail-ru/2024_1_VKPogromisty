@@ -79,13 +79,14 @@ const (
 	INSERT INTO public.user (
 			first_name,
 			last_name,
+			full_name,
 			email,
 			hashed_password,
 			salt,
 			avatar,
 			date_of_birth
 		)
-	VALUES ($1, $2, $3, $4, $5, $6, $7)
+	VALUES ($1, $2, $1 || ' ' || $2, $3, $4, $5, $6, $7)
 	RETURNING id,
 		first_name,
 		last_name,
@@ -140,8 +141,7 @@ const (
 		created_at,
 		updated_at
 	FROM public.user
-	WHERE to_tsvector('english', first_name || ' ' || last_name) @@ plainto_tsquery('english', $1)
-	OR to_tsvector('russian', first_name || ' ' || last_name) @@ plainto_tsquery('russian', $1);
+	WHERE full_name ILIKE '%' || $1 || '%';
 	`
 )
 

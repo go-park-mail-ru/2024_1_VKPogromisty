@@ -281,18 +281,18 @@ func (u *UserManager) GetFriends(ctx context.Context, in *uspb.GetFriendsRequest
 }
 
 func (u *UserManager) SearchByName(ctx context.Context, in *uspb.SearchByNameRequest) (res *uspb.SearchByNameResponse, err error) {
-	// query := in.GetQuery()
+	query := in.GetQuery()
 
-	// users, err := u.UserService.SearchByName(ctx, query)
-	// if err != nil {
-	// 	customErr := errors.NewCustomError(err)
-	// 	err = customErr.GRPCStatus().Err()
-	// 	return
-	// }
+	users, err := u.UserService.SearchByName(ctx, query)
+	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
+		return
+	}
 
-	// res = &uspb.SearchByNameResponse{
-	// 	Users: uspb.ToUsersResponse(users),
-	// }
+	res = &uspb.SearchByNameResponse{
+		Users: uspb.ToUsersResponse(users),
+	}
 
 	return
 }
