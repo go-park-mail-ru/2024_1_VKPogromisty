@@ -20,6 +20,7 @@ service User {
     rpc GetSubscriptions(GetSubscriptionsRequest) returns (GetSubscriptionsResponse) {}
     rpc GetSubscribers(GetSubscribersRequest) returns (GetSubscribersResponse) {} 
     rpc GetFriends(GetFriendsRequest) returns (GetFriendsResponse) {}
+    rpc SearchByName(SearchByNameRequest) returns (SearchByNameResponse) {}
 }
 
 message GetByIDRequest {
@@ -153,4 +154,12 @@ message GetFriendsRequest {
 
 message GetFriendsResponse {
     repeated UserResponse friends = 1;
+}
+
+message SearchByNameRequest {
+    string query = 1;
+}
+
+message SearchByNameResponse {
+    repeated UserResponse users = 1;
 }

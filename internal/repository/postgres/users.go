@@ -128,6 +128,21 @@ const (
 	DELETE FROM public.user
 	WHERE id = $1;
 	`
+	getUsersByNameQuery = `
+	SELECT id,
+		first_name,
+		last_name,
+		email,
+		hashed_password,
+		salt,
+		avatar,
+		date_of_birth,
+		created_at,
+		updated_at
+	FROM public.user
+	WHERE to_tsvector('english', first_name || ' ' || last_name) @@ plainto_tsquery('english', $1)
+	OR to_tsvector('russian', first_name || ' ' || last_name) @@ plainto_tsquery('russian', $1);
+	`
 )
 
 type Users struct {
@@ -358,6 +373,41 @@ func (s *Users) DeleteUser(ctx context.Context, userID uint) (err error) {
 	err = tx.Commit(context.Background())
 	if err != nil {
 		return
+	}
+
+	return
+}
+
+func (s *Users) SearchByName(ctx context.Context, query string) (users []*domain.User, err error) {
+	contextlogger.LogSQL(ctx, getUsersByNameQuery, query)
+
+	rows, err := s.db.Query(context.Background(), getUsersByNameQuery, query)
+	if err != nil {
+		return
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		user := new(domain.User)
+
+		err = rows.Scan(
+			&user.ID,
+			&user.FirstName,
+			&user.LastName,
+			&user.Email,
+			&user.Password,
+			&user.Salt,
+			&user.Avatar,
+			&user.DateOfBirth.Time,
+			&user.CreatedAt.Time,
+			&user.UpdatedAt.Time,
+		)
+		if err != nil {
+			return
+		}
+
+		users = append(users, user)
 	}
 
 	return
