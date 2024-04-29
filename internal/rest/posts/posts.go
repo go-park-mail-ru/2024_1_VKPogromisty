@@ -2,10 +2,7 @@ package rest
 
 import (
 	defJSON "encoding/json"
-	"io"
-	"mime/multipart"
 	"net/http"
-	"path/filepath"
 	"socio/domain"
 	"socio/errors"
 	"socio/pkg/json"
@@ -16,8 +13,8 @@ import (
 
 	postspb "socio/internal/grpc/post/proto"
 	uspb "socio/internal/grpc/user/proto"
+	"socio/internal/rest/uploaders"
 
-	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 )
 
@@ -45,53 +42,6 @@ func NewPostsHandler(postsClient postspb.PostClient, userClient uspb.UserClient)
 		UserClient:  userClient,
 	}
 	return
-}
-
-func (h *PostsHandler) uploadAvatar(r *http.Request, fh *multipart.FileHeader) (string, error) {
-	fileName := uuid.NewString() + filepath.Ext(fh.Filename)
-	stream, err := h.PostsClient.Upload(r.Context())
-	if err != nil {
-		return "", err
-	}
-
-	file, err := fh.Open()
-	if err != nil {
-		return "", err
-	}
-	defer file.Close()
-
-	buf := make([]byte, BatchSize)
-	batchNumber := 1
-
-	for {
-		num, err := file.Read(buf)
-		if err == io.EOF {
-			break
-		}
-
-		if err != nil {
-			return "", err
-		}
-
-		chunk := buf[:num]
-
-		err = stream.Send(&postspb.UploadRequest{
-			FileName: fileName,
-			Chunk:    chunk,
-		})
-
-		if err != nil {
-			return "", err
-		}
-		batchNumber += 1
-	}
-
-	res, err := stream.CloseAndRecv()
-	if err != nil {
-		return "", err
-	}
-
-	return res.FileName, nil
 }
 
 // HandleGetPostByID godoc
@@ -359,7 +309,7 @@ func (h *PostsHandler) HandleCreatePost(w http.ResponseWriter, r *http.Request) 
 
 	for _, fh := range r.MultipartForm.File {
 		for _, f := range fh {
-			fileName, err := h.uploadAvatar(r, f)
+			fileName, err := uploaders.UploadPostAttachment(r, h.PostsClient, f)
 			if err != nil {
 				json.ServeJSONError(r.Context(), w, err)
 				return

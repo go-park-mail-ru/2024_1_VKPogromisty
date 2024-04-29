@@ -129,6 +129,7 @@ message UnlikePostResponse {
 message UploadRequest {
     string file_name = 1;
     bytes chunk = 2;
+    string contentType = 3;
 }
 
 message UploadResponse {

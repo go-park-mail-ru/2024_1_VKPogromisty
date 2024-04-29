@@ -215,6 +215,7 @@ func (p *PostManager) Upload(stream postspb.Post_UploadServer) (err error) {
 	}
 
 	fileName := ""
+	contentType := ""
 
 	var fileSize uint64
 	fileSize = 0
@@ -245,9 +246,10 @@ func (p *PostManager) Upload(stream postspb.Post_UploadServer) (err error) {
 			err = customErr.GRPCStatus().Err()
 			return err
 		}
+		contentType = req.GetContentType()
 	}
 
-	p.PostsService.UploadAttachment(fileName, file.Name())
+	p.PostsService.UploadAttachment(fileName, file.Name(), contentType)
 
 	if err = os.Remove(file.Name()); err != nil {
 		return

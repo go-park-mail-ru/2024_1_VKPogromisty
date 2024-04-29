@@ -5,26 +5,21 @@ import (
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
-
-	uspb "socio/internal/grpc/user/proto"
+	postpb "socio/internal/grpc/post/proto"
 
 	"github.com/google/uuid"
 )
 
-const (
-	BatchSize = 1 << 23
-)
+func UploadPostAttachment(r *http.Request, postClient postpb.PostClient, fh *multipart.FileHeader) (string, error) {
+	fileName := uuid.NewString() + filepath.Ext(fh.Filename)
+	contentType := fh.Header.Get("Content-Type")
 
-func UploadAvatar(r *http.Request, userClient uspb.UserClient, avatarFH *multipart.FileHeader) (string, error) {
-	fileName := uuid.NewString() + filepath.Ext(avatarFH.Filename)
-	contentType := avatarFH.Header.Get("Content-Type")
-
-	stream, err := userClient.Upload(r.Context())
+	stream, err := postClient.Upload(r.Context())
 	if err != nil {
 		return "", err
 	}
 
-	file, err := avatarFH.Open()
+	file, err := fh.Open()
 	if err != nil {
 		return "", err
 	}
@@ -45,7 +40,7 @@ func UploadAvatar(r *http.Request, userClient uspb.UserClient, avatarFH *multipa
 
 		chunk := buf[:num]
 
-		err = stream.Send(&uspb.UploadRequest{
+		err = stream.Send(&postpb.UploadRequest{
 			FileName:    fileName,
 			Chunk:       chunk,
 			ContentType: contentType,

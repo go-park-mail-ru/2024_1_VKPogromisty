@@ -21,7 +21,7 @@ type UserStorage interface {
 }
 
 type AvatarStorage interface {
-	Store(fileName string, filePath string) (err error)
+	Store(fileName string, filePath string, contentType string) (err error)
 	Delete(fileName string) (err error)
 }
 
@@ -84,8 +84,8 @@ func (p *Service) GetUserByEmail(ctx context.Context, email string) (user *domai
 	return
 }
 
-func (p *Service) UploadAvatar(fileName string, filePath string) (err error) {
-	err = p.AvatarStorage.Store(fileName, filePath)
+func (p *Service) UploadAvatar(fileName string, filePath string, contentType string) (err error) {
+	err = p.AvatarStorage.Store(fileName, filePath, contentType)
 	if err != nil {
 		return
 	}

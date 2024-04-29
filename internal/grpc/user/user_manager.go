@@ -113,6 +113,7 @@ func (u *UserManager) Upload(stream uspb.User_UploadServer) (err error) {
 	}
 
 	fileName := ""
+	contentType := ""
 
 	var fileSize uint64
 	fileSize = 0
@@ -141,9 +142,10 @@ func (u *UserManager) Upload(stream uspb.User_UploadServer) (err error) {
 			err = customErr.GRPCStatus().Err()
 			return err
 		}
+		contentType = req.GetContentType()
 	}
 
-	u.UserService.UploadAvatar(fileName, file.Name())
+	u.UserService.UploadAvatar(fileName, file.Name(), contentType)
 
 	if err = os.Remove(file.Name()); err != nil {
 		customErr := errors.NewCustomError(err)

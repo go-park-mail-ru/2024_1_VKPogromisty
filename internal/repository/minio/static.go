@@ -34,8 +34,10 @@ func NewStaticStorage(minioClient *minio.Client, bucketName string) (storage *St
 	return
 }
 
-func (a *StaticStorage) Store(fileName string, filePath string) (err error) {
-	_, err = a.MinioClient.FPutObject(a.bucketName, fileName, filePath, minio.PutObjectOptions{})
+func (a *StaticStorage) Store(fileName string, filePath string, contentType string) (err error) {
+	_, err = a.MinioClient.FPutObject(a.bucketName, fileName, filePath, minio.PutObjectOptions{
+		ContentType: contentType,
+	})
 	if err != nil {
 		return
 	}

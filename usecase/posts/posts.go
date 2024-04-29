@@ -63,7 +63,7 @@ type PostsStorage interface {
 }
 
 type AttachmentStorage interface {
-	Store(fileName string, filePath string) (err error)
+	Store(fileName string, filePath string, contentType string) (err error)
 	Delete(fileName string) (err error)
 }
 
@@ -234,8 +234,8 @@ func (s *Service) UnlikePost(ctx context.Context, likeData *domain.PostLike) (er
 	return
 }
 
-func (s *Service) UploadAttachment(fileName string, filePath string) (err error) {
-	err = s.AttachmentStorage.Store(fileName, filePath)
+func (s *Service) UploadAttachment(fileName string, filePath string, contentType string) (err error) {
+	err = s.AttachmentStorage.Store(fileName, filePath, contentType)
 	if err != nil {
 		return
 	}
