@@ -133,9 +133,9 @@ func (h *PublicGroupHandler) HandleSearchByName(w http.ResponseWriter, r *http.R
 //
 //	@Param			Cookie	header	string	true	"session_id=some_session"
 //	@Param			X-CSRF-Token	header	string	true	"CSRF token"
-//	@Param			name	form	string	true	"Name of the group"
-//	@Param			description	form	string	true	"Description of the group"
-//	@Param			avatar	form	file	false	"Avatar of the group"
+//	@Param			name	formData	string	true	"Name of the group"
+//	@Param			description	formData	string	true	"Description of the group"
+//	@Param			avatar	formData	file	false	"Avatar of the group"
 //
 //	@Produce		json
 //	@Success		201	{object}	json.JSONResponse{body=domain.PublicGroup}
@@ -191,9 +191,9 @@ func (h *PublicGroupHandler) HandleCreate(w http.ResponseWriter, r *http.Request
 //	@Param			Cookie	header	string	true	"session_id=some_session"
 //	@Param			X-CSRF-Token	header	string	true	"CSRF token"
 //	@Param			groupID	path	string	true	"Group ID"
-//	@Param			name	form	string	false	"Name of the group"
-//	@Param			description	form	string	false	"Description of the group"
-//	@Param			avatar	form	file	false	"Avatar of the group"
+//	@Param			name	formData	string	false	"Name of the group"
+//	@Param			description	formData	string	false	"Description of the group"
+//	@Param			avatar	formData	file	false	"Avatar of the group"
 //
 //	@Produce		json
 //	@Success		200	{object}	json.JSONResponse{body=domain.PublicGroup}

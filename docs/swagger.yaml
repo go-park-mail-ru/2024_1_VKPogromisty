@@ -73,6 +73,27 @@ definitions:
       post:
         $ref: '#/definitions/domain.Post'
     type: object
+  domain.PublicGroup:
+    properties:
+      avatar:
+        type: string
+      createdAt:
+        example: "2021-01-01T00:00:00Z"
+        format: date-time
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      subscribersCount:
+        type: integer
+      updatedAt:
+        example: "2021-01-01T00:00:00Z"
+        format: date-time
+        type: string
+    type: object
   domain.Subscription:
     properties:
       createdAt:
@@ -133,6 +154,13 @@ definitions:
         $ref: '#/definitions/domain.User'
       post:
         $ref: '#/definitions/domain.Post'
+    type: object
+  publicgroup.PublicGroupWithInfo:
+    properties:
+      isSubscribed:
+        type: boolean
+      publicGroup:
+        $ref: '#/definitions/domain.PublicGroup'
     type: object
   rest.CSRFTokenResponse:
     properties:
@@ -546,6 +574,244 @@ paths:
       summary: Get CSRF token
       tags:
       - csrf
+  /groups/:
+    post:
+      consumes:
+      - application/json
+      description: create public group
+      operationId: groups/create
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: Name of the group
+        in: formData
+        name: name
+        required: true
+        type: string
+      - description: Description of the group
+        in: formData
+        name: description
+        required: true
+        type: string
+      - description: Avatar of the group
+        in: formData
+        name: avatar
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  $ref: '#/definitions/domain.PublicGroup'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: create public group
+      tags:
+      - groups
+  /groups/{groupID}:
+    get:
+      consumes:
+      - application/json
+      description: get public group by ID
+      operationId: groups/get
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: groupID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  $ref: '#/definitions/publicgroup.PublicGroupWithInfo'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: get public group by ID
+      tags:
+      - groups
+    put:
+      consumes:
+      - multipart/form-data
+      description: update public group
+      operationId: groups/update
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: groupID
+        required: true
+        type: string
+      - description: Name of the group
+        in: formData
+        name: name
+        type: string
+      - description: Description of the group
+        in: formData
+        name: description
+        type: string
+      - description: Avatar of the group
+        in: formData
+        name: avatar
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  $ref: '#/definitions/domain.PublicGroup'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: update public group
+      tags:
+      - groups
+  /groups/search:
+    get:
+      consumes:
+      - application/json
+      description: search public groups by name
+      operationId: groups/search
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: Search query
+        in: query
+        name: query
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/publicgroup.PublicGroupWithInfo'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: search public groups by name
+      tags:
+      - groups
   /posts/:
     delete:
       consumes:
