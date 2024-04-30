@@ -27,10 +27,10 @@ BEFORE UPDATE ON public.subscription
 FOR EACH ROW 
 EXECUTE PROCEDURE trigger_set_timestamp();
 
-CREATE OR REPLACE TRIGGER set_timestamp
-BEFORE UPDATE ON public.post_attachment
-FOR EACH ROW 
-EXECUTE PROCEDURE trigger_set_timestamp();
+-- CREATE OR REPLACE TRIGGER set_timestamp
+-- BEFORE UPDATE ON public.post_attachment
+-- FOR EACH ROW 
+-- EXECUTE PROCEDURE trigger_set_timestamp();
 ---- create above / drop below ----
 DROP TRIGGER IF EXISTS set_timestamp ON public.user;
 DROP TRIGGER IF EXISTS set_timestamp ON public.post;

@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS public.personal_message (
     sender_id BIGINT NOT NULL,
     receiver_id BIGINT NOT NULL,
     content TEXT NOT NULL DEFAULT ''::TEXT,
+    attachments TEXT[] DEFAULT ARRAY[]::TEXT[],
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     CONSTRAINT messages_receiver_fkey FOREIGN KEY (receiver_id) REFERENCES public.user (id) ON UPDATE CASCADE ON DELETE RESTRICT,
