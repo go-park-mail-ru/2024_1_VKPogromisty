@@ -6,6 +6,7 @@ import (
 	"os"
 	authpb "socio/internal/grpc/auth/proto"
 	postpb "socio/internal/grpc/post/proto"
+	pgpb "socio/internal/grpc/public_group/proto"
 	uspb "socio/internal/grpc/user/proto"
 	pgRepo "socio/internal/repository/postgres"
 	redisRepo "socio/internal/repository/redis"
@@ -91,12 +92,24 @@ func MountRootRouter(router *mux.Router) (err error) {
 
 	authClient := authpb.NewAuthClient(authClientConn)
 
+	publicGroupClientConn, err := grpc.Dial(
+		os.Getenv("GRPC_PUBLIC_GROUP_SERVICE_HOST")+os.Getenv("GRPC_PUBLIC_GROUP_SERVICE_PORT"),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		return
+	}
+	defer publicGroupClientConn.Close()
+
+	publicGroupClient := pgpb.NewPublicGroupClient(publicGroupClientConn)
+
 	MountAuthRouter(rootRouter, authClient, userClient)
 	MountCSRFRouter(rootRouter, authClient)
 	MountChatRouter(rootRouter, chatPubSubRepository, personalMessageStorage, authClient)
 	MountProfileRouter(rootRouter, userClient, authClient)
 	MountPostsRouter(rootRouter, postClient, userClient, authClient)
 	MountSubscriptionsRouter(rootRouter, userClient, authClient)
+	MountPublicGroupRouter(rootRouter, publicGroupClient, authClient)
 
 	prodLogger, err := logger.NewZapLogger()
 	if err != nil {

@@ -82,7 +82,7 @@ func (s *Service) Create(ctx context.Context, publicGroup *domain.PublicGroup) (
 	}
 
 	if len(publicGroup.Avatar) == 0 {
-		publicGroup.Avatar = static.DefaultAvatarFileName
+		publicGroup.Avatar = static.DefaultGroupAvatarFileName
 	}
 
 	newGroup, err = s.PublicGroupStorage.StorePublicGroup(ctx, publicGroup)

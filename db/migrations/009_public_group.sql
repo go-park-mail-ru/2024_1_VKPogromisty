@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS public_group (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name TEXT NOT NULL CHECK (char_length(name) < 800),
     description TEXT NOT NULL,
-    avatar TEXT NOT NULL DEFAULT 'default_avatar.png'::TEXT,
+    avatar TEXT NOT NULL DEFAULT 'default_group_avatar.png'::TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
