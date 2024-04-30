@@ -5,6 +5,8 @@ import (
 	"net"
 	"os"
 	"socio/internal/grpc/auth"
+	"socio/internal/grpc/interceptors"
+	"socio/pkg/logger"
 
 	authpb "socio/internal/grpc/auth/proto"
 	uspb "socio/internal/grpc/user/proto"
@@ -50,7 +52,19 @@ func main() {
 
 	manager := auth.NewAuthManager(userClient, sessionStorage)
 
-	server := grpc.NewServer()
+	prodLogger, err := logger.NewZapLogger()
+	if err != nil {
+		return
+	}
+
+	defer prodLogger.Sync()
+
+	logger := logger.NewLogger(prodLogger)
+
+	server := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(logger.UnaryLoggerInterceptor),
+		grpc.ChainUnaryInterceptor(interceptors.UnaryRecoveryInterceptor),
+	)
 
 	authpb.RegisterAuthServer(server, manager)
 

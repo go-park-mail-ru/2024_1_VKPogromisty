@@ -26,6 +26,9 @@ user-build:
 auth-build:
 	docker build -t socio/auth-service -f cmd/auth/Dockerfile . --no-cache
 
+public-group-build:
+	docker build -t socio/public-group-service -f cmd/public_group/Dockerfile . --no-cache
+
 app-build:
 	docker build -t socio/app-service -f cmd/app/Dockerfile . --no-cache
 
@@ -33,6 +36,7 @@ docker-build:
 	make user-build
 	make post-build
 	make auth-build
+	make public-group-build
 	make app-build
 
 docker-run:

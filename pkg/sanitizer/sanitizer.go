@@ -69,3 +69,13 @@ func (s *Sanitizer) SanitizeDialog(dialog *domain.Dialog) {
 	s.SanitizeUser(dialog.User2)
 	s.SanitizePersonalMessage(dialog.LastMessage)
 }
+
+func (s *Sanitizer) SanitizePublicGroup(publicGroup *domain.PublicGroup) {
+	if publicGroup == nil {
+		return
+	}
+
+	publicGroup.Name = s.Sanitize(publicGroup.Name)
+	publicGroup.Description = s.Sanitize(publicGroup.Description)
+	publicGroup.Avatar = s.Sanitize(publicGroup.Avatar)
+}

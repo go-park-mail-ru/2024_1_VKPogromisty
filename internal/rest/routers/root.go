@@ -10,6 +10,7 @@ import (
 	pgRepo "socio/internal/repository/postgres"
 	redisRepo "socio/internal/repository/redis"
 	"socio/internal/rest/middleware"
+	"socio/pkg/logger"
 	customtime "socio/pkg/time"
 
 	"github.com/rs/cors"
@@ -97,14 +98,14 @@ func MountRootRouter(router *mux.Router) (err error) {
 	MountPostsRouter(rootRouter, postClient, userClient, authClient)
 	MountSubscriptionsRouter(rootRouter, userClient, authClient)
 
-	prodLogger, err := middleware.NewZapLogger()
+	prodLogger, err := logger.NewZapLogger()
 	if err != nil {
 		return
 	}
 
 	defer prodLogger.Sync()
 
-	logger := middleware.NewLogger(prodLogger)
+	logger := logger.NewLogger(prodLogger)
 
 	rootRouter.Use(middleware.Recovery)
 	rootRouter.Use(logger.LoggerMiddleware)

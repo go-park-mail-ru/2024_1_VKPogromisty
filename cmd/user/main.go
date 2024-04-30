@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"socio/internal/grpc/interceptors"
 	"socio/internal/grpc/user"
 	uspb "socio/internal/grpc/user/proto"
 	minioRepo "socio/internal/repository/minio"
 	pgRepo "socio/internal/repository/postgres"
+	"socio/pkg/logger"
 	customtime "socio/pkg/time"
 
 	"github.com/joho/godotenv"
@@ -39,7 +41,7 @@ func main() {
 		return
 	}
 
-	avatarStorage, err := minioRepo.NewStaticStorage(minioClient, minioRepo.AvatarBucket)
+	avatarStorage, err := minioRepo.NewStaticStorage(minioClient, minioRepo.UserAvatarsBucket)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -57,7 +59,19 @@ func main() {
 
 	manager := user.NewUserManager(userStorage, subsciptionsStorage, avatarStorage)
 
-	server := grpc.NewServer()
+	prodLogger, err := logger.NewZapLogger()
+	if err != nil {
+		return
+	}
+
+	defer prodLogger.Sync()
+
+	logger := logger.NewLogger(prodLogger)
+
+	server := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(logger.UnaryLoggerInterceptor),
+		grpc.ChainUnaryInterceptor(interceptors.UnaryRecoveryInterceptor),
+	)
 
 	uspb.RegisterUserServer(server, manager)
 
