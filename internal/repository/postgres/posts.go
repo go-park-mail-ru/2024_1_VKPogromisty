@@ -20,10 +20,9 @@ const (
         p.content,
         p.created_at,
         p.updated_at,
-        array_agg(DISTINCT pa.file_name) AS attachments,
+        p.attachments,
         array_agg(DISTINCT pl.user_id) AS liked_by_users
     FROM public.post AS p
-        LEFT JOIN public.post_attachment AS pa ON p.id = pa.post_id
         LEFT JOIN public.post_like AS pl ON p.id = pl.post_id
     WHERE p.id = $1
     GROUP BY p.id,
@@ -43,10 +42,9 @@ const (
         p.content,
         p.created_at,
         p.updated_at,
-        array_agg(DISTINCT pa.file_name) AS attachments,
+        p.attachments,
         array_agg(DISTINCT pl.user_id) AS liked_by_users
     FROM public.post AS p
-        LEFT JOIN public.post_attachment AS pa ON p.id = pa.post_id
         LEFT JOIN public.post_like AS pl ON p.id = pl.post_id
     WHERE p.author_id = $1
         AND p.id < $2
@@ -70,10 +68,9 @@ const (
         p.content,
         p.created_at,
         p.updated_at,
-        array_agg(DISTINCT pa.file_name) AS attachments,
+        p.attachments,
         array_agg(DISTINCT pl.user_id) AS liked_by_users
     FROM public.post AS p
-        LEFT JOIN public.post_attachment AS pa ON p.id = pa.post_id
         LEFT JOIN public.post_like AS pl ON p.id = pl.post_id
         INNER JOIN public.subscription AS s ON p.author_id = s.subscribed_to_id
     WHERE s.subscriber_id = $1
@@ -109,11 +106,6 @@ const (
 		created_at,
 		updated_at;
 	`
-	SelectAttachmentsQuery = `
-	SELECT array_agg(file_name) AS attachments
-	FROM public.post_attachment
-	WHERE post_id = $1;
-	`
 	DeletePostQuery = `
 	DELETE FROM public.post
 	WHERE id = $1;
@@ -141,12 +133,11 @@ const (
 		p.content,
 		p.created_at as post_created_at,
 		p.updated_at as post_updated_at,
-		array_agg(DISTINCT pa.file_name) AS attachments,
+		p.attachments,
 		array_agg(DISTINCT pl1.user_id) AS liked_by_users
 	FROM public.post_like AS pl
 	JOIN public.post AS p ON pl.post_id = p.id
 	LEFT JOIN public.post_like AS pl1 ON p.id = pl1.post_id
-	LEFT JOIN public.post_attachment AS pa ON p.id = pa.post_id
 	WHERE p.author_id = $1
 		AND pl.id < $2
 	GROUP BY pl.id, 
