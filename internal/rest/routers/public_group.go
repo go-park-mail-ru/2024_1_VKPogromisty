@@ -16,7 +16,7 @@ import (
 func MountPublicGroupRouter(rootRouter *mux.Router, groupClient pgpb.PublicGroupClient, postClient postpb.PostClient, userClient uspb.UserClient, authManager authpb.AuthClient) {
 	publicRouter := rootRouter.PathPrefix("/groups").Subrouter()
 
-	h := rest.NewPublicGroupHandler(groupClient, postClient)
+	h := rest.NewPublicGroupHandler(groupClient, postClient, userClient)
 
 	publicRouter.HandleFunc("/search", h.HandleSearchByName).Methods("GET", "OPTIONS")
 	publicRouter.HandleFunc("/{groupID:[0-9]+}", h.HandleGetByID).Methods("GET", "OPTIONS")
@@ -31,6 +31,10 @@ func MountPublicGroupRouter(rootRouter *mux.Router, groupClient pgpb.PublicGroup
 
 	adminRouter := publicRouter.PathPrefix("/groups").Subrouter()
 
+	adminRouter.HandleFunc("/{groupID:[0-9]+}/admins/", h.HandleGetAdminsByPublicGroupID).Methods("GET", "OPTIONS")
+	adminRouter.HandleFunc("/{groupID:[0-9]+}/admins/check", h.HandleCheckIfUserIsAdmin).Methods("GET", "OPTIONS")
+	adminRouter.HandleFunc("/{groupID:[0-9]+}/admins/", h.HandleCreatePublicGroupAdmin).Methods("POST", "OPTIONS")
+	adminRouter.HandleFunc("/{groupID:[0-9]+}/admins/", h.HandleDeletePublicGroupAdmin).Methods("DELETE", "OPTIONS")
 	adminRouter.HandleFunc("/{groupID:[0-9]+}", h.HandleUpdate).Methods("PUT", "OPTIONS")
 	adminRouter.HandleFunc("/{groupID:[0-9]+}", h.HandleDelete).Methods("DELETE", "OPTIONS")
 	adminRouter.HandleFunc("/{groupID:[0-9]+}/posts/", h.HandleCreateGroupPost).Methods("POST", "OPTIONS")
