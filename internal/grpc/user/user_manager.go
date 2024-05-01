@@ -315,3 +315,76 @@ func (u *UserManager) GetSubscriptionIDs(ctx context.Context, in *uspb.GetSubscr
 
 	return
 }
+
+func (u *UserManager) CreatePublicGroupAdmin(ctx context.Context, in *uspb.CreatePublicGroupAdminRequest) (res *uspb.CreatePublicGroupAdminResponse, err error) {
+	userID := in.GetUserId()
+	publicGroupID := in.GetPublicGroupId()
+
+	_, err = u.UserService.CreatePublicGroupAdmin(ctx, &domain.PublicGroupAdmin{
+		UserID:        uint(userID),
+		PublicGroupID: uint(publicGroupID),
+	})
+	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
+		return
+	}
+
+	res = &uspb.CreatePublicGroupAdminResponse{}
+
+	return
+}
+
+func (u *UserManager) DeletePublicGroupAdmin(ctx context.Context, in *uspb.DeletePublicGroupAdminRequest) (res *uspb.DeletePublicGroupAdminResponse, err error) {
+	userID := in.GetUserId()
+	publicGroupID := in.GetPublicGroupId()
+
+	err = u.UserService.DeletePublicGroupAdmin(ctx, &domain.PublicGroupAdmin{
+		UserID:        uint(userID),
+		PublicGroupID: uint(publicGroupID),
+	})
+	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
+		return
+	}
+
+	res = &uspb.DeletePublicGroupAdminResponse{}
+
+	return
+}
+
+func (u *UserManager) GetAdminsByPublicGroupID(ctx context.Context, in *uspb.GetAdminsByPublicGroupIDRequest) (res *uspb.GetAdminsByPublicGroupIDResponse, err error) {
+	publicGroupID := in.GetPublicGroupId()
+
+	admins, err := u.UserService.GetAdminsByPublicGroupID(ctx, uint(publicGroupID))
+	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
+		return
+	}
+
+	res = &uspb.GetAdminsByPublicGroupIDResponse{
+		Admins: uspb.ToUsersResponse(admins),
+	}
+
+	return
+}
+
+func (u *UserManager) CheckIfUserIsAdmin(ctx context.Context, in *uspb.CheckIfUserIsAdminRequest) (res *uspb.CheckIfUserIsAdminResponse, err error) {
+	userID := in.GetUserId()
+	publicGroupID := in.GetPublicGroupId()
+
+	isAdmin, err := u.UserService.CheckIfUserIsAdmin(ctx, uint(userID), uint(publicGroupID))
+	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
+		return
+	}
+
+	res = &uspb.CheckIfUserIsAdminResponse{
+		IsAdmin: isAdmin,
+	}
+
+	return
+}

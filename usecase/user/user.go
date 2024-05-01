@@ -19,6 +19,10 @@ type UserStorage interface {
 	DeleteUser(ctx context.Context, userID uint) (err error)
 	SearchByName(ctx context.Context, query string) (users []*domain.User, err error)
 	GetSubscriptionIDs(ctx context.Context, userID uint) (subscribedToIDs []uint, err error)
+	StorePublicGroupAdmin(ctx context.Context, publicGroupAdmin *domain.PublicGroupAdmin) (newPublicGroupAdmin *domain.PublicGroupAdmin, err error)
+	DeletePublicGroupAdmin(ctx context.Context, publicGroupAdmin *domain.PublicGroupAdmin) (err error)
+	GetAdminsByPublicGroupID(ctx context.Context, publicGroupID uint) (admins []*domain.User, err error)
+	CheckIfUserIsAdmin(ctx context.Context, publicGroupID, userID uint) (isAdmin bool, err error)
 }
 
 type AvatarStorage interface {

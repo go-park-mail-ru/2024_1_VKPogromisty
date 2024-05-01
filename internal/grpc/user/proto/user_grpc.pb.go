@@ -32,6 +32,10 @@ type UserClient interface {
 	GetFriends(ctx context.Context, in *GetFriendsRequest, opts ...grpc.CallOption) (*GetFriendsResponse, error)
 	SearchByName(ctx context.Context, in *SearchByNameRequest, opts ...grpc.CallOption) (*SearchByNameResponse, error)
 	GetSubscriptionIDs(ctx context.Context, in *GetSubscriptionIDsRequest, opts ...grpc.CallOption) (*GetSubscriptionIDsResponse, error)
+	CreatePublicGroupAdmin(ctx context.Context, in *CreatePublicGroupAdminRequest, opts ...grpc.CallOption) (*CreatePublicGroupAdminResponse, error)
+	DeletePublicGroupAdmin(ctx context.Context, in *DeletePublicGroupAdminRequest, opts ...grpc.CallOption) (*DeletePublicGroupAdminResponse, error)
+	GetAdminsByPublicGroupID(ctx context.Context, in *GetAdminsByPublicGroupIDRequest, opts ...grpc.CallOption) (*GetAdminsByPublicGroupIDResponse, error)
+	CheckIfUserIsAdmin(ctx context.Context, in *CheckIfUserIsAdminRequest, opts ...grpc.CallOption) (*CheckIfUserIsAdminResponse, error)
 }
 
 type userClient struct {
@@ -193,6 +197,42 @@ func (c *userClient) GetSubscriptionIDs(ctx context.Context, in *GetSubscription
 	return out, nil
 }
 
+func (c *userClient) CreatePublicGroupAdmin(ctx context.Context, in *CreatePublicGroupAdminRequest, opts ...grpc.CallOption) (*CreatePublicGroupAdminResponse, error) {
+	out := new(CreatePublicGroupAdminResponse)
+	err := c.cc.Invoke(ctx, "/user.User/CreatePublicGroupAdmin", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userClient) DeletePublicGroupAdmin(ctx context.Context, in *DeletePublicGroupAdminRequest, opts ...grpc.CallOption) (*DeletePublicGroupAdminResponse, error) {
+	out := new(DeletePublicGroupAdminResponse)
+	err := c.cc.Invoke(ctx, "/user.User/DeletePublicGroupAdmin", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userClient) GetAdminsByPublicGroupID(ctx context.Context, in *GetAdminsByPublicGroupIDRequest, opts ...grpc.CallOption) (*GetAdminsByPublicGroupIDResponse, error) {
+	out := new(GetAdminsByPublicGroupIDResponse)
+	err := c.cc.Invoke(ctx, "/user.User/GetAdminsByPublicGroupID", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userClient) CheckIfUserIsAdmin(ctx context.Context, in *CheckIfUserIsAdminRequest, opts ...grpc.CallOption) (*CheckIfUserIsAdminResponse, error) {
+	out := new(CheckIfUserIsAdminResponse)
+	err := c.cc.Invoke(ctx, "/user.User/CheckIfUserIsAdmin", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserServer is the server API for User service.
 // All implementations must embed UnimplementedUserServer
 // for forward compatibility
@@ -211,6 +251,10 @@ type UserServer interface {
 	GetFriends(context.Context, *GetFriendsRequest) (*GetFriendsResponse, error)
 	SearchByName(context.Context, *SearchByNameRequest) (*SearchByNameResponse, error)
 	GetSubscriptionIDs(context.Context, *GetSubscriptionIDsRequest) (*GetSubscriptionIDsResponse, error)
+	CreatePublicGroupAdmin(context.Context, *CreatePublicGroupAdminRequest) (*CreatePublicGroupAdminResponse, error)
+	DeletePublicGroupAdmin(context.Context, *DeletePublicGroupAdminRequest) (*DeletePublicGroupAdminResponse, error)
+	GetAdminsByPublicGroupID(context.Context, *GetAdminsByPublicGroupIDRequest) (*GetAdminsByPublicGroupIDResponse, error)
+	CheckIfUserIsAdmin(context.Context, *CheckIfUserIsAdminRequest) (*CheckIfUserIsAdminResponse, error)
 	mustEmbedUnimplementedUserServer()
 }
 
@@ -259,6 +303,18 @@ func (UnimplementedUserServer) SearchByName(context.Context, *SearchByNameReques
 }
 func (UnimplementedUserServer) GetSubscriptionIDs(context.Context, *GetSubscriptionIDsRequest) (*GetSubscriptionIDsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSubscriptionIDs not implemented")
+}
+func (UnimplementedUserServer) CreatePublicGroupAdmin(context.Context, *CreatePublicGroupAdminRequest) (*CreatePublicGroupAdminResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreatePublicGroupAdmin not implemented")
+}
+func (UnimplementedUserServer) DeletePublicGroupAdmin(context.Context, *DeletePublicGroupAdminRequest) (*DeletePublicGroupAdminResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeletePublicGroupAdmin not implemented")
+}
+func (UnimplementedUserServer) GetAdminsByPublicGroupID(context.Context, *GetAdminsByPublicGroupIDRequest) (*GetAdminsByPublicGroupIDResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAdminsByPublicGroupID not implemented")
+}
+func (UnimplementedUserServer) CheckIfUserIsAdmin(context.Context, *CheckIfUserIsAdminRequest) (*CheckIfUserIsAdminResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CheckIfUserIsAdmin not implemented")
 }
 func (UnimplementedUserServer) mustEmbedUnimplementedUserServer() {}
 
@@ -533,6 +589,78 @@ func _User_GetSubscriptionIDs_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _User_CreatePublicGroupAdmin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreatePublicGroupAdminRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServer).CreatePublicGroupAdmin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/user.User/CreatePublicGroupAdmin",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServer).CreatePublicGroupAdmin(ctx, req.(*CreatePublicGroupAdminRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _User_DeletePublicGroupAdmin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeletePublicGroupAdminRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServer).DeletePublicGroupAdmin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/user.User/DeletePublicGroupAdmin",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServer).DeletePublicGroupAdmin(ctx, req.(*DeletePublicGroupAdminRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _User_GetAdminsByPublicGroupID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAdminsByPublicGroupIDRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServer).GetAdminsByPublicGroupID(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/user.User/GetAdminsByPublicGroupID",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServer).GetAdminsByPublicGroupID(ctx, req.(*GetAdminsByPublicGroupIDRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _User_CheckIfUserIsAdmin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckIfUserIsAdminRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServer).CheckIfUserIsAdmin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/user.User/CheckIfUserIsAdmin",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServer).CheckIfUserIsAdmin(ctx, req.(*CheckIfUserIsAdminRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // User_ServiceDesc is the grpc.ServiceDesc for User service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -591,6 +719,22 @@ var User_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetSubscriptionIDs",
 			Handler:    _User_GetSubscriptionIDs_Handler,
+		},
+		{
+			MethodName: "CreatePublicGroupAdmin",
+			Handler:    _User_CreatePublicGroupAdmin_Handler,
+		},
+		{
+			MethodName: "DeletePublicGroupAdmin",
+			Handler:    _User_DeletePublicGroupAdmin_Handler,
+		},
+		{
+			MethodName: "GetAdminsByPublicGroupID",
+			Handler:    _User_GetAdminsByPublicGroupID_Handler,
+		},
+		{
+			MethodName: "CheckIfUserIsAdmin",
+			Handler:    _User_CheckIfUserIsAdmin_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
