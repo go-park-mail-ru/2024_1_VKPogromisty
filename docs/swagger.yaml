@@ -42,6 +42,8 @@ definitions:
         example: "2021-01-01T00:00:00Z"
         format: date-time
         type: string
+      groupId:
+        type: integer
       likedBy:
         items:
           type: integer
@@ -1224,6 +1226,63 @@ paths:
       summary: get post by id
       tags:
       - posts
+  /posts/all:
+    get:
+      consumes:
+      - application/json
+      description: get posts by group subscriptions and user subscriptions
+      operationId: posts/get_posts_by_group_subscriptions_and_user_subscriptions
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: ID of the last post, if 0 - get first posts
+        in: query
+        name: lastPostId
+        type: integer
+      - description: Amount of posts to get, if 0 - get 20 posts
+        in: query
+        name: postsAmount
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.PostWithAuthorAndGroup'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: get posts by group subscriptions and user subscriptions
+      tags:
+      - posts
   /posts/friends:
     get:
       consumes:
@@ -1280,6 +1339,63 @@ paths:
           schema:
             $ref: '#/definitions/errors.HTTPError'
       summary: get user friends posts
+      tags:
+      - posts
+  /posts/groups:
+    get:
+      consumes:
+      - application/json
+      description: get group posts by subscriptions
+      operationId: posts/get_group_posts_by_subscriptions
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: ID of the last post, if 0 - get first posts
+        in: query
+        name: lastPostId
+        type: integer
+      - description: Amount of posts to get, if 0 - get 20 posts
+        in: query
+        name: postsAmount
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.PostWithAuthorAndGroup'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: get group posts by subscriptions
       tags:
       - posts
   /posts/like:
@@ -1392,6 +1508,63 @@ paths:
           schema:
             $ref: '#/definitions/errors.HTTPError'
       summary: get liked posts
+      tags:
+      - posts
+  /posts/new:
+    get:
+      consumes:
+      - application/json
+      description: get new posts
+      operationId: posts/get_new_posts
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: ID of the last post, if 0 - get first posts
+        in: query
+        name: lastPostId
+        type: integer
+      - description: Amount of posts to get, if 0 - get 20 posts
+        in: query
+        name: postsAmount
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.PostWithAuthorAndGroup'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: get new posts
       tags:
       - posts
   /posts/unlike:

@@ -107,7 +107,7 @@ func MountRootRouter(router *mux.Router) (err error) {
 	MountCSRFRouter(rootRouter, authClient)
 	MountChatRouter(rootRouter, chatPubSubRepository, personalMessageStorage, authClient)
 	MountProfileRouter(rootRouter, userClient, authClient)
-	MountPostsRouter(rootRouter, postClient, userClient, authClient)
+	MountPostsRouter(rootRouter, postClient, userClient, publicGroupClient, authClient)
 	MountSubscriptionsRouter(rootRouter, userClient, authClient)
 	MountPublicGroupRouter(rootRouter, publicGroupClient, postClient, authClient)
 

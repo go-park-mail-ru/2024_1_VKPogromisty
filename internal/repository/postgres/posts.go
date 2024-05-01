@@ -7,6 +7,7 @@ import (
 	"socio/pkg/contextlogger"
 	customtime "socio/pkg/time"
 	"socio/usecase/posts"
+	"strconv"
 
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
@@ -233,7 +234,8 @@ const (
 			p.author_id,
 			p.content,
 			p.created_at,
-			p.updated_at
+			p.updated_at,
+			pgp.public_group_id
 			ORDER BY p.created_at DESC
 			LIMIT $3;`
 	getLastGroupPostBySubscriptionIDsQuery = `
@@ -291,7 +293,8 @@ const (
 			p.author_id,
 			p.content,
 			p.created_at,
-			p.updated_at
+			p.updated_at,
+			pgp.public_group_id
 			ORDER BY p.created_at DESC
 			LIMIT $2;
 	`
@@ -323,6 +326,18 @@ func int8ArrayIntoUintSlice(arr pgtype.Int8Array) (res []uint64) {
 	for _, v := range arr.Elements {
 		if v.Status == pgtype.Present {
 			res = append(res, uint64(v.Int))
+		}
+	}
+
+	return
+}
+
+func uintArrayIntoString(arr []uint) (res string) {
+	res = ""
+	for i, id := range arr {
+		res += strconv.Itoa(int(id))
+		if i != len(res)-1 {
+			res += ", "
 		}
 	}
 
@@ -720,10 +735,16 @@ func (p *Posts) GetPostsOfGroup(ctx context.Context, groupID, lastPostID, postsA
 }
 
 func (p *Posts) GetGroupPostsBySubscriptionIDs(ctx context.Context, subIDs []uint, lastPostID, postsAmount uint) (posts []*domain.Post, err error) {
-	if lastPostID == 0 {
-		contextlogger.LogSQL(ctx, getLastGroupPostBySubscriptionIDsQuery, subIDs)
+	if len(subIDs) == 0 {
+		subIDs = append(subIDs, 0)
+	}
 
-		err = p.db.QueryRow(context.Background(), getLastGroupPostBySubscriptionIDsQuery, subIDs).Scan(&lastPostID)
+	subIDsStr := uintArrayIntoString(subIDs)
+
+	if lastPostID == 0 {
+		contextlogger.LogSQL(ctx, getLastGroupPostBySubscriptionIDsQuery, subIDsStr)
+
+		err = p.db.QueryRow(context.Background(), getLastGroupPostBySubscriptionIDsQuery, subIDsStr).Scan(&lastPostID)
 		if err != nil {
 			return
 		}
@@ -731,9 +752,9 @@ func (p *Posts) GetGroupPostsBySubscriptionIDs(ctx context.Context, subIDs []uin
 		lastPostID += 1
 	}
 
-	contextlogger.LogSQL(ctx, getGroupPostsBySubscriptionIDsQuery, subIDs, lastPostID, postsAmount)
+	contextlogger.LogSQL(ctx, getGroupPostsBySubscriptionIDsQuery, subIDsStr, lastPostID, postsAmount)
 
-	rows, err := p.db.Query(context.Background(), getGroupPostsBySubscriptionIDsQuery, subIDs, lastPostID, postsAmount)
+	rows, err := p.db.Query(context.Background(), getGroupPostsBySubscriptionIDsQuery, subIDsStr, lastPostID, postsAmount)
 	if err != nil {
 		return
 	}
@@ -777,10 +798,13 @@ func (p *Posts) GetPostsByGroupSubIDsAndUserSubIDs(ctx context.Context, groupSub
 		userSubIDs = append(userSubIDs, 0)
 	}
 
-	if lastPostID == 0 {
-		contextlogger.LogSQL(ctx, getLastPostByGroupSubIDsAndUserSubIDsQuery, groupSubIDs, userSubIDs)
+	groupSubIDsStr := uintArrayIntoString(groupSubIDs)
+	userSubIDsStr := uintArrayIntoString(userSubIDs)
 
-		err = p.db.QueryRow(context.Background(), getLastPostByGroupSubIDsAndUserSubIDsQuery, groupSubIDs, userSubIDs).Scan(&lastPostID)
+	if lastPostID == 0 {
+		contextlogger.LogSQL(ctx, getLastPostByGroupSubIDsAndUserSubIDsQuery, groupSubIDsStr, userSubIDsStr)
+
+		err = p.db.QueryRow(context.Background(), getLastPostByGroupSubIDsAndUserSubIDsQuery, groupSubIDsStr, userSubIDsStr).Scan(&lastPostID)
 		if err != nil {
 			return
 		}
@@ -788,9 +812,9 @@ func (p *Posts) GetPostsByGroupSubIDsAndUserSubIDs(ctx context.Context, groupSub
 		lastPostID += 1
 	}
 
-	contextlogger.LogSQL(ctx, getPostsByGroupSubIDsAndUserSubIDsQuery, groupSubIDs, userSubIDs, lastPostID, postsAmount)
+	contextlogger.LogSQL(ctx, getPostsByGroupSubIDsAndUserSubIDsQuery, groupSubIDsStr, userSubIDsStr, lastPostID, postsAmount)
 
-	rows, err := p.db.Query(context.Background(), getPostsByGroupSubIDsAndUserSubIDsQuery, groupSubIDs, userSubIDs, lastPostID)
+	rows, err := p.db.Query(context.Background(), getPostsByGroupSubIDsAndUserSubIDsQuery, groupSubIDsStr, userSubIDsStr, lastPostID, postsAmount)
 	if err != nil {
 		return
 	}

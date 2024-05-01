@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	postspb "socio/internal/grpc/post/proto"
+	pgpb "socio/internal/grpc/public_group/proto"
 	uspb "socio/internal/grpc/user/proto"
 	"socio/internal/rest/uploaders"
 
@@ -32,14 +33,16 @@ type ListUserPostsResponse struct {
 }
 
 type PostsHandler struct {
-	PostsClient postspb.PostClient
-	UserClient  uspb.UserClient
+	PostsClient       postspb.PostClient
+	UserClient        uspb.UserClient
+	PublicGroupClient pgpb.PublicGroupClient
 }
 
-func NewPostsHandler(postsClient postspb.PostClient, userClient uspb.UserClient) (handler *PostsHandler) {
+func NewPostsHandler(postsClient postspb.PostClient, userClient uspb.UserClient, publicGroupClient pgpb.PublicGroupClient) (handler *PostsHandler) {
 	handler = &PostsHandler{
-		PostsClient: postsClient,
-		UserClient:  userClient,
+		PostsClient:       postsClient,
+		UserClient:        userClient,
+		PublicGroupClient: publicGroupClient,
 	}
 	return
 }
@@ -643,4 +646,310 @@ func (h *PostsHandler) HandleUnlikePost(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// HandleGetGroupPostsBySubscriptions godoc
+//
+//	@Summary		get group posts by subscriptions
+//	@Description	get group posts by subscriptions
+//	@Tags			posts
+//	@license.name	Apache 2.0
+//	@ID				posts/get_group_posts_by_subscriptions
+//	@Accept			json
+//
+//	@Param			Cookie		header	string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
+//	@Param			lastPostId	query	uint	false	"ID of the last post, if 0 - get first posts"
+//	@Param			postsAmount	query	uint	false	"Amount of posts to get, if 0 - get 20 posts"
+//
+//	@Produce		json
+//	@Success		200	{object}	[]domain.PostWithAuthorAndGroup
+//	@Failure		400	{object}	errors.HTTPError
+//	@Failure		401	{object}	errors.HTTPError
+//	@Failure		403	{object}	errors.HTTPError
+//	@Failure		404	{object}	errors.HTTPError
+//	@Failure		500	{object}	errors.HTTPError
+//	@Router			/posts/groups [get]
+func (h *PostsHandler) HandleGetGroupPostsBySubscriptions(w http.ResponseWriter, r *http.Request) {
+	userID, err := requestcontext.GetUserID(r.Context())
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, err)
+		return
+	}
 
+	subscriptions, err := h.PublicGroupClient.GetBySubscriberID(r.Context(), &pgpb.GetBySubscriberIDRequest{
+		SubscriberId: uint64(userID),
+	})
+	if err != nil {
+		json.ServeGRPCStatus(r.Context(), w, err)
+		return
+	}
+
+	subIDs := make([]uint64, 0, len(subscriptions.GetPublicGroups()))
+	groupsByID := map[uint64]*domain.PublicGroup{}
+	for _, sub := range subscriptions.GetPublicGroups() {
+		subIDs = append(subIDs, sub.Id)
+		groupsByID[sub.Id] = pgpb.ToPublicGroup(sub)
+	}
+
+	lastPostIDData := r.URL.Query().Get(LastPostIDQueryParam)
+	var lastPostID uint64
+
+	if lastPostIDData == "" {
+		lastPostID = 0
+	} else {
+		lastPostID, err = strconv.ParseUint(lastPostIDData, 0, 0)
+		if err != nil {
+			json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
+			return
+		}
+	}
+
+	postsAmountData := r.URL.Query().Get(PostsAmountQueryParam)
+	var postsAmount uint64
+
+	if postsAmountData == "" {
+		postsAmount = 0
+	} else {
+		postsAmount, err = strconv.ParseUint(postsAmountData, 0, 0)
+		if err != nil {
+			json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
+			return
+		}
+	}
+
+	postsRes, err := h.PostsClient.GetGroupPostsBySubscriptionIDs(r.Context(), &postspb.GetGroupPostsBySubscriptionIDsRequest{
+		SubscriptionIds: subIDs,
+		LastPostId:      lastPostID,
+		PostsAmount:     postsAmount,
+	})
+	if err != nil {
+		json.ServeGRPCStatus(r.Context(), w, err)
+		return
+	}
+
+	posts := postspb.ToPosts(postsRes.GetPosts())
+	res := make([]*domain.PostWithAuthorAndGroup, 0, len(posts))
+	for _, post := range posts {
+		postWithAuthorAndGroup := new(domain.PostWithAuthorAndGroup)
+		author, err := h.UserClient.GetByID(r.Context(), &uspb.GetByIDRequest{
+			UserId: uint64(post.AuthorID),
+		})
+		if err != nil {
+			json.ServeGRPCStatus(r.Context(), w, err)
+			return
+		}
+
+		postWithAuthorAndGroup.Author = uspb.ToUser(author.User)
+		postWithAuthorAndGroup.Group = groupsByID[uint64(post.GroupID)]
+		postWithAuthorAndGroup.Post = post
+
+		res = append(res, postWithAuthorAndGroup)
+	}
+
+	json.ServeJSONBody(r.Context(), w, res, http.StatusOK)
+}
+
+// HandleGetPostsByGroupSubIDsAndUserSubIDs godoc
+//
+//		@Summary		get posts by group subscriptions and user subscriptions
+//		@Description	get posts by group subscriptions and user subscriptions
+//		@Tags			posts
+//		@license.name	Apache 2.0
+//		@ID				posts/get_posts_by_group_subscriptions_and_user_subscriptions
+//		@Accept			json
+//
+//		@Param			Cookie		header	string	true	"session_id=some_session"
+//		@Param			X-CSRF-Token	header	string	true	"CSRF token"
+//		@Param			lastPostId	query	uint	false	"ID of the last post, if 0 - get first posts"
+//		@Param			postsAmount	query	uint	false	"Amount of posts to get, if 0 - get 20 posts"
+//
+//		@Produce		json
+//		@Success		200	{object}	[]domain.PostWithAuthorAndGroup
+//		@Failure		400	{object}	errors.HTTPError
+//		@Failure		401	{object}	errors.HTTPError
+//		@Failure		403	{object}	errors.HTTPError
+//	 @Failure		404	{object}	errors.HTTPError
+//		@Failure		500	{object}	errors.HTTPError
+//		@Router			/posts/all [get]
+func (h *PostsHandler) HandleGetPostsByGroupSubIDsAndUserSubIDs(w http.ResponseWriter, r *http.Request) {
+	userID, err := requestcontext.GetUserID(r.Context())
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, err)
+		return
+	}
+
+	groupSubs, err := h.PublicGroupClient.GetBySubscriberID(r.Context(), &pgpb.GetBySubscriberIDRequest{
+		SubscriberId: uint64(userID),
+	})
+	if err != nil {
+		json.ServeGRPCStatus(r.Context(), w, err)
+		return
+	}
+
+	groupSubIDs := make([]uint64, 0, len(groupSubs.GetPublicGroups()))
+	groupsByID := map[uint64]*domain.PublicGroup{}
+	for _, sub := range groupSubs.GetPublicGroups() {
+		groupSubIDs = append(groupSubIDs, sub.Id)
+		groupsByID[sub.Id] = pgpb.ToPublicGroup(sub)
+	}
+
+	userSubIDsRes, err := h.UserClient.GetSubscriptionIDs(r.Context(), &uspb.GetSubscriptionIDsRequest{
+		UserId: uint64(userID),
+	})
+	if err != nil {
+		json.ServeGRPCStatus(r.Context(), w, err)
+		return
+	}
+
+	userSubIDs := userSubIDsRes.GetSubscriptionIds()
+
+	lastPostIDData := r.URL.Query().Get(LastPostIDQueryParam)
+	var lastPostID uint64
+
+	if lastPostIDData == "" {
+		lastPostID = 0
+	} else {
+		lastPostID, err = strconv.ParseUint(lastPostIDData, 0, 0)
+		if err != nil {
+			json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
+			return
+		}
+	}
+
+	postsAmountData := r.URL.Query().Get(PostsAmountQueryParam)
+	var postsAmount uint64
+
+	if postsAmountData == "" {
+		postsAmount = 0
+	} else {
+		postsAmount, err = strconv.ParseUint(postsAmountData, 0, 0)
+		if err != nil {
+			json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
+			return
+		}
+	}
+
+	postsRes, err := h.PostsClient.GetPostsByGroupSubIDsAndUserSubIDs(r.Context(), &postspb.GetPostsByGroupSubIDsAndUserSubIDsRequest{
+		GroupSubscriptionIds: groupSubIDs,
+		UserSubscriptionIds:  userSubIDs,
+		LastPostId:           lastPostID,
+		PostsAmount:          postsAmount,
+	})
+	if err != nil {
+		json.ServeGRPCStatus(r.Context(), w, err)
+		return
+	}
+
+	posts := postspb.ToPosts(postsRes.GetPosts())
+	res := make([]*domain.PostWithAuthorAndGroup, 0, len(posts))
+	for _, post := range posts {
+		postWithAuthorAndGroup := new(domain.PostWithAuthorAndGroup)
+		author, err := h.UserClient.GetByID(r.Context(), &uspb.GetByIDRequest{
+			UserId: uint64(post.AuthorID),
+		})
+		if err != nil {
+			json.ServeGRPCStatus(r.Context(), w, err)
+			return
+		}
+
+		postWithAuthorAndGroup.Author = uspb.ToUser(author.User)
+		if post.GroupID != 0 {
+			postWithAuthorAndGroup.Group = groupsByID[uint64(post.GroupID)]
+		}
+		postWithAuthorAndGroup.Post = post
+
+		res = append(res, postWithAuthorAndGroup)
+	}
+
+	json.ServeJSONBody(r.Context(), w, res, http.StatusOK)
+}
+
+// HandleGetNewPosts godoc
+//
+//	@Summary		get new posts
+//	@Description	get new posts
+//	@Tags			posts
+//	@license.name	Apache 2.0
+//	@ID				posts/get_new_posts
+//	@Accept			json
+//
+//	@Param			Cookie		header	string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
+//	@Param			lastPostId	query	uint	false	"ID of the last post, if 0 - get first posts"
+//	@Param			postsAmount	query	uint	false	"Amount of posts to get, if 0 - get 20 posts"
+//
+//	@Produce		json
+//	@Success		200	{object}	[]domain.PostWithAuthorAndGroup
+//	@Failure		400	{object}	errors.HTTPError
+//	@Failure		401	{object}	errors.HTTPError
+//	@Failure		403	{object}	errors.HTTPError
+//	@Failure		404	{object}	errors.HTTPError
+//	@Failure		500	{object}	errors.HTTPError
+//	@Router			/posts/new [get]
+func (h *PostsHandler) HandleGetNewPosts(w http.ResponseWriter, r *http.Request) {
+	lastPostIDData := r.URL.Query().Get(LastPostIDQueryParam)
+	var lastPostID uint64
+	var err error
+
+	if lastPostIDData == "" {
+		lastPostID = 0
+	} else {
+		lastPostID, err = strconv.ParseUint(lastPostIDData, 0, 0)
+		if err != nil {
+			json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
+			return
+		}
+	}
+
+	postsAmountData := r.URL.Query().Get(PostsAmountQueryParam)
+	var postsAmount uint64
+
+	if postsAmountData == "" {
+		postsAmount = 0
+	} else {
+		postsAmount, err = strconv.ParseUint(postsAmountData, 0, 0)
+		if err != nil {
+			json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
+			return
+		}
+	}
+
+	postsRes, err := h.PostsClient.GetNewPosts(r.Context(), &postspb.GetNewPostsRequest{
+		LastPostId:  lastPostID,
+		PostsAmount: postsAmount,
+	})
+	if err != nil {
+		json.ServeGRPCStatus(r.Context(), w, err)
+		return
+	}
+
+	posts := postspb.ToPosts(postsRes.GetPosts())
+	res := make([]*domain.PostWithAuthorAndGroup, 0, len(posts))
+	for _, post := range posts {
+		postWithAuthorAndGroup := new(domain.PostWithAuthorAndGroup)
+		author, err := h.UserClient.GetByID(r.Context(), &uspb.GetByIDRequest{
+			UserId: uint64(post.AuthorID),
+		})
+		if err != nil {
+			json.ServeGRPCStatus(r.Context(), w, err)
+			return
+		}
+
+		postWithAuthorAndGroup.Author = uspb.ToUser(author.User)
+		if post.GroupID != 0 {
+			group, err := h.PublicGroupClient.GetByID(r.Context(), &pgpb.GetByIDRequest{
+				Id: uint64(post.GroupID),
+			})
+			if err != nil {
+				json.ServeGRPCStatus(r.Context(), w, err)
+				return
+			}
+			postWithAuthorAndGroup.Group = pgpb.ToPublicGroup(group.PublicGroup.PublicGroup)
+		}
+
+		postWithAuthorAndGroup.Post = post
+
+		res = append(res, postWithAuthorAndGroup)
+	}
+
+	json.ServeJSONBody(r.Context(), w, res, http.StatusOK)
+}
