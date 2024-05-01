@@ -60,6 +60,9 @@ type PostsStorage interface {
 	GetLikedPosts(ctx context.Context, userID uint, lastLikeID uint, limit uint) (likedPosts []LikeWithPost, err error)
 	StorePostLike(ctx context.Context, likeData *domain.PostLike) (like *domain.PostLike, err error)
 	DeletePostLike(ctx context.Context, likeData *domain.PostLike) (err error)
+	StoreGroupPost(ctx context.Context, groupPost *domain.GroupPost) (newGroupPost *domain.GroupPost, err error)
+	DeleteGroupPost(ctx context.Context, postID uint) (err error)
+	GetPostsOfGroup(ctx context.Context, groupID, lastPostID, postsAmount uint) (posts []*domain.Post, err error)
 }
 
 type AttachmentStorage interface {
@@ -191,6 +194,11 @@ func (s *Service) DeletePost(ctx context.Context, userID uint, postID uint) (err
 		s.AttachmentStorage.Delete(attachment)
 	}
 
+	err = s.PostsStorage.DeleteGroupPost(ctx, postID)
+	if err != nil {
+		return
+	}
+
 	err = s.PostsStorage.DeletePost(ctx, postID)
 	if err != nil {
 		return
@@ -238,6 +246,32 @@ func (s *Service) UploadAttachment(fileName string, filePath string, contentType
 	err = s.AttachmentStorage.Store(fileName, filePath, contentType)
 	if err != nil {
 		return
+	}
+
+	return
+}
+
+func (s *Service) CreateGroupPost(ctx context.Context, groupPost *domain.GroupPost) (newGroupPost *domain.GroupPost, err error) {
+	newGroupPost, err = s.PostsStorage.StoreGroupPost(ctx, groupPost)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (s *Service) GetPostsOfGroup(ctx context.Context, groupID, lastPostID, postsAmount uint) (posts []*domain.Post, err error) {
+	if postsAmount == 0 {
+		postsAmount = defaultPostsAmount
+	}
+
+	posts, err = s.PostsStorage.GetPostsOfGroup(ctx, groupID, lastPostID, postsAmount)
+	if err != nil {
+		return
+	}
+
+	for _, post := range posts {
+		s.Sanitizer.SanitizePost(post)
 	}
 
 	return

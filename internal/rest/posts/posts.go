@@ -171,7 +171,7 @@ func (h *PostsHandler) HandleGetUserPosts(w http.ResponseWriter, r *http.Request
 	}
 
 	response := ListUserPostsResponse{
-		Posts:  postspb.ToPosts(posts),
+		Posts:  postspb.ToPosts(posts.GetPosts()),
 		Author: uspb.ToUser(author.User),
 	}
 	json.ServeJSONBody(r.Context(), w, response, http.StatusOK)

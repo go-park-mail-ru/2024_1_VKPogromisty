@@ -18,6 +18,8 @@ service Post {
     rpc LikePost(LikePostRequest) returns (LikePostResponse) {}
     rpc UnlikePost(UnlikePostRequest) returns (UnlikePostResponse) {}
     rpc Upload(stream UploadRequest) returns (UploadResponse) {}
+    rpc CreateGroupPost(CreateGroupPostRequest) returns (CreateGroupPostResponse) {}
+    rpc GetPostsOfGroup(GetPostsOfGroupRequest) returns (GetPostsOfGroupResponse) {}
 }
 
 message PostResponse {
@@ -137,3 +139,19 @@ message UploadResponse {
     uint64 size = 2;
 }
 
+message CreateGroupPostRequest {
+    uint64 group_id = 1;
+    uint64 post_id = 2;
+}
+
+message CreateGroupPostResponse {}
+
+message GetPostsOfGroupRequest {
+    uint64 group_id = 1;
+    uint64 last_post_id = 2;
+    uint64 posts_amount = 3;
+}
+
+message GetPostsOfGroupResponse {
+    repeated PostResponse posts = 1;
+}

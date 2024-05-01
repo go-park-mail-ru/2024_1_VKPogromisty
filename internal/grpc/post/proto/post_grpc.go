@@ -55,10 +55,10 @@ func ToPost(res *PostResponse) *domain.Post {
 	}
 }
 
-func ToPosts(res *GetUserPostsResponse) (posts []*domain.Post) {
+func ToPosts(res []*PostResponse) (posts []*domain.Post) {
 	posts = make([]*domain.Post, 0)
 
-	for _, post := range res.Posts {
+	for _, post := range res {
 		posts = append(posts, ToPost(post))
 	}
 

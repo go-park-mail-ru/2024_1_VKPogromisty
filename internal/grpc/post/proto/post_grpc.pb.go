@@ -28,6 +28,8 @@ type PostClient interface {
 	LikePost(ctx context.Context, in *LikePostRequest, opts ...grpc.CallOption) (*LikePostResponse, error)
 	UnlikePost(ctx context.Context, in *UnlikePostRequest, opts ...grpc.CallOption) (*UnlikePostResponse, error)
 	Upload(ctx context.Context, opts ...grpc.CallOption) (Post_UploadClient, error)
+	CreateGroupPost(ctx context.Context, in *CreateGroupPostRequest, opts ...grpc.CallOption) (*CreateGroupPostResponse, error)
+	GetPostsOfGroup(ctx context.Context, in *GetPostsOfGroupRequest, opts ...grpc.CallOption) (*GetPostsOfGroupResponse, error)
 }
 
 type postClient struct {
@@ -153,6 +155,24 @@ func (x *postUploadClient) CloseAndRecv() (*UploadResponse, error) {
 	return m, nil
 }
 
+func (c *postClient) CreateGroupPost(ctx context.Context, in *CreateGroupPostRequest, opts ...grpc.CallOption) (*CreateGroupPostResponse, error) {
+	out := new(CreateGroupPostResponse)
+	err := c.cc.Invoke(ctx, "/post.Post/CreateGroupPost", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *postClient) GetPostsOfGroup(ctx context.Context, in *GetPostsOfGroupRequest, opts ...grpc.CallOption) (*GetPostsOfGroupResponse, error) {
+	out := new(GetPostsOfGroupResponse)
+	err := c.cc.Invoke(ctx, "/post.Post/GetPostsOfGroup", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // PostServer is the server API for Post service.
 // All implementations must embed UnimplementedPostServer
 // for forward compatibility
@@ -167,6 +187,8 @@ type PostServer interface {
 	LikePost(context.Context, *LikePostRequest) (*LikePostResponse, error)
 	UnlikePost(context.Context, *UnlikePostRequest) (*UnlikePostResponse, error)
 	Upload(Post_UploadServer) error
+	CreateGroupPost(context.Context, *CreateGroupPostRequest) (*CreateGroupPostResponse, error)
+	GetPostsOfGroup(context.Context, *GetPostsOfGroupRequest) (*GetPostsOfGroupResponse, error)
 	mustEmbedUnimplementedPostServer()
 }
 
@@ -203,6 +225,12 @@ func (UnimplementedPostServer) UnlikePost(context.Context, *UnlikePostRequest) (
 }
 func (UnimplementedPostServer) Upload(Post_UploadServer) error {
 	return status.Errorf(codes.Unimplemented, "method Upload not implemented")
+}
+func (UnimplementedPostServer) CreateGroupPost(context.Context, *CreateGroupPostRequest) (*CreateGroupPostResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateGroupPost not implemented")
+}
+func (UnimplementedPostServer) GetPostsOfGroup(context.Context, *GetPostsOfGroupRequest) (*GetPostsOfGroupResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetPostsOfGroup not implemented")
 }
 func (UnimplementedPostServer) mustEmbedUnimplementedPostServer() {}
 
@@ -405,6 +433,42 @@ func (x *postUploadServer) Recv() (*UploadRequest, error) {
 	return m, nil
 }
 
+func _Post_CreateGroupPost_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateGroupPostRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PostServer).CreateGroupPost(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/post.Post/CreateGroupPost",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PostServer).CreateGroupPost(ctx, req.(*CreateGroupPostRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Post_GetPostsOfGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPostsOfGroupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PostServer).GetPostsOfGroup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/post.Post/GetPostsOfGroup",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PostServer).GetPostsOfGroup(ctx, req.(*GetPostsOfGroupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Post_ServiceDesc is the grpc.ServiceDesc for Post service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -447,6 +511,14 @@ var Post_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UnlikePost",
 			Handler:    _Post_UnlikePost_Handler,
+		},
+		{
+			MethodName: "CreateGroupPost",
+			Handler:    _Post_CreateGroupPost_Handler,
+		},
+		{
+			MethodName: "GetPostsOfGroup",
+			Handler:    _Post_GetPostsOfGroup_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

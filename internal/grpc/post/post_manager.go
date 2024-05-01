@@ -260,3 +260,41 @@ func (p *PostManager) Upload(stream postspb.Post_UploadServer) (err error) {
 		Size:     fileSize,
 	})
 }
+
+func (p *PostManager) CreateGroupPost(ctx context.Context, in *postspb.CreateGroupPostRequest) (res *postspb.CreateGroupPostResponse, err error) {
+	postID := in.GetPostId()
+	groupID := in.GetGroupId()
+
+	_, err = p.PostsService.CreateGroupPost(ctx, &domain.GroupPost{
+		PostID:  uint(postID),
+		GroupID: uint(groupID),
+	})
+	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
+		return
+	}
+
+	res = &postspb.CreateGroupPostResponse{}
+
+	return
+}
+
+func (p *PostManager) GetPostsOfGroup(ctx context.Context, in *postspb.GetPostsOfGroupRequest) (res *postspb.GetPostsOfGroupResponse, err error) {
+	groupID := in.GetGroupId()
+	lastPostID := in.GetLastPostId()
+	postsAmount := in.GetPostsAmount()
+
+	posts, err := p.PostsService.GetPostsOfGroup(ctx, uint(groupID), uint(lastPostID), uint(postsAmount))
+	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
+		return
+	}
+
+	res = &postspb.GetPostsOfGroupResponse{
+		Posts: postspb.ToPostsResponse(posts),
+	}
+
+	return
+}

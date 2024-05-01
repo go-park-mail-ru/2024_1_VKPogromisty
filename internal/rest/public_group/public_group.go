@@ -2,11 +2,14 @@ package rest
 
 import (
 	"net/http"
+	"socio/domain"
 	"socio/errors"
+	postpb "socio/internal/grpc/post/proto"
 	pgpb "socio/internal/grpc/public_group/proto"
 	"socio/internal/rest/uploaders"
 	"socio/pkg/json"
 	"socio/pkg/requestcontext"
+	"socio/usecase/posts"
 	"strconv"
 	"strings"
 
@@ -15,11 +18,13 @@ import (
 
 type PublicGroupHandler struct {
 	PublicGroupClient pgpb.PublicGroupClient
+	PostClient        postpb.PostClient
 }
 
-func NewPublicGroupHandler(publicGroupClient pgpb.PublicGroupClient) (h *PublicGroupHandler) {
+func NewPublicGroupHandler(publicGroupClient pgpb.PublicGroupClient, postClient postpb.PostClient) (h *PublicGroupHandler) {
 	return &PublicGroupHandler{
 		PublicGroupClient: publicGroupClient,
+		PostClient:        postClient,
 	}
 }
 
@@ -401,4 +406,175 @@ func (h *PublicGroupHandler) HandleUnsubscribe(w http.ResponseWriter, r *http.Re
 	}
 
 	json.ServeJSONBody(r.Context(), w, nil, http.StatusNoContent)
+}
+
+// HandleCreateGroupPost godoc
+//
+//	@Summary		create post in public group
+//	@Description	create post in public group
+//	@Tags			groups
+//	@license.name	Apache 2.0
+//	@ID				groups/posts/create
+//	@Accept			mpfd
+//
+//	@Param			Cookie	header	string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
+//	@Param			groupID	path	string	true	"Group ID"
+//	@Param			content	formData	string	true	"Content of the post"
+//	@Param			attachments	formData	file	false	"Attachments of the post"
+//
+//	@Produce		json
+//	@Success		201	{object}	json.JSONResponse{body=domain.PostWithAuthorAndGroup}
+//	@Failure		400	{object}	errors.HTTPError
+//	@Failure		401	{object}	errors.HTTPError
+//	@Failure		403	{object}	errors.HTTPError
+//	@Failure		404	{object}	errors.HTTPError
+//	@Failure		500	{object}	errors.HTTPError
+//	@Router			/groups/{groupID}/posts/ [post]
+func (h *PublicGroupHandler) HandleCreateGroupPost(w http.ResponseWriter, r *http.Request) {
+	groupIDData := mux.Vars(r)["groupID"]
+	if len(groupIDData) == 0 {
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidSlug)
+		return
+	}
+
+	groupID, err := strconv.ParseUint(groupIDData, 10, 0)
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidSlug)
+		return
+	}
+
+	err = r.ParseMultipartForm(1000 << 20)
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidBody)
+		return
+	}
+
+	var postInput posts.PostInput
+
+	postInput.AuthorID, err = requestcontext.GetUserID(r.Context())
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, err)
+		return
+	}
+
+	postInput.Content = strings.TrimSpace(r.PostFormValue("content"))
+
+	for _, fh := range r.MultipartForm.File {
+		for _, f := range fh {
+			fileName, err := uploaders.UploadPostAttachment(r, h.PostClient, f)
+			if err != nil {
+				json.ServeJSONError(r.Context(), w, err)
+				return
+			}
+			postInput.Attachments = append(postInput.Attachments, fileName)
+		}
+	}
+
+	postData, err := h.PostClient.CreatePost(r.Context(), &postpb.CreatePostRequest{
+		AuthorId:    uint64(postInput.AuthorID),
+		Content:     postInput.Content,
+		Attachments: postInput.Attachments,
+	})
+	if err != nil {
+		json.ServeGRPCStatus(r.Context(), w, err)
+		return
+	}
+
+	post := postpb.ToPost(postData.Post)
+
+	_, err = h.PostClient.CreateGroupPost(r.Context(), &postpb.CreateGroupPostRequest{
+		GroupId: groupID,
+		PostId:  uint64(post.ID),
+	})
+	if err != nil {
+		json.ServeGRPCStatus(r.Context(), w, err)
+		return
+	}
+
+	group, err := h.PublicGroupClient.GetByID(r.Context(), &pgpb.GetByIDRequest{
+		Id: groupID,
+	})
+	if err != nil {
+		json.ServeGRPCStatus(r.Context(), w, err)
+		return
+	}
+
+	postWithGroup := &domain.PostWithAuthorAndGroup{
+		Post:  post,
+		Group: pgpb.ToPublicGroup(group.GetPublicGroup().PublicGroup),
+	}
+
+	json.ServeJSONBody(r.Context(), w, postWithGroup, http.StatusCreated)
+}
+
+// HandleGetGroupPosts godoc
+//
+//	@Summary		get posts of public group
+//	@Description	get posts of public group
+//	@Tags			groups
+//	@license.name	Apache 2.0
+//	@ID				groups/posts
+//	@Accept			json
+//
+//	@Param			Cookie	header	string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
+//	@Param			groupID	path	string	true	"Group ID"
+//	@Param			lastPostId	query	string	false	"Last post ID"
+//	@Param			postsAmount	query	string	false	"Posts amount"
+//
+//	@Produce		json
+//	@Success		200	{object}	json.JSONResponse{body=[]domain.Post}
+//	@Failure		400	{object}	errors.HTTPError
+//	@Failure		401	{object}	errors.HTTPError
+//	@Failure		403	{object}	errors.HTTPError
+//	@Failure		404	{object}	errors.HTTPError
+//	@Failure		500	{object}	errors.HTTPError
+//	@Router			/groups/{groupID}/posts/ [get]
+func (h *PublicGroupHandler) HandleGetGroupPosts(w http.ResponseWriter, r *http.Request) {
+	groupIDData := mux.Vars(r)["groupID"]
+	if len(groupIDData) == 0 {
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidSlug)
+		return
+	}
+
+	groupID, err := strconv.ParseUint(groupIDData, 10, 0)
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidSlug)
+		return
+	}
+
+	lastPostIDData := r.URL.Query().Get("lastPostId")
+	var lastPostID uint64
+	if len(lastPostIDData) != 0 {
+		lastPostID, err = strconv.ParseUint(lastPostIDData, 10, 0)
+		if err != nil {
+			json.ServeJSONError(r.Context(), w, errors.ErrInvalidSlug)
+			return
+		}
+	}
+
+	postsAmountData := r.URL.Query().Get("postsAmount")
+	var postsAmount uint64
+	if len(postsAmountData) != 0 {
+		postsAmount, err = strconv.ParseUint(postsAmountData, 10, 0)
+		if err != nil {
+			json.ServeJSONError(r.Context(), w, errors.ErrInvalidSlug)
+			return
+		}
+	}
+
+	res, err := h.PostClient.GetPostsOfGroup(r.Context(), &postpb.GetPostsOfGroupRequest{
+		GroupId:     groupID,
+		LastPostId:  lastPostID,
+		PostsAmount: postsAmount,
+	})
+	if err != nil {
+		json.ServeGRPCStatus(r.Context(), w, err)
+		return
+	}
+
+	posts := postpb.ToPosts(res.GetPosts())
+
+	json.ServeJSONBody(r.Context(), w, posts, http.StatusOK)
 }

@@ -2,6 +2,7 @@ package routers
 
 import (
 	authpb "socio/internal/grpc/auth/proto"
+	postpb "socio/internal/grpc/post/proto"
 	pgpb "socio/internal/grpc/public_group/proto"
 	"socio/internal/rest/middleware"
 	rest "socio/internal/rest/public_group"
@@ -11,10 +12,10 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func MountPublicGroupRouter(rootRouter *mux.Router, groupClient pgpb.PublicGroupClient, authManager authpb.AuthClient) {
+func MountPublicGroupRouter(rootRouter *mux.Router, groupClient pgpb.PublicGroupClient, postClient postpb.PostClient, authManager authpb.AuthClient) {
 	r := rootRouter.PathPrefix("/groups").Subrouter()
 
-	h := rest.NewPublicGroupHandler(groupClient)
+	h := rest.NewPublicGroupHandler(groupClient, postClient)
 
 	r.HandleFunc("/search", h.HandleSearchByName).Methods("GET", "OPTIONS")
 	r.HandleFunc("/{groupID:[0-9]+}", h.HandleGetByID).Methods("GET", "OPTIONS")
@@ -25,6 +26,8 @@ func MountPublicGroupRouter(rootRouter *mux.Router, groupClient pgpb.PublicGroup
 	r.HandleFunc("/", h.HandleCreate).Methods("POST", "OPTIONS")
 	r.HandleFunc("/{groupID:[0-9]+}", h.HandleUpdate).Methods("PUT", "OPTIONS")
 	r.HandleFunc("/{groupID:[0-9]+}", h.HandleDelete).Methods("DELETE", "OPTIONS")
+	r.HandleFunc("/{groupID:[0-9]+}/posts/", h.HandleGetGroupPosts).Methods("GET", "OPTIONS")
+	r.HandleFunc("/{groupID:[0-9]+}/posts/", h.HandleCreateGroupPost).Methods("POST", "OPTIONS")
 	r.Use(middleware.CreateCheckIsAuthorizedMiddleware(authManager))
 	r.Use(middleware.CreateCSRFMiddleware(csrf.NewCSRFService(customtime.RealTimeProvider{})))
 }
