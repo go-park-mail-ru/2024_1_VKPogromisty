@@ -105,6 +105,23 @@ definitions:
         format: date-time
         type: string
     type: object
+  domain.PublicGroupSubscription:
+    properties:
+      createdAt:
+        example: "2021-01-01T00:00:00Z"
+        format: date-time
+        type: string
+      id:
+        type: integer
+      publicGroupId:
+        type: integer
+      subscriberId:
+        type: integer
+      updatedAt:
+        example: "2021-01-01T00:00:00Z"
+        format: date-time
+        type: string
+    type: object
   domain.Subscription:
     properties:
       createdAt:
@@ -177,6 +194,11 @@ definitions:
     properties:
       csrfToken:
         type: string
+    type: object
+  rest.CheckIfUserIsAdminRes:
+    properties:
+      isAdmin:
+        type: boolean
     type: object
   rest.ListUserPostsResponse:
     properties:
@@ -648,6 +670,57 @@ paths:
       tags:
       - groups
   /groups/{groupID}:
+    delete:
+      consumes:
+      - application/json
+      description: delete public group
+      operationId: groups/delete
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: groupID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            $ref: '#/definitions/json.JSONResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: delete public group
+      tags:
+      - groups
     get:
       consumes:
       - application/json
@@ -766,6 +839,281 @@ paths:
           schema:
             $ref: '#/definitions/errors.HTTPError'
       summary: update public group
+      tags:
+      - groups
+  /groups/{groupID}/admins/:
+    delete:
+      consumes:
+      - application/json
+      description: delete public group admin
+      operationId: groups/admin/delete
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: groupID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            $ref: '#/definitions/json.JSONResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: delete public group admin
+      tags:
+      - groups
+    get:
+      consumes:
+      - application/json
+      description: get admins by public group ID
+      operationId: groups/admins
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: groupID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/domain.User'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: get admins by public group ID
+      tags:
+      - groups
+    post:
+      consumes:
+      - application/json
+      description: create public group admin
+      operationId: groups/admin/create
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: groupID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/json.JSONResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: create public group admin
+      tags:
+      - groups
+  /groups/{groupID}/admins/check:
+    get:
+      consumes:
+      - application/json
+      description: check if user is admin
+      operationId: groups/admins/check
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: groupID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  $ref: '#/definitions/rest.CheckIfUserIsAdminRes'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: check if user is admin
+      tags:
+      - groups
+  /groups/{groupID}/is-sub:
+    get:
+      consumes:
+      - application/json
+      description: get subscription by public group ID and subscriber ID
+      operationId: groups/is-sub
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: groupID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  $ref: '#/definitions/domain.PublicGroupSubscription'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: get subscription by public group ID and subscriber ID
       tags:
       - groups
   /groups/{groupID}/posts/:
@@ -898,6 +1246,168 @@ paths:
           schema:
             $ref: '#/definitions/errors.HTTPError'
       summary: create post in public group
+      tags:
+      - groups
+  /groups/{groupID}/sub:
+    post:
+      consumes:
+      - application/json
+      description: subscribe to public group
+      operationId: groups/sub
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: groupID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/json.JSONResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: subscribe to public group
+      tags:
+      - groups
+  /groups/{groupID}/unsub:
+    post:
+      consumes:
+      - application/json
+      description: unsubscribe from public group
+      operationId: groups/unsub
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: groupID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            $ref: '#/definitions/json.JSONResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: unsubscribe from public group
+      tags:
+      - groups
+  /groups/by-sub/{userID}:
+    get:
+      consumes:
+      - application/json
+      description: get public groups by subscriber ID
+      operationId: groups/by-sub
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: User ID
+        in: path
+        name: userID
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/domain.PublicGroup'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: get public groups by subscriber ID
       tags:
       - groups
   /groups/search:

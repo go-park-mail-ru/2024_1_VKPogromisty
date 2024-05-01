@@ -34,7 +34,7 @@ const (
 		u.created_at,
 		u.updated_at
 	FROM public.user AS u
-		JOIN public.public_group_admin AS pga ON public_group_admin.user_id = public.user.id
+		JOIN public.public_group_admin AS pga ON pga.user_id = u.id
 	WHERE pga.public_group_id = $1;
 	`
 	checkIfUserIsAdminQuery = `
@@ -61,8 +61,8 @@ func (s *Users) StorePublicGroupAdmin(ctx context.Context, publicGroupAdmin *dom
 		&newPublicGroupAdmin.ID,
 		&newPublicGroupAdmin.PublicGroupID,
 		&newPublicGroupAdmin.UserID,
-		&newPublicGroupAdmin.CreatedAt,
-		&newPublicGroupAdmin.UpdatedAt,
+		&newPublicGroupAdmin.CreatedAt.Time,
+		&newPublicGroupAdmin.UpdatedAt.Time,
 	)
 	if err != nil {
 		return

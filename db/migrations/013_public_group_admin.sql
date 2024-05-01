@@ -2,12 +2,12 @@
 CREATE TABLE IF NOT EXISTS public_group_admin (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     user_id BIGINT NOT NULL,
-    group_id BIGINT NOT NULL,
+    public_group_id BIGINT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     FOREIGN KEY (user_id) REFERENCES public.user(id) ON UPDATE CASCADE ON DELETE CASCADE,
-    FOREIGN KEY (group_id) REFERENCES public.public_group(id) ON UPDATE CASCADE ON DELETE CASCADE,
-    UNIQUE (user_id, group_id)
+    FOREIGN KEY (public_group_id) REFERENCES public.public_group(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT public_group_admin_user_group_unique UNIQUE (user_id, public_group_id)
 );
 
 CREATE OR REPLACE TRIGGER set_timestamp

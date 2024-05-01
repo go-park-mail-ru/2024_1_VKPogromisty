@@ -375,7 +375,7 @@ func (u *UserManager) CheckIfUserIsAdmin(ctx context.Context, in *uspb.CheckIfUs
 	userID := in.GetUserId()
 	publicGroupID := in.GetPublicGroupId()
 
-	isAdmin, err := u.UserService.CheckIfUserIsAdmin(ctx, uint(userID), uint(publicGroupID))
+	isAdmin, err := u.UserService.CheckIfUserIsAdmin(ctx, uint(publicGroupID), uint(userID))
 	if err != nil {
 		customErr := errors.NewCustomError(err)
 		err = customErr.GRPCStatus().Err()

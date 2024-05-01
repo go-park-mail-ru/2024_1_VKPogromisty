@@ -29,7 +29,7 @@ func MountPublicGroupRouter(rootRouter *mux.Router, groupClient pgpb.PublicGroup
 	publicRouter.Use(middleware.CreateCheckIsAuthorizedMiddleware(authManager))
 	publicRouter.Use(middleware.CreateCSRFMiddleware(csrf.NewCSRFService(customtime.RealTimeProvider{})))
 
-	adminRouter := publicRouter.PathPrefix("/groups").Subrouter()
+	adminRouter := rootRouter.PathPrefix("/groups").Subrouter()
 
 	adminRouter.HandleFunc("/{groupID:[0-9]+}/admins/", h.HandleGetAdminsByPublicGroupID).Methods("GET", "OPTIONS")
 	adminRouter.HandleFunc("/{groupID:[0-9]+}/admins/check", h.HandleCheckIfUserIsAdmin).Methods("GET", "OPTIONS")

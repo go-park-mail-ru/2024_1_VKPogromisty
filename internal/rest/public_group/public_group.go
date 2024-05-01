@@ -401,7 +401,7 @@ func (h *PublicGroupHandler) HandleGetSubscriptionByPublicGroupIDAndSubscriberID
 //	@Param			userID	path	string	false	"User ID"
 //
 //	@Produce		json
-//	@Success		200	{object}	json.JSONResponse{body=[]publicgroup.PublicGroup}
+//	@Success		200	{object}	json.JSONResponse{body=[]domain.PublicGroup}
 //	@Failure		400	{object}	errors.HTTPError
 //	@Failure		401	{object}	errors.HTTPError
 //	@Failure		403	{object}	errors.HTTPError
