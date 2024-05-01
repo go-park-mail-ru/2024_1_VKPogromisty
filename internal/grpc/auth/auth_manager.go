@@ -30,8 +30,6 @@ func (a *AuthManager) Login(ctx context.Context, in *authpb.LoginRequest) (res *
 
 	userRes, err := a.UserClient.GetByEmail(ctx, &uspb.GetByEmailRequest{Email: loginInput.Email})
 	if err != nil {
-		customErr := errors.NewCustomError(err)
-		err = customErr.GRPCStatus().Err()
 		return
 	}
 

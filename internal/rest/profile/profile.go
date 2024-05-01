@@ -121,12 +121,12 @@ func (h *ProfileHandler) HandleUpdateProfile(w http.ResponseWriter, r *http.Requ
 
 	var input user.UpdateUserInput
 	input.ID = userID
-	input.FirstName = strings.Trim(r.PostFormValue("firstName"), " \n\r\t")
-	input.LastName = strings.Trim(r.PostFormValue("lastName"), " \n\r\t")
-	input.Email = strings.Trim(r.PostFormValue("email"), " \n\r\t")
+	input.FirstName = strings.TrimSpace(r.PostFormValue("firstName"))
+	input.LastName = strings.TrimSpace(r.PostFormValue("lastName"))
+	input.Email = strings.TrimSpace(r.PostFormValue("email"))
 	input.Password = r.PostFormValue("password")
 	input.RepeatPassword = r.PostFormValue("repeatPassword")
-	input.DateOfBirth = strings.Trim(r.PostFormValue("dateOfBirth"), " \n\r\t")
+	input.DateOfBirth = strings.TrimSpace(r.PostFormValue("dateOfBirth"))
 	_, avatarFH, err := r.FormFile("avatar")
 	if err != nil && err != http.ErrMissingFile {
 		json.ServeJSONError(r.Context(), w, err)

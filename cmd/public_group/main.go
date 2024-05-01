@@ -5,9 +5,9 @@ import (
 	"net"
 	"os"
 	"socio/internal/grpc/interceptors"
-	"socio/internal/grpc/post"
+	publicgroup "socio/internal/grpc/public_group"
 
-	postspb "socio/internal/grpc/post/proto"
+	pgpb "socio/internal/grpc/public_group/proto"
 	minioRepo "socio/internal/repository/minio"
 	pgRepo "socio/internal/repository/postgres"
 	"socio/pkg/logger"
@@ -42,21 +42,21 @@ func main() {
 		return
 	}
 
-	attachmentStorage, err := minioRepo.NewStaticStorage(minioClient, minioRepo.AttachmentsBucket)
+	avatarStorage, err := minioRepo.NewStaticStorage(minioClient, minioRepo.GroupAvatarsBucket)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	port := os.Getenv("GRPC_POST_SERVICE_PORT")
+	port := os.Getenv("GRPC_PUBLIC_GROUP_SERVICE_PORT")
 	lis, err := net.Listen("tcp", "0.0.0.0"+port)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	postsStorage := pgRepo.NewPosts(db, customtime.RealTimeProvider{})
-	manager := post.NewPostManager(postsStorage, attachmentStorage)
+	postsStorage := pgRepo.NewPublicGroup(db, customtime.RealTimeProvider{})
+	manager := publicgroup.NewPublicGroupManager(postsStorage, avatarStorage)
 
 	prodLogger, err := logger.NewZapLogger()
 	if err != nil {
@@ -72,9 +72,9 @@ func main() {
 		grpc.ChainUnaryInterceptor(interceptors.UnaryRecoveryInterceptor),
 	)
 
-	postspb.RegisterPostServer(server, manager)
+	pgpb.RegisterPublicGroupServer(server, manager)
 
-	fmt.Println("Post service is running on port:", port)
+	fmt.Println("Public group service is running on port:", port)
 	err = server.Serve(lis)
 	if err != nil {
 		fmt.Println(err)

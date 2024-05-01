@@ -1,4 +1,4 @@
-package middleware
+package logger
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 )
 
 type Logger struct {
@@ -59,4 +60,31 @@ func (l *Logger) LoggerMiddleware(h http.Handler) http.Handler {
 			zap.Duration("work_time", time.Since(start)),
 		)
 	})
+}
+
+func (l *Logger) UnaryLoggerInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+	start := time.Now()
+	requestID, err := requestcontext.GetRequestID(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	currLogger := l.logger.With(
+		zap.String("requestID", requestID),
+		zap.String("method", info.FullMethod),
+	)
+
+	newCtx := context.WithValue(ctx, requestcontext.LoggerKey, currLogger)
+
+	resp, err = handler(newCtx, req)
+	if err != nil {
+		currLogger.Error(err.Error())
+	}
+
+	currLogger.Info(
+		"Working time: ",
+		zap.Duration("work_time", time.Since(start)),
+	)
+
+	return resp, err
 }

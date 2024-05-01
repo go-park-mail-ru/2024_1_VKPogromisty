@@ -5,8 +5,9 @@ import (
 )
 
 const (
-	AvatarBucket      = "user-avatars"
-	AttachmentsBucket = "post-attachments"
+	UserAvatarsBucket  = "user-avatars"
+	AttachmentsBucket  = "post-attachments"
+	GroupAvatarsBucket = "group-avatars"
 )
 
 type StaticStorage struct {
@@ -22,6 +23,24 @@ func NewStaticStorage(minioClient *minio.Client, bucketName string) (storage *St
 
 	if !bucketExists {
 		err = minioClient.MakeBucket(bucketName, "ru-central1")
+		if err != nil {
+			return
+		}
+
+		policy := `{
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Sid": "PublicRead",
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": ["s3:GetObject"],
+                "Resource": ["arn:aws:s3:::` + bucketName + `/*"]
+            }
+        ]
+    }`
+
+		err = minioClient.SetBucketPolicy(bucketName, policy)
 		if err != nil {
 			return
 		}

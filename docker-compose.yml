@@ -82,6 +82,29 @@ services:
       - redis
       - minio
       - user_service
+  
+  public_group_service:
+    image: socio/public-group-service:latest
+    container_name: public_group_service_container
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - PG_USER=${PG_USER}
+      - PG_PASSWORD=${PG_PASSWORD}
+      - PG_DBNAME=${PG_DBNAME}
+      - PG_HOST=postgresdb
+      - PG_PORT=${PG_PORT}
+    tty: true
+    ports:
+      - 8085:8085
+    restart: on-failure
+    volumes:
+      - ./volumes/logs/:/var/log/socio/
+    depends_on:
+      - postgresdb
+      - redis
+      - minio
     
   auth_service:
     image: socio/auth-service:latest

@@ -82,12 +82,12 @@ func (api *AuthHandler) HandleRegistration(w http.ResponseWriter, r *http.Reques
 	}
 
 	var regInput user.CreateUserInput
-	regInput.FirstName = strings.Trim(r.PostFormValue("firstName"), " \n\r\t")
-	regInput.LastName = strings.Trim(r.PostFormValue("lastName"), " \n\r\t")
-	regInput.Email = strings.Trim(r.PostFormValue("email"), " \n\r\t")
+	regInput.FirstName = strings.TrimSpace(r.PostFormValue("firstName"))
+	regInput.LastName = strings.TrimSpace(r.PostFormValue("lastName"))
+	regInput.Email = strings.TrimSpace(r.PostFormValue("email"))
 	regInput.Password = r.PostFormValue("password")
 	regInput.RepeatPassword = r.PostFormValue("repeatPassword")
-	regInput.DateOfBirth = strings.Trim(r.PostFormValue("dateOfBirth"), " \n\r\t")
+	regInput.DateOfBirth = strings.TrimSpace(r.PostFormValue("dateOfBirth"))
 	_, avatarFH, err := r.FormFile("avatar")
 	if err != nil && err != http.ErrMissingFile {
 		json.ServeJSONError(r.Context(), w, err)
