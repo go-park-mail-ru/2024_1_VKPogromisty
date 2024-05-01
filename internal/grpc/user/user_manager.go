@@ -298,3 +298,20 @@ func (u *UserManager) SearchByName(ctx context.Context, in *uspb.SearchByNameReq
 
 	return
 }
+
+func (u *UserManager) GetSubscriptionIDs(ctx context.Context, in *uspb.GetSubscriptionIDsRequest) (res *uspb.GetSubscriptionIDsResponse, err error) {
+	userID := in.GetUserId()
+
+	subIDs, err := u.UserService.GetSubscriptionIDs(ctx, uint(userID))
+	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
+		return
+	}
+
+	res = &uspb.GetSubscriptionIDsResponse{
+		SubscriptionIds: uspb.UintToUint64Slice(subIDs),
+	}
+
+	return
+}

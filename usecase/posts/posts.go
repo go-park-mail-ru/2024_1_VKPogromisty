@@ -63,6 +63,9 @@ type PostsStorage interface {
 	StoreGroupPost(ctx context.Context, groupPost *domain.GroupPost) (newGroupPost *domain.GroupPost, err error)
 	DeleteGroupPost(ctx context.Context, postID uint) (err error)
 	GetPostsOfGroup(ctx context.Context, groupID, lastPostID, postsAmount uint) (posts []*domain.Post, err error)
+	GetGroupPostsBySubscriptionIDs(ctx context.Context, subIDs []uint, lastPostID, postsAmount uint) (posts []*domain.Post, err error)
+	GetPostsByGroupSubIDsAndUserSubIDs(ctx context.Context, groupSubIDs, userSubIDs []uint, lastPostID, postsAmount uint) (posts []*domain.Post, err error)
+	GetNewPosts(ctx context.Context, lastPostID, postsAmount uint) (posts []*domain.Post, err error)
 }
 
 type AttachmentStorage interface {
@@ -266,6 +269,57 @@ func (s *Service) GetPostsOfGroup(ctx context.Context, groupID, lastPostID, post
 	}
 
 	posts, err = s.PostsStorage.GetPostsOfGroup(ctx, groupID, lastPostID, postsAmount)
+	if err != nil {
+		return
+	}
+
+	for _, post := range posts {
+		s.Sanitizer.SanitizePost(post)
+	}
+
+	return
+}
+
+func (s *Service) GetGroupPostsBySubscriptionIDs(ctx context.Context, subIDs []uint, lastPostID, postsAmount uint) (posts []*domain.Post, err error) {
+	if postsAmount == 0 {
+		postsAmount = defaultPostsAmount
+	}
+
+	posts, err = s.PostsStorage.GetGroupPostsBySubscriptionIDs(ctx, subIDs, lastPostID, postsAmount)
+	if err != nil {
+		return
+	}
+
+	for _, post := range posts {
+		s.Sanitizer.SanitizePost(post)
+	}
+
+	return
+}
+
+func (s *Service) GetPostsByGroupSubIDsAndUserSubIDs(ctx context.Context, groupSubIDs, userSubIDs []uint, lastPostID, postsAmount uint) (posts []*domain.Post, err error) {
+	if postsAmount == 0 {
+		postsAmount = defaultPostsAmount
+	}
+
+	posts, err = s.PostsStorage.GetPostsByGroupSubIDsAndUserSubIDs(ctx, groupSubIDs, userSubIDs, lastPostID, postsAmount)
+	if err != nil {
+		return
+	}
+
+	for _, post := range posts {
+		s.Sanitizer.SanitizePost(post)
+	}
+
+	return
+}
+
+func (s *Service) GetNewPosts(ctx context.Context, lastPostID, postsAmount uint) (posts []*domain.Post, err error) {
+	if postsAmount == 0 {
+		postsAmount = defaultPostsAmount
+	}
+
+	posts, err = s.PostsStorage.GetNewPosts(ctx, lastPostID, postsAmount)
 	if err != nil {
 		return
 	}

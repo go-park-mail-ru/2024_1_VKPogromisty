@@ -298,3 +298,65 @@ func (p *PostManager) GetPostsOfGroup(ctx context.Context, in *postspb.GetPostsO
 
 	return
 }
+
+func (p *PostManager) GetGroupPostsBySubscriptionIDs(ctx context.Context, in *postspb.GetGroupPostsBySubscriptionIDsRequest) (res *postspb.GetGroupPostsBySubscriptionIDsResponse, err error) {
+	subIDs := in.GetSubscriptionIds()
+	lastPostID := in.GetLastPostId()
+	postsAmount := in.GetPostsAmount()
+
+	subIDsUint := postspb.Uint64ToUintSlice(subIDs)
+
+	posts, err := p.PostsService.GetGroupPostsBySubscriptionIDs(ctx, subIDsUint, uint(lastPostID), uint(postsAmount))
+	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
+		return
+	}
+
+	res = &postspb.GetGroupPostsBySubscriptionIDsResponse{
+		Posts: postspb.ToPostsResponse(posts),
+	}
+
+	return
+}
+
+func (p *PostManager) GetPostsByGroupSubIDsAndUserSubIDs(ctx context.Context, in *postspb.GetPostsByGroupSubIDsAndUserSubIDsRequest) (res *postspb.GetPostsByGroupSubIDsAndUserSubIDsResponse, err error) {
+	groupSubIDs := in.GetGroupSubscriptionIds()
+	userSubIDs := in.GetUserSubscriptionIds()
+	lastPostID := in.GetLastPostId()
+	postsAmount := in.GetPostsAmount()
+
+	groupSubIDsUint := postspb.Uint64ToUintSlice(groupSubIDs)
+	userSubIDsUint := postspb.Uint64ToUintSlice(userSubIDs)
+
+	posts, err := p.PostsService.GetPostsByGroupSubIDsAndUserSubIDs(ctx, groupSubIDsUint, userSubIDsUint, uint(lastPostID), uint(postsAmount))
+	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
+		return
+	}
+
+	res = &postspb.GetPostsByGroupSubIDsAndUserSubIDsResponse{
+		Posts: postspb.ToPostsResponse(posts),
+	}
+
+	return
+}
+
+func (p *PostManager) GetNewPosts(ctx context.Context, in *postspb.GetNewPostsRequest) (res *postspb.GetNewPostsResponse, err error) {
+	lastPostID := in.GetLastPostId()
+	postsAmount := in.GetPostsAmount()
+
+	posts, err := p.PostsService.GetNewPosts(ctx, uint(lastPostID), uint(postsAmount))
+	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
+		return
+	}
+
+	res = &postspb.GetNewPostsResponse{
+		Posts: postspb.ToPostsResponse(posts),
+	}
+
+	return
+}

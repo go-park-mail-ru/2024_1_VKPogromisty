@@ -18,6 +18,7 @@ type UserStorage interface {
 	UpdateUser(ctx context.Context, user *domain.User, prevPassword string) (updatedUser *domain.User, err error)
 	DeleteUser(ctx context.Context, userID uint) (err error)
 	SearchByName(ctx context.Context, query string) (users []*domain.User, err error)
+	GetSubscriptionIDs(ctx context.Context, userID uint) (subscribedToIDs []uint, err error)
 }
 
 type AvatarStorage interface {
@@ -219,6 +220,20 @@ func (p *Service) SearchByName(ctx context.Context, query string) (users []*doma
 
 	for _, user := range users {
 		p.Sanitizer.SanitizeUser(user)
+	}
+
+	return
+}
+
+func (p *Service) GetSubscriptionIDs(ctx context.Context, userID uint) (subIDs []uint, err error) {
+	_, err = p.UserStorage.GetUserByID(ctx, userID)
+	if err != nil {
+		return
+	}
+
+	subIDs, err = p.UserStorage.GetSubscriptionIDs(ctx, userID)
+	if err != nil {
+		return
 	}
 
 	return

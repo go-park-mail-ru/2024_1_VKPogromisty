@@ -143,6 +143,11 @@ const (
 	FROM public.user
 	WHERE full_name ILIKE '%' || $1 || '%';
 	`
+	getSubscriptionIDsQuery = `
+	SELECT subscribed_to_id
+	FROM subscription
+	WHERE subscriber_id = $1;
+	`
 )
 
 type Users struct {
@@ -412,6 +417,30 @@ func (s *Users) SearchByName(ctx context.Context, query string) (users []*domain
 		}
 
 		users = append(users, user)
+	}
+
+	return
+}
+
+func (s *Users) GetSubscriptionIDs(ctx context.Context, userID uint) (subscribedToIDs []uint, err error) {
+	contextlogger.LogSQL(ctx, getSubscriptionIDsQuery, userID)
+
+	rows, err := s.db.Query(context.Background(), getSubscriptionIDsQuery, userID)
+	if err != nil {
+		return
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var subscribedToID uint
+
+		err = rows.Scan(&subscribedToID)
+		if err != nil {
+			return
+		}
+
+		subscribedToIDs = append(subscribedToIDs, subscribedToID)
 	}
 
 	return

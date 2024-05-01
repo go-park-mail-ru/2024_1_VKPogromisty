@@ -17,6 +17,7 @@ service PublicGroup {
     rpc Subscribe(SubscribeRequest) returns (SubscribeResponse) {}
     rpc Unsubscribe(UnsubscribeRequest) returns (UnsubscribeResponse) {}
     rpc Upload(stream UploadRequest) returns (UploadResponse) {}
+    rpc GetSubscriptionIDs(GetSubscriptionIDsRequest) returns (GetSubscriptionIDsResponse) {}
 }
 
 message PublicGroupResponse {
@@ -131,3 +132,10 @@ message UploadResponse {
     uint64 size = 2;
 }
 
+message GetSubscriptionIDsRequest {
+    uint64 user_id = 1;
+}
+
+message GetSubscriptionIDsResponse {
+    repeated uint64 public_group_ids = 1;
+}

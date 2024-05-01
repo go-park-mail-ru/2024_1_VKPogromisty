@@ -7,6 +7,7 @@ import (
 type Post struct {
 	ID          uint                  `json:"postId"`
 	AuthorID    uint                  `json:"authorId"`
+	GroupID     uint                  `json:"groupId,omitempty"`
 	Content     string                `json:"content"`
 	Attachments []string              `json:"attachments"`
 	LikedByIDs  []uint64              `json:"likedBy"`

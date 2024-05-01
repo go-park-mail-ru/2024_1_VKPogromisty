@@ -34,8 +34,10 @@ const (
 	`
 	getLastUserPostIDQuery = `
 	SELECT COALESCE(MAX(id), 0) AS last_post_id
-	FROM public.post
-	WHERE author_id = $1;
+	FROM public.post AS p
+	LEFT JOIN public.public_group_post AS pgp ON pgp.post_id = p.id
+	WHERE author_id = $1 
+		AND pgp.post_id IS NULL;
 	`
 	getUserPostsQuery = `
 	SELECT p.id,
@@ -48,8 +50,10 @@ const (
     FROM public.post AS p
         LEFT JOIN public.post_attachment AS pa ON p.id = pa.post_id
         LEFT JOIN public.post_like AS pl ON p.id = pl.post_id
+		LEFT JOIN public.public_group_post AS pgp ON pgp.post_id = p.id
     WHERE p.author_id = $1
         AND p.id < $2
+		AND pgp.post_id IS NULL
     GROUP BY p.id,
         p.author_id,
         p.content,
@@ -76,8 +80,10 @@ const (
         LEFT JOIN public.post_attachment AS pa ON p.id = pa.post_id
         LEFT JOIN public.post_like AS pl ON p.id = pl.post_id
         INNER JOIN public.subscription AS s ON p.author_id = s.subscribed_to_id
+		LEFT JOIN public.public_group_post AS pgp ON pgp.post_id = p.id
     WHERE s.subscriber_id = $1
         AND p.id < $2
+		AND pgp.post_id IS NULL
     GROUP BY p.id,
         p.content,
         p.created_at,
@@ -207,6 +213,87 @@ const (
 			p.updated_at
 		ORDER BY p.created_at DESC
 		LIMIT $3;
+	`
+	getGroupPostsBySubscriptionIDsQuery = `
+	SELECT p.id,
+		p.author_id,
+		p.content,
+		p.created_at,
+		p.updated_at,
+		array_agg(DISTINCT pa.file_name) AS attachments,
+		array_agg(DISTINCT pl.user_id) AS liked_by_users,
+		pgp.public_group_id
+		FROM public.post AS p
+		LEFT JOIN public.post_attachment AS pa ON p.id = pa.post_id
+		LEFT JOIN public.post_like AS pl ON p.id = pl.post_id
+		LEFT JOIN public.public_group_post AS pgp ON p.id = pgp.post_id
+		WHERE pgp.public_group_id IN ($1)
+			AND p.id < $2
+			GROUP BY p.id,
+			p.author_id,
+			p.content,
+			p.created_at,
+			p.updated_at
+			ORDER BY p.created_at DESC
+			LIMIT $3;`
+	getLastGroupPostBySubscriptionIDsQuery = `
+	SELECT COALESCE(MAX(p.id), 0) AS last_post_id
+	FROM public.post AS p
+		LEFT JOIN public.public_group_post AS pgp ON p.id = pgp.post_id
+		WHERE pgp.public_group_id IN ($1);
+	`
+	getPostsByGroupSubIDsAndUserSubIDsQuery = `
+	SELECT p.id,
+		p.author_id,
+		p.content,
+		p.created_at,
+		p.updated_at,
+		array_agg(DISTINCT pa.file_name) AS attachments,
+		array_agg(DISTINCT pl.user_id) AS liked_by_users
+		FROM public.post AS p
+		LEFT JOIN public.post_attachment AS pa ON p.id = pa.post_id
+		LEFT JOIN public.post_like AS pl ON p.id = pl.post_id
+		LEFT JOIN public.public_group_post AS pgp ON p.id = pgp.post_id
+		WHERE pgp.public_group_id IN ($1) OR p.author_id IN ($2)
+			AND p.id < $3
+			GROUP BY p.id,
+			p.author_id,
+			p.content,
+			p.created_at,
+			p.updated_at
+			ORDER BY p.created_at DESC
+			LIMIT $4;`
+	getLastPostByGroupSubIDsAndUserSubIDsQuery = `
+	SELECT COALESCE(MAX(p.id), 0) AS last_post_id
+	FROM public.post AS p
+		LEFT JOIN public.public_group_post AS pgp ON p.id = pgp.post_id
+		WHERE pgp.public_group_id IN ($1) OR p.author_id IN ($2);
+	`
+	getLastPostIDQuery = `
+	SELECT COALESCE(MAX(id), 0) AS last_post_id
+	FROM public.post;
+	`
+	getNewPostsQuery = `
+	SELECT p.id,
+		p.author_id,
+		p.content,
+		p.created_at,
+		p.updated_at,
+		array_agg(DISTINCT pa.file_name) AS attachments,
+		array_agg(DISTINCT pl.user_id) AS liked_by_users,
+		COALESCE(pgp.public_group_id, 0) AS group_id
+		FROM public.post AS p
+		LEFT JOIN public.post_attachment AS pa ON p.id = pa.post_id
+		LEFT JOIN public.post_like AS pl ON p.id = pl.post_id
+		LEFT JOIN public.public_group_post AS pgp ON p.id = pgp.post_id
+		WHERE p.id < $1
+		GROUP BY p.id,
+			p.author_id,
+			p.content,
+			p.created_at,
+			p.updated_at
+			ORDER BY p.created_at DESC
+			LIMIT $2;
 	`
 )
 
@@ -618,6 +705,160 @@ func (p *Posts) GetPostsOfGroup(ctx context.Context, groupID, lastPostID, postsA
 			&post.UpdatedAt.Time,
 			&attachments,
 			&likedByUsers,
+		)
+		if err != nil {
+			return
+		}
+
+		post.Attachments = textArrayIntoStringSlice(attachments)
+		post.LikedByIDs = int8ArrayIntoUintSlice(likedByUsers)
+
+		posts = append(posts, post)
+	}
+
+	return
+}
+
+func (p *Posts) GetGroupPostsBySubscriptionIDs(ctx context.Context, subIDs []uint, lastPostID, postsAmount uint) (posts []*domain.Post, err error) {
+	if lastPostID == 0 {
+		contextlogger.LogSQL(ctx, getLastGroupPostBySubscriptionIDsQuery, subIDs)
+
+		err = p.db.QueryRow(context.Background(), getLastGroupPostBySubscriptionIDsQuery, subIDs).Scan(&lastPostID)
+		if err != nil {
+			return
+		}
+
+		lastPostID += 1
+	}
+
+	contextlogger.LogSQL(ctx, getGroupPostsBySubscriptionIDsQuery, subIDs, lastPostID, postsAmount)
+
+	rows, err := p.db.Query(context.Background(), getGroupPostsBySubscriptionIDsQuery, subIDs, lastPostID, postsAmount)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		post := new(domain.Post)
+
+		var attachments pgtype.TextArray
+		var likedByUsers pgtype.Int8Array
+
+		err = rows.Scan(
+			&post.ID,
+			&post.AuthorID,
+			&post.Content,
+			&post.CreatedAt.Time,
+			&post.UpdatedAt.Time,
+			&attachments,
+			&likedByUsers,
+			&post.GroupID,
+		)
+		if err != nil {
+			return
+		}
+
+		post.Attachments = textArrayIntoStringSlice(attachments)
+		post.LikedByIDs = int8ArrayIntoUintSlice(likedByUsers)
+
+		posts = append(posts, post)
+	}
+
+	return
+}
+
+func (p *Posts) GetPostsByGroupSubIDsAndUserSubIDs(ctx context.Context, groupSubIDs, userSubIDs []uint, lastPostID, postsAmount uint) (posts []*domain.Post, err error) {
+	if len(groupSubIDs) == 0 {
+		groupSubIDs = append(groupSubIDs, 0)
+	}
+
+	if len(userSubIDs) == 0 {
+		userSubIDs = append(userSubIDs, 0)
+	}
+
+	if lastPostID == 0 {
+		contextlogger.LogSQL(ctx, getLastPostByGroupSubIDsAndUserSubIDsQuery, groupSubIDs, userSubIDs)
+
+		err = p.db.QueryRow(context.Background(), getLastPostByGroupSubIDsAndUserSubIDsQuery, groupSubIDs, userSubIDs).Scan(&lastPostID)
+		if err != nil {
+			return
+		}
+
+		lastPostID += 1
+	}
+
+	contextlogger.LogSQL(ctx, getPostsByGroupSubIDsAndUserSubIDsQuery, groupSubIDs, userSubIDs, lastPostID, postsAmount)
+
+	rows, err := p.db.Query(context.Background(), getPostsByGroupSubIDsAndUserSubIDsQuery, groupSubIDs, userSubIDs, lastPostID)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		post := new(domain.Post)
+
+		var attachments pgtype.TextArray
+		var likedByUsers pgtype.Int8Array
+
+		err = rows.Scan(
+			&post.ID,
+			&post.AuthorID,
+			&post.Content,
+			&post.CreatedAt.Time,
+			&post.UpdatedAt.Time,
+			&attachments,
+			&likedByUsers,
+		)
+		if err != nil {
+			return
+		}
+
+		post.Attachments = textArrayIntoStringSlice(attachments)
+		post.LikedByIDs = int8ArrayIntoUintSlice(likedByUsers)
+
+		posts = append(posts, post)
+	}
+
+	return
+}
+
+func (p *Posts) GetNewPosts(ctx context.Context, lastPostID, postsAmount uint) (posts []*domain.Post, err error) {
+	if lastPostID == 0 {
+		contextlogger.LogSQL(ctx, getLastPostIDQuery)
+
+		err = p.db.QueryRow(context.Background(), getLastPostIDQuery).Scan(&lastPostID)
+		if err != nil {
+			return
+		}
+
+		lastPostID += 1
+	}
+
+	contextlogger.LogSQL(ctx, getNewPostsQuery, lastPostID, postsAmount)
+
+	rows, err := p.db.Query(context.Background(), getNewPostsQuery, lastPostID, postsAmount)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		post := new(domain.Post)
+
+		var attachments pgtype.TextArray
+		var likedByUsers pgtype.Int8Array
+
+		err = rows.Scan(
+			&post.ID,
+			&post.AuthorID,
+			&post.Content,
+			&post.CreatedAt.Time,
+			&post.UpdatedAt.Time,
+			&attachments,
+			&likedByUsers,
+			&post.GroupID,
 		)
 		if err != nil {
 			return
