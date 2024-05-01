@@ -892,6 +892,210 @@
                 }
             }
         },
+        "/groups/{groupID}/posts/": {
+            "get": {
+                "description": "get posts of public group",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "groups"
+                ],
+                "summary": "get posts of public group",
+                "operationId": "groups/posts",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "session_id=some_session",
+                        "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "CSRF token",
+                        "name": "X-CSRF-Token",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "groupID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Last post ID",
+                        "name": "lastPostId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Posts amount",
+                        "name": "postsAmount",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/json.JSONResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/domain.Post"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "create post in public group",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "groups"
+                ],
+                "summary": "create post in public group",
+                "operationId": "groups/posts/create",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "session_id=some_session",
+                        "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "CSRF token",
+                        "name": "X-CSRF-Token",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "groupID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Content of the post",
+                        "name": "content",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Attachments of the post",
+                        "name": "attachments",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/json.JSONResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/domain.PostWithAuthorAndGroup"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/posts/": {
             "get": {
                 "description": "get user posts",
@@ -2486,6 +2690,20 @@
             "properties": {
                 "author": {
                     "$ref": "#/definitions/domain.User"
+                },
+                "post": {
+                    "$ref": "#/definitions/domain.Post"
+                }
+            }
+        },
+        "domain.PostWithAuthorAndGroup": {
+            "type": "object",
+            "properties": {
+                "author": {
+                    "$ref": "#/definitions/domain.User"
+                },
+                "group": {
+                    "$ref": "#/definitions/domain.PublicGroup"
                 },
                 "post": {
                     "$ref": "#/definitions/domain.Post"

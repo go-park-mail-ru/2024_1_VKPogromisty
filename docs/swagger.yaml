@@ -73,6 +73,15 @@ definitions:
       post:
         $ref: '#/definitions/domain.Post'
     type: object
+  domain.PostWithAuthorAndGroup:
+    properties:
+      author:
+        $ref: '#/definitions/domain.User'
+      group:
+        $ref: '#/definitions/domain.PublicGroup'
+      post:
+        $ref: '#/definitions/domain.Post'
+    type: object
   domain.PublicGroup:
     properties:
       avatar:
@@ -755,6 +764,138 @@ paths:
           schema:
             $ref: '#/definitions/errors.HTTPError'
       summary: update public group
+      tags:
+      - groups
+  /groups/{groupID}/posts/:
+    get:
+      consumes:
+      - application/json
+      description: get posts of public group
+      operationId: groups/posts
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: groupID
+        required: true
+        type: string
+      - description: Last post ID
+        in: query
+        name: lastPostId
+        type: string
+      - description: Posts amount
+        in: query
+        name: postsAmount
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/domain.Post'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: get posts of public group
+      tags:
+      - groups
+    post:
+      consumes:
+      - multipart/form-data
+      description: create post in public group
+      operationId: groups/posts/create
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: groupID
+        required: true
+        type: string
+      - description: Content of the post
+        in: formData
+        name: content
+        required: true
+        type: string
+      - description: Attachments of the post
+        in: formData
+        name: attachments
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  $ref: '#/definitions/domain.PostWithAuthorAndGroup'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: create post in public group
       tags:
       - groups
   /groups/search:
