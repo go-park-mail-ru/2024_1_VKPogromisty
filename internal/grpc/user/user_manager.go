@@ -9,6 +9,7 @@ import (
 	"socio/domain"
 	"socio/errors"
 	uspb "socio/internal/grpc/user/proto"
+	"socio/pkg/utils"
 	"socio/usecase/subscriptions"
 	"socio/usecase/user"
 
@@ -310,7 +311,7 @@ func (u *UserManager) GetSubscriptionIDs(ctx context.Context, in *uspb.GetSubscr
 	}
 
 	res = &uspb.GetSubscriptionIDsResponse{
-		SubscriptionIds: uspb.UintToUint64Slice(subIDs),
+		SubscriptionIds: utils.UintToUint64Slice(subIDs),
 	}
 
 	return

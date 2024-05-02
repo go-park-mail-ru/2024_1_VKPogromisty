@@ -9,6 +9,7 @@ import (
 	"socio/domain"
 	"socio/errors"
 	pgpb "socio/internal/grpc/public_group/proto"
+	"socio/pkg/utils"
 	publicgroup "socio/usecase/public_group"
 
 	"github.com/google/uuid"
@@ -265,7 +266,7 @@ func (p *PublicGroupManager) GetSubscriptionIDs(ctx context.Context, in *pgpb.Ge
 	}
 
 	res = &pgpb.GetSubscriptionIDsResponse{
-		PublicGroupIds: pgpb.UintToUint64Slice(subIDs),
+		PublicGroupIds: utils.UintToUint64Slice(subIDs),
 	}
 
 	return
