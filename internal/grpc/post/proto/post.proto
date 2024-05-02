@@ -18,6 +18,11 @@ service Post {
     rpc LikePost(LikePostRequest) returns (LikePostResponse) {}
     rpc UnlikePost(UnlikePostRequest) returns (UnlikePostResponse) {}
     rpc Upload(stream UploadRequest) returns (UploadResponse) {}
+    rpc CreateGroupPost(CreateGroupPostRequest) returns (CreateGroupPostResponse) {}
+    rpc GetPostsOfGroup(GetPostsOfGroupRequest) returns (GetPostsOfGroupResponse) {}
+    rpc GetGroupPostsBySubscriptionIDs(GetGroupPostsBySubscriptionIDsRequest) returns (GetGroupPostsBySubscriptionIDsResponse) {}
+    rpc GetPostsByGroupSubIDsAndUserSubIDs(GetPostsByGroupSubIDsAndUserSubIDsRequest) returns (GetPostsByGroupSubIDsAndUserSubIDsResponse) {}
+    rpc GetNewPosts(GetNewPostsRequest) returns (GetNewPostsResponse) {}
 }
 
 message PostResponse {
@@ -28,6 +33,7 @@ message PostResponse {
     repeated uint64 liked_by_ids = 5;
     google.protobuf.Timestamp created_at = 6;
     google.protobuf.Timestamp updated_at = 7;
+    uint64 group_id = 8;
 }
 
 message LikedPostResponse {
@@ -137,3 +143,49 @@ message UploadResponse {
     uint64 size = 2;
 }
 
+message CreateGroupPostRequest {
+    uint64 group_id = 1;
+    uint64 post_id = 2;
+}
+
+message CreateGroupPostResponse {}
+
+message GetPostsOfGroupRequest {
+    uint64 group_id = 1;
+    uint64 last_post_id = 2;
+    uint64 posts_amount = 3;
+}
+
+message GetPostsOfGroupResponse {
+    repeated PostResponse posts = 1;
+}
+
+message GetGroupPostsBySubscriptionIDsRequest {
+    repeated uint64 subscription_ids = 1;
+    uint64 last_post_id = 2;
+    uint64 posts_amount = 3;
+}
+
+message GetGroupPostsBySubscriptionIDsResponse {
+    repeated PostResponse posts = 1;
+}
+
+message GetPostsByGroupSubIDsAndUserSubIDsRequest {
+    repeated uint64 group_subscription_ids = 1;
+    repeated uint64 user_subscription_ids = 2;
+    uint64 last_post_id = 3;
+    uint64 posts_amount = 4;
+}
+
+message GetPostsByGroupSubIDsAndUserSubIDsResponse {
+    repeated PostResponse posts = 1;
+}
+
+message GetNewPostsRequest {
+    uint64 last_post_id = 1;
+    uint64 posts_amount = 2;
+}
+
+message GetNewPostsResponse {
+    repeated PostResponse posts = 1;
+}

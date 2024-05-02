@@ -9,6 +9,7 @@ import (
 	"socio/domain"
 	"socio/errors"
 	pgpb "socio/internal/grpc/public_group/proto"
+	"socio/pkg/utils"
 	publicgroup "socio/usecase/public_group"
 
 	"github.com/google/uuid"
@@ -252,4 +253,21 @@ func (p *PublicGroupManager) Upload(stream pgpb.PublicGroup_UploadServer) (err e
 		FileName: fileName,
 		Size:     fileSize,
 	})
+}
+
+func (p *PublicGroupManager) GetSubscriptionIDs(ctx context.Context, in *pgpb.GetSubscriptionIDsRequest) (res *pgpb.GetSubscriptionIDsResponse, err error) {
+	groupID := in.GetUserId()
+
+	subIDs, err := p.PublicGroupService.GetSubscriptionIDs(ctx, uint(groupID))
+	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
+		return
+	}
+
+	res = &pgpb.GetSubscriptionIDsResponse{
+		PublicGroupIds: utils.UintToUint64Slice(subIDs),
+	}
+
+	return
 }

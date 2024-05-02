@@ -21,6 +21,11 @@ service User {
     rpc GetSubscribers(GetSubscribersRequest) returns (GetSubscribersResponse) {} 
     rpc GetFriends(GetFriendsRequest) returns (GetFriendsResponse) {}
     rpc SearchByName(SearchByNameRequest) returns (SearchByNameResponse) {}
+    rpc GetSubscriptionIDs(GetSubscriptionIDsRequest) returns (GetSubscriptionIDsResponse) {}
+    rpc CreatePublicGroupAdmin(CreatePublicGroupAdminRequest) returns (CreatePublicGroupAdminResponse) {}
+    rpc DeletePublicGroupAdmin(DeletePublicGroupAdminRequest) returns (DeletePublicGroupAdminResponse) {}
+    rpc GetAdminsByPublicGroupID(GetAdminsByPublicGroupIDRequest) returns (GetAdminsByPublicGroupIDResponse) {}
+    rpc CheckIfUserIsAdmin(CheckIfUserIsAdminRequest) returns (CheckIfUserIsAdminResponse) {}
 }
 
 message GetByIDRequest {
@@ -163,4 +168,43 @@ message SearchByNameRequest {
 
 message SearchByNameResponse {
     repeated UserResponse users = 1;
+}
+
+message GetSubscriptionIDsRequest {
+    uint64 user_id = 1;
+}
+
+message GetSubscriptionIDsResponse {
+    repeated uint64 subscription_ids = 1;
+}
+
+message CreatePublicGroupAdminRequest {
+    uint64 user_id = 1;
+    uint64 public_group_id = 2;
+}
+
+message CreatePublicGroupAdminResponse {}
+
+message DeletePublicGroupAdminRequest {
+    uint64 user_id = 1;
+    uint64 public_group_id = 2;
+}
+
+message DeletePublicGroupAdminResponse {}
+
+message GetAdminsByPublicGroupIDRequest {
+    uint64 public_group_id = 1;
+}
+
+message GetAdminsByPublicGroupIDResponse {
+    repeated UserResponse admins = 1;
+}
+
+message CheckIfUserIsAdminRequest {
+    uint64 user_id = 1;
+    uint64 public_group_id = 2;
+}
+
+message CheckIfUserIsAdminResponse {
+    bool is_admin = 1;
 }

@@ -82,6 +82,11 @@ const (
 	DELETE FROM public.public_group_subscription
 	WHERE public_group_id = $1 AND subscriber_id = $2;
 	`
+	getPublicGroupSubscriptionIDsQuery = `
+	SELECT public_group_id
+	FROM public.public_group_subscription
+	WHERE subscriber_id = $1;
+	`
 )
 
 type PublicGroup struct {
@@ -139,6 +144,14 @@ func (p *PublicGroup) SearchPublicGroupsByNameWithInfo(ctx context.Context, quer
 		query,
 		userID,
 	)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			err = errors.ErrNotFound
+		}
+
+		return
+	}
+	defer rows.Close()
 
 	for rows.Next() {
 		publicGroupWithInfo := &publicgroup.PublicGroupWithInfo{
@@ -294,6 +307,7 @@ func (p *PublicGroup) GetPublicGroupsBySubscriberID(ctx context.Context, subscri
 
 		return
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		group := new(domain.PublicGroup)
@@ -357,6 +371,33 @@ func (p *PublicGroup) DeletePublicGroupSubscription(ctx context.Context, subscri
 	if result.RowsAffected() > 1 {
 		err = errors.ErrRowsAffected
 		return
+	}
+
+	return
+}
+
+func (p *PublicGroup) GetPublicGroupSubscriptionIDs(ctx context.Context, userID uint) (subIDs []uint, err error) {
+	contextlogger.LogSQL(ctx, getPublicGroupSubscriptionIDsQuery, userID)
+
+	rows, err := p.db.Query(context.Background(), getPublicGroupSubscriptionIDsQuery, userID)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			err = errors.ErrNotFound
+		}
+
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var subID uint
+
+		err = rows.Scan(&subID)
+		if err != nil {
+			return
+		}
+
+		subIDs = append(subIDs, subID)
 	}
 
 	return

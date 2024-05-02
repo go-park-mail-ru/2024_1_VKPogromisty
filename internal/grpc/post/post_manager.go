@@ -260,3 +260,103 @@ func (p *PostManager) Upload(stream postspb.Post_UploadServer) (err error) {
 		Size:     fileSize,
 	})
 }
+
+func (p *PostManager) CreateGroupPost(ctx context.Context, in *postspb.CreateGroupPostRequest) (res *postspb.CreateGroupPostResponse, err error) {
+	postID := in.GetPostId()
+	groupID := in.GetGroupId()
+
+	_, err = p.PostsService.CreateGroupPost(ctx, &domain.GroupPost{
+		PostID:  uint(postID),
+		GroupID: uint(groupID),
+	})
+	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
+		return
+	}
+
+	res = &postspb.CreateGroupPostResponse{}
+
+	return
+}
+
+func (p *PostManager) GetPostsOfGroup(ctx context.Context, in *postspb.GetPostsOfGroupRequest) (res *postspb.GetPostsOfGroupResponse, err error) {
+	groupID := in.GetGroupId()
+	lastPostID := in.GetLastPostId()
+	postsAmount := in.GetPostsAmount()
+
+	posts, err := p.PostsService.GetPostsOfGroup(ctx, uint(groupID), uint(lastPostID), uint(postsAmount))
+	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
+		return
+	}
+
+	res = &postspb.GetPostsOfGroupResponse{
+		Posts: postspb.ToPostsResponse(posts),
+	}
+
+	return
+}
+
+func (p *PostManager) GetGroupPostsBySubscriptionIDs(ctx context.Context, in *postspb.GetGroupPostsBySubscriptionIDsRequest) (res *postspb.GetGroupPostsBySubscriptionIDsResponse, err error) {
+	subIDs := in.GetSubscriptionIds()
+	lastPostID := in.GetLastPostId()
+	postsAmount := in.GetPostsAmount()
+
+	subIDsUint := postspb.Uint64ToUintSlice(subIDs)
+
+	posts, err := p.PostsService.GetGroupPostsBySubscriptionIDs(ctx, subIDsUint, uint(lastPostID), uint(postsAmount))
+	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
+		return
+	}
+
+	res = &postspb.GetGroupPostsBySubscriptionIDsResponse{
+		Posts: postspb.ToPostsResponse(posts),
+	}
+
+	return
+}
+
+func (p *PostManager) GetPostsByGroupSubIDsAndUserSubIDs(ctx context.Context, in *postspb.GetPostsByGroupSubIDsAndUserSubIDsRequest) (res *postspb.GetPostsByGroupSubIDsAndUserSubIDsResponse, err error) {
+	groupSubIDs := in.GetGroupSubscriptionIds()
+	userSubIDs := in.GetUserSubscriptionIds()
+	lastPostID := in.GetLastPostId()
+	postsAmount := in.GetPostsAmount()
+
+	groupSubIDsUint := postspb.Uint64ToUintSlice(groupSubIDs)
+	userSubIDsUint := postspb.Uint64ToUintSlice(userSubIDs)
+
+	posts, err := p.PostsService.GetPostsByGroupSubIDsAndUserSubIDs(ctx, groupSubIDsUint, userSubIDsUint, uint(lastPostID), uint(postsAmount))
+	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
+		return
+	}
+
+	res = &postspb.GetPostsByGroupSubIDsAndUserSubIDsResponse{
+		Posts: postspb.ToPostsResponse(posts),
+	}
+
+	return
+}
+
+func (p *PostManager) GetNewPosts(ctx context.Context, in *postspb.GetNewPostsRequest) (res *postspb.GetNewPostsResponse, err error) {
+	lastPostID := in.GetLastPostId()
+	postsAmount := in.GetPostsAmount()
+
+	posts, err := p.PostsService.GetNewPosts(ctx, uint(lastPostID), uint(postsAmount))
+	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
+		return
+	}
+
+	res = &postspb.GetNewPostsResponse{
+		Posts: postspb.ToPostsResponse(posts),
+	}
+
+	return
+}

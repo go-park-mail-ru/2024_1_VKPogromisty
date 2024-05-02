@@ -12,6 +12,7 @@ func ToPostResponse(post *domain.Post) *PostResponse {
 	return &PostResponse{
 		Id:          uint64(post.ID),
 		AuthorId:    uint64(post.AuthorID),
+		GroupId:     uint64(post.GroupID),
 		Content:     post.Content,
 		Attachments: post.Attachments,
 		LikedByIds:  post.LikedByIDs,
@@ -43,6 +44,7 @@ func ToPost(res *PostResponse) *domain.Post {
 	return &domain.Post{
 		ID:          uint(res.Id),
 		AuthorID:    uint(res.AuthorId),
+		GroupID:     uint(res.GroupId),
 		Content:     res.Content,
 		Attachments: res.Attachments,
 		LikedByIDs:  res.LikedByIds,
@@ -55,10 +57,10 @@ func ToPost(res *PostResponse) *domain.Post {
 	}
 }
 
-func ToPosts(res *GetUserPostsResponse) (posts []*domain.Post) {
+func ToPosts(res []*PostResponse) (posts []*domain.Post) {
 	posts = make([]*domain.Post, 0)
 
-	for _, post := range res.Posts {
+	for _, post := range res {
 		posts = append(posts, ToPost(post))
 	}
 
@@ -101,6 +103,16 @@ func ToLikedPosts(likesWithPosts []posts.LikeWithPost) (res []*LikedPostResponse
 			Post: ToPostResponse(likeWithPost.Post),
 			Like: ToPostLikeResponse(likeWithPost.Like),
 		})
+	}
+
+	return
+}
+
+func Uint64ToUintSlice(ids []uint64) (res []uint) {
+	res = make([]uint, 0)
+
+	for _, id := range ids {
+		res = append(res, uint(id))
 	}
 
 	return

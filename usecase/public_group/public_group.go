@@ -25,6 +25,7 @@ type PublicGroupStorage interface {
 	GetPublicGroupsBySubscriberID(ctx context.Context, subscriberID uint) (groups []*domain.PublicGroup, err error)
 	StorePublicGroupSubscription(ctx context.Context, publicGroupSubscription *domain.PublicGroupSubscription) (newSubscription *domain.PublicGroupSubscription, err error)
 	DeletePublicGroupSubscription(ctx context.Context, subscription *domain.PublicGroupSubscription) (err error)
+	GetPublicGroupSubscriptionIDs(ctx context.Context, userID uint) (subIDs []uint, err error)
 }
 
 type AvatarStorage interface {
@@ -212,6 +213,20 @@ func (s *Service) Unsubscribe(ctx context.Context, publicGroupSubscription *doma
 
 func (s *Service) UploadAvatar(fileName string, filePath string, contentType string) (err error) {
 	err = s.AvatarStorage.Store(fileName, filePath, contentType)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (s *Service) GetSubscriptionIDs(ctx context.Context, userID uint) (subIDs []uint, err error) {
+	if userID == 0 {
+		err = errors.ErrInvalidData
+		return
+	}
+
+	subIDs, err = s.PublicGroupStorage.GetPublicGroupSubscriptionIDs(ctx, userID)
 	if err != nil {
 		return
 	}

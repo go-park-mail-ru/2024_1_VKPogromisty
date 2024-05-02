@@ -28,6 +28,7 @@ type PublicGroupClient interface {
 	Subscribe(ctx context.Context, in *SubscribeRequest, opts ...grpc.CallOption) (*SubscribeResponse, error)
 	Unsubscribe(ctx context.Context, in *UnsubscribeRequest, opts ...grpc.CallOption) (*UnsubscribeResponse, error)
 	Upload(ctx context.Context, opts ...grpc.CallOption) (PublicGroup_UploadClient, error)
+	GetSubscriptionIDs(ctx context.Context, in *GetSubscriptionIDsRequest, opts ...grpc.CallOption) (*GetSubscriptionIDsResponse, error)
 }
 
 type publicGroupClient struct {
@@ -153,6 +154,15 @@ func (x *publicGroupUploadClient) CloseAndRecv() (*UploadResponse, error) {
 	return m, nil
 }
 
+func (c *publicGroupClient) GetSubscriptionIDs(ctx context.Context, in *GetSubscriptionIDsRequest, opts ...grpc.CallOption) (*GetSubscriptionIDsResponse, error) {
+	out := new(GetSubscriptionIDsResponse)
+	err := c.cc.Invoke(ctx, "/publicgroup.PublicGroup/GetSubscriptionIDs", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // PublicGroupServer is the server API for PublicGroup service.
 // All implementations must embed UnimplementedPublicGroupServer
 // for forward compatibility
@@ -167,6 +177,7 @@ type PublicGroupServer interface {
 	Subscribe(context.Context, *SubscribeRequest) (*SubscribeResponse, error)
 	Unsubscribe(context.Context, *UnsubscribeRequest) (*UnsubscribeResponse, error)
 	Upload(PublicGroup_UploadServer) error
+	GetSubscriptionIDs(context.Context, *GetSubscriptionIDsRequest) (*GetSubscriptionIDsResponse, error)
 	mustEmbedUnimplementedPublicGroupServer()
 }
 
@@ -203,6 +214,9 @@ func (UnimplementedPublicGroupServer) Unsubscribe(context.Context, *UnsubscribeR
 }
 func (UnimplementedPublicGroupServer) Upload(PublicGroup_UploadServer) error {
 	return status.Errorf(codes.Unimplemented, "method Upload not implemented")
+}
+func (UnimplementedPublicGroupServer) GetSubscriptionIDs(context.Context, *GetSubscriptionIDsRequest) (*GetSubscriptionIDsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSubscriptionIDs not implemented")
 }
 func (UnimplementedPublicGroupServer) mustEmbedUnimplementedPublicGroupServer() {}
 
@@ -405,6 +419,24 @@ func (x *publicGroupUploadServer) Recv() (*UploadRequest, error) {
 	return m, nil
 }
 
+func _PublicGroup_GetSubscriptionIDs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSubscriptionIDsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PublicGroupServer).GetSubscriptionIDs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/publicgroup.PublicGroup/GetSubscriptionIDs",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PublicGroupServer).GetSubscriptionIDs(ctx, req.(*GetSubscriptionIDsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // PublicGroup_ServiceDesc is the grpc.ServiceDesc for PublicGroup service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -447,6 +479,10 @@ var PublicGroup_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Unsubscribe",
 			Handler:    _PublicGroup_Unsubscribe_Handler,
+		},
+		{
+			MethodName: "GetSubscriptionIDs",
+			Handler:    _PublicGroup_GetSubscriptionIDs_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

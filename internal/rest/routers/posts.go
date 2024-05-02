@@ -3,6 +3,7 @@ package routers
 import (
 	authpb "socio/internal/grpc/auth/proto"
 	post "socio/internal/grpc/post/proto"
+	pgpb "socio/internal/grpc/public_group/proto"
 	user "socio/internal/grpc/user/proto"
 	"socio/internal/rest/middleware"
 	rest "socio/internal/rest/posts"
@@ -12,14 +13,17 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func MountPostsRouter(rootRouter *mux.Router, postsClient post.PostClient, userClient user.UserClient, authManager authpb.AuthClient) {
+func MountPostsRouter(rootRouter *mux.Router, postsClient post.PostClient, userClient user.UserClient, publicGroupClient pgpb.PublicGroupClient, authManager authpb.AuthClient) {
 	r := rootRouter.PathPrefix("/posts").Subrouter()
 
-	h := rest.NewPostsHandler(postsClient, userClient)
+	h := rest.NewPostsHandler(postsClient, userClient, publicGroupClient)
 
 	r.HandleFunc("/{postID:[0-9]+}", h.HandleGetPostByID).Methods("GET", "OPTIONS")
 	r.HandleFunc("/", h.HandleGetUserPosts).Methods("GET", "OPTIONS")
 	r.HandleFunc("/friends", h.HandleGetUserFriendsPosts).Methods("GET", "OPTIONS")
+	r.HandleFunc("/groups", h.HandleGetGroupPostsBySubscriptions).Methods("GET", "OPTIONS")
+	r.HandleFunc("/all", h.HandleGetPostsByGroupSubIDsAndUserSubIDs).Methods("GET", "OPTIONS")
+	r.HandleFunc("/new", h.HandleGetNewPosts).Methods("GET", "OPTIONS")
 	r.HandleFunc("/", h.HandleCreatePost).Methods("POST", "OPTIONS")
 	r.HandleFunc("/", h.HandleUpdatePost).Methods("PUT", "OPTIONS")
 	r.HandleFunc("/", h.HandleDeletePost).Methods("DELETE", "OPTIONS")
