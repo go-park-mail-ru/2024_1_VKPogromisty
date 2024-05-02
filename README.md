@@ -20,9 +20,8 @@ https://socio-project.ru/swagger/index.html#/
 
 Разработчики:
 <ul>
-  <li>Никита Плёнкин - https://github.com/kond9</li>
-  <li>Горбунов Алексей - https://github.com/Famelbyby</li>
   <li>Митин Пётр - https://github.com/Petr09Mitin</li>
+  <li>Горбунов Алексей - https://github.com/Famelbyby</li>
 </ul>
 
 
