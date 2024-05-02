@@ -144,6 +144,14 @@ func (p *PublicGroup) SearchPublicGroupsByNameWithInfo(ctx context.Context, quer
 		query,
 		userID,
 	)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			err = errors.ErrNotFound
+		}
+
+		return
+	}
+	defer rows.Close()
 
 	for rows.Next() {
 		publicGroupWithInfo := &publicgroup.PublicGroupWithInfo{
@@ -299,6 +307,7 @@ func (p *PublicGroup) GetPublicGroupsBySubscriberID(ctx context.Context, subscri
 
 		return
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		group := new(domain.PublicGroup)
@@ -378,6 +387,7 @@ func (p *PublicGroup) GetPublicGroupSubscriptionIDs(ctx context.Context, userID 
 
 		return
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		var subID uint

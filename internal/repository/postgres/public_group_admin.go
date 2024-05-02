@@ -96,6 +96,7 @@ func (s *Users) GetAdminsByPublicGroupID(ctx context.Context, publicGroupID uint
 	if err != nil {
 		return
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		admin := new(domain.User)
