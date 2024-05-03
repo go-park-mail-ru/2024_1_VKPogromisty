@@ -6,19 +6,26 @@ import (
 )
 
 func TestUintToUint64Slice(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name     string
-		ids      []uint
+		input    []uint
 		expected []uint64
 	}{
 		{
-			name:     "Test empty slice",
-			ids:      []uint{},
+			name:     "Test empty array",
+			input:    []uint{},
 			expected: []uint64{},
 		},
 		{
-			name:     "Test non-empty slice",
-			ids:      []uint{1, 2, 3},
+			name:     "Test single element array",
+			input:    []uint{1},
+			expected: []uint64{1},
+		},
+		{
+			name:     "Test multiple elements array",
+			input:    []uint{1, 2, 3},
 			expected: []uint64{1, 2, 3},
 		},
 		// Add more test cases here
@@ -26,10 +33,47 @@ func TestUintToUint64Slice(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := UintToUint64Slice(tt.ids)
+			output := UintToUint64Slice(tt.input)
 
-			if !reflect.DeepEqual(res, tt.expected) {
-				t.Errorf("UintToUint64Slice(%v) = %v, want %v", tt.ids, res, tt.expected)
+			if !reflect.DeepEqual(output, tt.expected) {
+				t.Errorf("expected %v, got %v", tt.expected, output)
+			}
+		})
+	}
+}
+
+func TestUintArrayIntoString(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		input    []uint
+		expected string
+	}{
+		{
+			name:     "Test empty array",
+			input:    []uint{},
+			expected: "",
+		},
+		{
+			name:     "Test single element array",
+			input:    []uint{1},
+			expected: "1",
+		},
+		{
+			name:     "Test multiple elements array",
+			input:    []uint{1, 2, 3},
+			expected: "1, 2, 3",
+		},
+		// Add more test cases here
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			output := UintArrayIntoString(tt.input)
+
+			if output != tt.expected {
+				t.Errorf("expected %q, got %q", tt.expected, output)
 			}
 		})
 	}
