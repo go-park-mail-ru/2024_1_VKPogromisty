@@ -58,7 +58,7 @@ func main() {
 	postsStorage := pgRepo.NewPosts(db, customtime.RealTimeProvider{})
 	manager := post.NewPostManager(postsStorage, attachmentStorage)
 
-	prodLogger, err := logger.NewZapLogger()
+	prodLogger, err := logger.NewZapLogger(nil)
 	if err != nil {
 		return
 	}

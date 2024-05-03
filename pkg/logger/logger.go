@@ -11,19 +11,27 @@ import (
 	"google.golang.org/grpc"
 )
 
+var (
+	DefaultOutputPaths = []string{
+		"/var/log/socio/socio.log",
+		"stderr",
+	}
+)
+
 type Logger struct {
 	logger *zap.Logger
 }
 
-func NewZapLogger() (logger *zap.Logger, err error) {
+func NewZapLogger(outputPaths []string) (logger *zap.Logger, err error) {
+	if outputPaths == nil {
+		outputPaths = DefaultOutputPaths
+	}
+
 	cfg := zap.NewProductionConfig()
 
 	cfg.Sampling = nil
 
-	cfg.OutputPaths = []string{
-		"/var/log/socio/socio.log",
-		"stderr",
-	}
+	cfg.OutputPaths = outputPaths
 
 	logger, err = cfg.Build()
 	if err != nil {

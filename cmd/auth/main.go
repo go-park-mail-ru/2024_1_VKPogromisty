@@ -52,7 +52,7 @@ func main() {
 
 	manager := auth.NewAuthManager(userClient, sessionStorage)
 
-	prodLogger, err := logger.NewZapLogger()
+	prodLogger, err := logger.NewZapLogger(nil)
 	if err != nil {
 		return
 	}
