@@ -6,7 +6,10 @@ import (
 	"socio/errors"
 	repository "socio/internal/repository/postgres"
 	customtime "socio/pkg/time"
+	"socio/pkg/utils"
+	"socio/usecase/posts"
 	"testing"
+	"time"
 
 	"github.com/chrisyxlee/pgxpoolmock"
 	"github.com/golang/mock/gomock"
@@ -65,7 +68,7 @@ func TestGetPostByID(t *testing.T) {
 			err:      nil,
 		},
 		{
-			name:   "Test OK",
+			name:   "Test err",
 			postID: 1,
 			mock: func(pool *pgxpoolmock.MockPgxIface, postID uint) {
 				pool.EXPECT().QueryRow(gomock.Any(), gomock.Any(), gomock.Any()).Return(ErrRow{})
@@ -171,7 +174,7 @@ func TestGetUserPosts(t *testing.T) {
 			err:      pgx.ErrNoRows,
 		},
 		{
-			name:        "Test OK",
+			name:        "Test err no rows",
 			userID:      1,
 			lastPostID:  0,
 			postsAmount: 5,
@@ -181,7 +184,7 @@ func TestGetUserPosts(t *testing.T) {
 				pool.EXPECT().Query(gomock.Any(), repository.GetUserPostsQuery, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, pgx.ErrNoRows)
 			},
 			expected: []*domain.Post{},
-			err:      nil,
+			err:      pgx.ErrNoRows,
 		},
 	}
 
@@ -268,8 +271,6 @@ func TestGetUserFriendsPosts(t *testing.T) {
 			if err != tt.err {
 				t.Errorf("unexpected error: %v", err)
 			}
-
-			// Add more assertions to compare the returned posts with the expected posts
 		})
 	}
 }
@@ -478,7 +479,7 @@ func TestDeletePost(t *testing.T) {
 			name:   "Test err rows affected",
 			postID: 1,
 			mock: func(pool *pgxpoolmock.MockPgxIface, postID uint) {
-				tag := pgconn.CommandTag("DELETE 0")
+				tag := pgconn.CommandTag("DELETE 2")
 				pool.EXPECT().Exec(gomock.Any(), repository.DeletePostQuery, gomock.Any()).Return(tag, nil)
 			},
 			expected: errors.ErrRowsAffected,
@@ -505,27 +506,6 @@ func TestDeletePost(t *testing.T) {
 	}
 }
 
-func TestErrRow_Scan(t *testing.T) {
-	type args struct {
-		in0 []interface{}
-	}
-	tests := []struct {
-		name    string
-		r       ErrRow
-		args    args
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.r.Scan(tt.args.in0...); (err != nil) != tt.wantErr {
-				t.Errorf("ErrRow.Scan() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
 func TestDeleteGroupPost(t *testing.T) {
 	t.Parallel()
 
@@ -544,12 +524,12 @@ func TestDeleteGroupPost(t *testing.T) {
 			err: nil,
 		},
 		{
-			name:   "Test not found",
+			name:   "Test rows affected err",
 			postID: 2,
 			mock: func(pool *pgxpoolmock.MockPgxIface, postID uint) {
-				pool.EXPECT().Exec(gomock.Any(), repository.DeleteGroupPostQuery, postID).Return(pgconn.CommandTag("DELETE 0"), nil)
+				pool.EXPECT().Exec(gomock.Any(), repository.DeleteGroupPostQuery, postID).Return(pgconn.CommandTag("DELETE 2"), nil)
 			},
-			err: nil,
+			err: errors.ErrRowsAffected,
 		},
 		{
 			name:   "Test err",
@@ -573,6 +553,581 @@ func TestDeleteGroupPost(t *testing.T) {
 			tt.mock(pool, tt.postID)
 
 			err := repo.DeleteGroupPost(context.Background(), tt.postID)
+
+			if err != tt.err {
+				t.Errorf("unexpected error: %v", err)
+			}
+		})
+	}
+}
+
+func TestGetLikedPosts(t *testing.T) {
+	t.Parallel()
+
+	tp := customtime.MockTimeProvider{}
+
+	tests := []struct {
+		name       string
+		userID     uint
+		lastLikeID uint
+		limit      uint
+		mock       func(pool *pgxpoolmock.MockPgxIface, userID uint, lastLikeID uint, limit uint)
+		expected   []posts.LikeWithPost
+		err        error
+	}{
+		{
+			name:       "Test OK",
+			userID:     1,
+			lastLikeID: 0,
+			limit:      10,
+			mock: func(pool *pgxpoolmock.MockPgxIface, userID uint, lastLikeID uint, limit uint) {
+				// Mock the GetLastPostLikeIDQuery
+				pool.EXPECT().QueryRow(gomock.Any(), repository.GetLastPostLikeIDQuery, gomock.Any()).Return(pgxpoolmock.NewRow(uint(1)))
+
+				arr := pgtype.TextArray{
+					Elements: []pgtype.Text{{String: "file1"}, {String: "file2"}},
+				}
+
+				likedBy := pgtype.Int8Array{
+					Elements: []pgtype.Int8{{Int: 1}, {Int: 2}},
+				}
+
+				// Mock the GetLikedPosts query
+				rows := pgxpoolmock.NewRows([]string{"like_id", "post_id", "user_id", "created_at", "author_id", "content", "created_at", "updated_at", "attachments", "liked_by_ids"})
+				rows.AddRow(uint(1), uint(1), uint(1), tp.Now(), uint(1), "content", tp.Now(), tp.Now(), arr, likedBy)
+				pool.EXPECT().Query(gomock.Any(), repository.GetLikedPosts, gomock.Any(), gomock.Any(), gomock.Any()).Return(rows.ToPgxRows(), nil)
+			},
+			expected: []posts.LikeWithPost{
+				{
+					Like: &domain.PostLike{
+						ID:     1,
+						PostID: 1,
+						UserID: 1,
+						CreatedAt: customtime.CustomTime{
+							Time: tp.Now(),
+						},
+					},
+					Post: &domain.Post{
+						ID:       1,
+						AuthorID: 1,
+						Content:  "content",
+						CreatedAt: customtime.CustomTime{
+							Time: tp.Now(),
+						},
+						UpdatedAt: customtime.CustomTime{
+							Time: tp.Now(),
+						},
+						Attachments: []string{"attachment"},
+						LikedByIDs:  []uint64{1},
+					},
+				},
+			},
+			err: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			pool := pgxpoolmock.NewMockPgxIface(ctrl)
+
+			repo := repository.NewPosts(pool, customtime.MockTimeProvider{})
+
+			tt.mock(pool, tt.userID, tt.lastLikeID, tt.limit)
+
+			_, err := repo.GetLikedPosts(context.Background(), tt.userID, tt.lastLikeID, tt.limit)
+
+			if err != tt.err {
+				t.Errorf("unexpected error: %v", err)
+			}
+		})
+	}
+}
+
+func TestStorePostLike(t *testing.T) {
+	t.Parallel()
+
+	tp := customtime.MockTimeProvider{}
+
+	tests := []struct {
+		name     string
+		likeData *domain.PostLike
+		mock     func(pool *pgxpoolmock.MockPgxIface, likeData *domain.PostLike)
+		expected *domain.PostLike
+		err      error
+	}{
+		{
+			name: "Test OK",
+			likeData: &domain.PostLike{
+				PostID: 1,
+				UserID: 1,
+			},
+			mock: func(pool *pgxpoolmock.MockPgxIface, likeData *domain.PostLike) {
+				// Mock the CreatePostLikeQuery
+				pool.EXPECT().QueryRow(gomock.Any(), repository.CreatePostLikeQuery, likeData.PostID, likeData.UserID).Return(pgxpoolmock.NewRow(uint(1), likeData.PostID, likeData.UserID, time.Now()))
+			},
+			expected: &domain.PostLike{
+				ID:     1,
+				PostID: 1,
+				UserID: 1,
+				CreatedAt: customtime.CustomTime{
+					Time: tp.Now(),
+				},
+			},
+			err: nil,
+		},
+		{
+			name: "Test err",
+			likeData: &domain.PostLike{
+				PostID: 1,
+				UserID: 1,
+			},
+			mock: func(pool *pgxpoolmock.MockPgxIface, likeData *domain.PostLike) {
+				// Mock the CreatePostLikeQuery
+				pool.EXPECT().QueryRow(gomock.Any(), repository.CreatePostLikeQuery, likeData.PostID, likeData.UserID).Return(
+					ErrRow{},
+				)
+			},
+			expected: &domain.PostLike{},
+			err:      pgx.ErrNoRows,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			pool := pgxpoolmock.NewMockPgxIface(ctrl)
+
+			repo := repository.NewPosts(pool, customtime.MockTimeProvider{})
+
+			tt.mock(pool, tt.likeData)
+
+			_, err := repo.StorePostLike(context.Background(), tt.likeData)
+
+			if err != tt.err {
+				t.Errorf("unexpected error: %v", err)
+			}
+		})
+	}
+}
+
+func TestDeletePostLike(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		likeData *domain.PostLike
+		mock     func(pool *pgxpoolmock.MockPgxIface, likeData *domain.PostLike)
+		err      error
+	}{
+		{
+			name: "Test OK",
+			likeData: &domain.PostLike{
+				PostID: 1,
+				UserID: 1,
+			},
+			mock: func(pool *pgxpoolmock.MockPgxIface, likeData *domain.PostLike) {
+				// Mock the DeletePostLikeQuery
+				pool.EXPECT().Exec(gomock.Any(), repository.DeletePostLikeQuery, likeData.PostID, likeData.UserID).Return(
+					pgconn.CommandTag("DELETE 1"),
+					nil,
+				)
+			},
+			err: nil,
+		},
+		{
+			name: "Test ErrInternal",
+			likeData: &domain.PostLike{
+				PostID: 1,
+				UserID: 1,
+			},
+			mock: func(pool *pgxpoolmock.MockPgxIface, likeData *domain.PostLike) {
+				// Mock the DeletePostLikeQuery
+				pool.EXPECT().Exec(gomock.Any(), repository.DeletePostLikeQuery, likeData.PostID, likeData.UserID).Return(
+					nil,
+					errors.ErrInternal,
+				)
+			},
+			err: errors.ErrInternal,
+		},
+		{
+			name: "Test ErrRowsAffected",
+			likeData: &domain.PostLike{
+				PostID: 1,
+				UserID: 1,
+			},
+			mock: func(pool *pgxpoolmock.MockPgxIface, likeData *domain.PostLike) {
+				// Mock the DeletePostLikeQuery
+				pool.EXPECT().Exec(gomock.Any(), repository.DeletePostLikeQuery, likeData.PostID, likeData.UserID).Return(
+					pgconn.CommandTag("DELETE 2"),
+					nil,
+				)
+			},
+			err: errors.ErrRowsAffected,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			pool := pgxpoolmock.NewMockPgxIface(ctrl)
+
+			repo := repository.NewPosts(pool, customtime.MockTimeProvider{})
+
+			tt.mock(pool, tt.likeData)
+
+			err := repo.DeletePostLike(context.Background(), tt.likeData)
+
+			if err != tt.err {
+				t.Errorf("unexpected error: %v", err)
+			}
+		})
+	}
+}
+
+func TestGetPostsOfGroup(t *testing.T) {
+	t.Parallel()
+
+	tp := customtime.MockTimeProvider{}
+
+	tests := []struct {
+		name        string
+		groupID     uint
+		lastPostID  uint
+		postsAmount uint
+		mock        func(pool *pgxpoolmock.MockPgxIface, groupID uint, lastPostID uint, postsAmount uint)
+		expected    []*domain.Post
+		err         error
+	}{
+		{
+			name:        "Test OK",
+			groupID:     1,
+			lastPostID:  0,
+			postsAmount: 10,
+			mock: func(pool *pgxpoolmock.MockPgxIface, groupID uint, lastPostID uint, postsAmount uint) {
+				// Mock the GetLastPostOfGroupIDQuery
+				pool.EXPECT().QueryRow(gomock.Any(), repository.GetLastPostOfGroupIDQuery, gomock.Any()).Return(pgxpoolmock.NewRow(uint(1)))
+
+				arr := pgtype.TextArray{
+					Elements: []pgtype.Text{{String: "file1"}, {String: "file2"}},
+				}
+
+				likedBy := pgtype.Int8Array{
+					Elements: []pgtype.Int8{{Int: 1}, {Int: 2}},
+				}
+
+				// Mock the GetPostsOfGroupQuery
+				rows := pgxpoolmock.NewRows([]string{"id", "author_id", "content", "created_at", "updated_at", "attachments", "liked_by_ids"})
+				rows.AddRow(uint(1), uint(1), "content", time.Now(), time.Now(), arr, likedBy)
+				pool.EXPECT().Query(gomock.Any(), repository.GetPostsOfGroupQuery, gomock.Any(), gomock.Any(), gomock.Any()).Return(
+					rows.ToPgxRows(),
+					nil,
+				)
+			},
+			expected: []*domain.Post{
+				{
+					ID:       1,
+					AuthorID: 1,
+					Content:  "content",
+					CreatedAt: customtime.CustomTime{
+						Time: tp.Now(),
+					},
+					UpdatedAt: customtime.CustomTime{
+						Time: tp.Now(),
+					},
+					Attachments: []string{"attachment"},
+					LikedByIDs:  []uint64{1},
+				},
+			},
+			err: nil,
+		},
+		{
+			name:        "Test ErrQueryRow",
+			groupID:     1,
+			lastPostID:  0,
+			postsAmount: 10,
+			mock: func(pool *pgxpoolmock.MockPgxIface, groupID uint, lastPostID uint, postsAmount uint) {
+				// Mock the GetLastPostOfGroupIDQuery
+				pool.EXPECT().QueryRow(gomock.Any(), repository.GetLastPostOfGroupIDQuery, gomock.Any()).Return(
+					ErrRow{},
+				)
+			},
+			expected: []*domain.Post{},
+			err:      pgx.ErrNoRows,
+		},
+		{
+			name:        "Test ErrQuery",
+			groupID:     1,
+			lastPostID:  0,
+			postsAmount: 10,
+			mock: func(pool *pgxpoolmock.MockPgxIface, groupID uint, lastPostID uint, postsAmount uint) {
+				// Mock the GetLastPostOfGroupIDQuery
+				pool.EXPECT().QueryRow(gomock.Any(), repository.GetLastPostOfGroupIDQuery, gomock.Any()).Return(pgxpoolmock.NewRow(uint(1)))
+				pool.EXPECT().Query(gomock.Any(), repository.GetPostsOfGroupQuery, gomock.Any(), gomock.Any(), gomock.Any()).Return(
+					nil,
+					errors.ErrInternal,
+				)
+			},
+			expected: []*domain.Post{},
+			err:      errors.ErrInternal,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			pool := pgxpoolmock.NewMockPgxIface(ctrl)
+
+			repo := repository.NewPosts(pool, customtime.MockTimeProvider{})
+
+			tt.mock(pool, tt.groupID, tt.lastPostID, tt.postsAmount)
+
+			_, err := repo.GetPostsOfGroup(context.Background(), tt.groupID, tt.lastPostID, tt.postsAmount)
+
+			if err != tt.err {
+				t.Errorf("unexpected error: %v", err)
+			}
+		})
+	}
+}
+
+func TestGetGroupPostsBySubscriptionIDs(t *testing.T) {
+	t.Parallel()
+
+	tp := customtime.MockTimeProvider{}
+
+	tests := []struct {
+		name        string
+		subIDs      []uint
+		lastPostID  uint
+		postsAmount uint
+		mock        func(pool *pgxpoolmock.MockPgxIface, subIDs []uint, lastPostID uint, postsAmount uint)
+		expected    []*domain.Post
+		err         error
+	}{
+		{
+			name:        "Test OK",
+			subIDs:      []uint{1},
+			lastPostID:  0,
+			postsAmount: 10,
+			mock: func(pool *pgxpoolmock.MockPgxIface, subIDs []uint, lastPostID uint, postsAmount uint) {
+				// Mock the GetLastGroupPostBySubscriptionIDsQuery
+				pool.EXPECT().QueryRow(gomock.Any(), repository.GetLastGroupPostBySubscriptionIDsQuery, utils.UintArrayIntoString(subIDs)).Return(
+					pgxpoolmock.NewRow(uint(1)),
+				)
+
+				arr := pgtype.TextArray{
+					Elements: []pgtype.Text{{String: "file1"}, {String: "file2"}},
+				}
+
+				likedBy := pgtype.Int8Array{
+					Elements: []pgtype.Int8{{Int: 1}, {Int: 2}},
+				}
+
+				// Mock the GetGroupPostsBySubscriptionIDsQuery
+				rows := pgxpoolmock.NewRows([]string{"id", "author_id", "content", "created_at", "updated_at", "attachments", "liked_by_ids", "group_id"})
+				rows.AddRow(uint(1), uint(1), "content", time.Now(), time.Now(), arr, likedBy, uint(1))
+				pool.EXPECT().Query(gomock.Any(), repository.GetGroupPostsBySubscriptionIDsQuery, gomock.Any(), gomock.Any(), gomock.Any()).Return(
+					rows.ToPgxRows(),
+					nil,
+				)
+			},
+			expected: []*domain.Post{
+				{
+					ID:       1,
+					AuthorID: 1,
+					Content:  "content",
+					CreatedAt: customtime.CustomTime{
+						Time: tp.Now(),
+					},
+					UpdatedAt: customtime.CustomTime{
+						Time: tp.Now(),
+					},
+					Attachments: []string{"attachment"},
+					LikedByIDs:  []uint64{1},
+					GroupID:     1,
+				},
+			},
+			err: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			pool := pgxpoolmock.NewMockPgxIface(ctrl)
+
+			repo := repository.NewPosts(pool, customtime.MockTimeProvider{})
+
+			tt.mock(pool, tt.subIDs, tt.lastPostID, tt.postsAmount)
+
+			_, err := repo.GetGroupPostsBySubscriptionIDs(context.Background(), tt.subIDs, tt.lastPostID, tt.postsAmount)
+
+			if err != tt.err {
+				t.Errorf("unexpected error: %v", err)
+			}
+		})
+	}
+}
+
+func TestGetPostsByGroupSubIDsAndUserSubIDs(t *testing.T) {
+	t.Parallel()
+
+	tp := customtime.MockTimeProvider{}
+
+	tests := []struct {
+		name        string
+		groupSubIDs []uint
+		userSubIDs  []uint
+		lastPostID  uint
+		postsAmount uint
+		mock        func(pool *pgxpoolmock.MockPgxIface, groupSubIDs, userSubIDs []uint, lastPostID, postsAmount uint)
+		expected    []*domain.Post
+		err         error
+	}{
+		{
+			name:        "Test OK",
+			groupSubIDs: []uint{1},
+			userSubIDs:  []uint{1},
+			lastPostID:  0,
+			postsAmount: 10,
+			mock: func(pool *pgxpoolmock.MockPgxIface, groupSubIDs, userSubIDs []uint, lastPostID, postsAmount uint) {
+				// Mock the GetLastPostByGroupSubIDsAndUserSubIDsQuery
+				pool.EXPECT().QueryRow(gomock.Any(), repository.GetLastPostByGroupSubIDsAndUserSubIDsQuery, utils.UintArrayIntoString(groupSubIDs), utils.UintArrayIntoString(userSubIDs)).Return(
+					pgxpoolmock.NewRow(uint(1)),
+				)
+
+				arr := pgtype.TextArray{
+					Elements: []pgtype.Text{{String: "file1"}, {String: "file2"}},
+				}
+
+				likedBy := pgtype.Int8Array{
+					Elements: []pgtype.Int8{{Int: 1}, {Int: 2}},
+				}
+
+				// Mock the GetPostsByGroupSubIDsAndUserSubIDsQuery
+				rows := pgxpoolmock.NewRows([]string{"id", "author_id", "content", "created_at", "updated_at", "attachments", "liked_by_ids"})
+				rows.AddRow(uint(1), uint(1), "content", tp.Now(), tp.Now(), arr, likedBy)
+				pool.EXPECT().Query(gomock.Any(), repository.GetPostsByGroupSubIDsAndUserSubIDsQuery, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(
+					rows.ToPgxRows(),
+					nil,
+				)
+			},
+			expected: []*domain.Post{
+				{
+					ID:       1,
+					AuthorID: 1,
+					Content:  "content",
+					CreatedAt: customtime.CustomTime{
+						Time: tp.Now(),
+					},
+					UpdatedAt: customtime.CustomTime{
+						Time: tp.Now(),
+					},
+					Attachments: []string{"attachment"},
+					LikedByIDs:  []uint64{1},
+				},
+			},
+			err: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			pool := pgxpoolmock.NewMockPgxIface(ctrl)
+
+			repo := repository.NewPosts(pool, customtime.MockTimeProvider{})
+
+			tt.mock(pool, tt.groupSubIDs, tt.userSubIDs, tt.lastPostID, tt.postsAmount)
+
+			_, err := repo.GetPostsByGroupSubIDsAndUserSubIDs(context.Background(), tt.groupSubIDs, tt.userSubIDs, tt.lastPostID, tt.postsAmount)
+
+			if err != tt.err {
+				t.Errorf("unexpected error: %v", err)
+			}
+		})
+	}
+}
+
+func TestGetNewPosts(t *testing.T) {
+	t.Parallel()
+
+	tp := customtime.MockTimeProvider{}
+
+	tests := []struct {
+		name        string
+		lastPostID  uint
+		postsAmount uint
+		mock        func(pool *pgxpoolmock.MockPgxIface, lastPostID, postsAmount uint)
+		expected    []*domain.Post
+		err         error
+	}{
+		{
+			name:        "Test OK",
+			lastPostID:  0,
+			postsAmount: 10,
+			mock: func(pool *pgxpoolmock.MockPgxIface, lastPostID, postsAmount uint) {
+				// Mock the GetLastPostIDQuery
+				pool.EXPECT().QueryRow(gomock.Any(), repository.GetLastPostIDQuery).Return(pgxpoolmock.NewRow(uint(1)))
+
+				arr := pgtype.TextArray{
+					Elements: []pgtype.Text{{String: "file1"}, {String: "file2"}},
+				}
+
+				likedBy := pgtype.Int8Array{
+					Elements: []pgtype.Int8{{Int: 1}, {Int: 2}},
+				}
+
+				// Mock the GetNewPostsQuery
+				rows := pgxpoolmock.NewRows([]string{"id", "author_id", "content", "created_at", "updated_at", "attachments", "liked_by_ids", "group_id"})
+				rows.AddRow(uint(1), uint(1), "content", tp.Now(), tp.Now(), arr, likedBy, uint(1))
+				pool.EXPECT().Query(gomock.Any(), repository.GetNewPostsQuery, gomock.Any(), gomock.Any()).Return(rows.ToPgxRows(), nil)
+			},
+			expected: []*domain.Post{
+				{
+					ID:       1,
+					AuthorID: 1,
+					Content:  "content",
+					CreatedAt: customtime.CustomTime{
+						Time: tp.Now(),
+					},
+					UpdatedAt: customtime.CustomTime{
+						Time: tp.Now(),
+					},
+					Attachments: []string{"attachment"},
+					LikedByIDs:  []uint64{1},
+					GroupID:     1,
+				},
+			},
+			err: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			pool := pgxpoolmock.NewMockPgxIface(ctrl)
+
+			repo := repository.NewPosts(pool, customtime.MockTimeProvider{})
+
+			tt.mock(pool, tt.lastPostID, tt.postsAmount)
+
+			_, err := repo.GetNewPosts(context.Background(), tt.lastPostID, tt.postsAmount)
 
 			if err != tt.err {
 				t.Errorf("unexpected error: %v", err)

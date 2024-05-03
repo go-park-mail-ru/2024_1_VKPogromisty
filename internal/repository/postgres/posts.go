@@ -379,10 +379,6 @@ func (p *Posts) GetUserPosts(ctx context.Context, userID uint, lastPostID uint, 
 
 	rows, err := p.db.Query(context.Background(), GetUserPostsQuery, userID, lastPostID, postsAmount)
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			err = nil
-		}
-
 		return
 	}
 	defer rows.Close()
@@ -432,10 +428,6 @@ func (p *Posts) GetUserFriendsPosts(ctx context.Context, userID uint, lastPostID
 
 	rows, err := p.db.Query(context.Background(), GetUserFriendsPostsQuery, userID, lastPostID, postsAmount)
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			err = nil
-		}
-
 		return
 	}
 	defer rows.Close()
@@ -566,7 +558,7 @@ func (p *Posts) DeletePost(ctx context.Context, postID uint) (err error) {
 		return
 	}
 
-	if result.RowsAffected() != 1 {
+	if result.RowsAffected() > 1 {
 		return errors.ErrRowsAffected
 	}
 
@@ -576,9 +568,13 @@ func (p *Posts) DeletePost(ctx context.Context, postID uint) (err error) {
 func (p *Posts) DeleteGroupPost(ctx context.Context, postID uint) (err error) {
 	contextlogger.LogSQL(ctx, DeleteGroupPostQuery, postID)
 
-	_, err = p.db.Exec(context.Background(), DeleteGroupPostQuery, postID)
+	result, err := p.db.Exec(context.Background(), DeleteGroupPostQuery, postID)
 	if err != nil {
 		return
+	}
+
+	if result.RowsAffected() > 1 {
+		return errors.ErrRowsAffected
 	}
 
 	return
@@ -667,7 +663,7 @@ func (p *Posts) DeletePostLike(ctx context.Context, likeData *domain.PostLike) (
 		return
 	}
 
-	if result.RowsAffected() != 1 {
+	if result.RowsAffected() > 1 {
 		return errors.ErrRowsAffected
 	}
 

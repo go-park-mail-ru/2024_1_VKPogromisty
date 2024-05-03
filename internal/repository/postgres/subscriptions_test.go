@@ -15,7 +15,6 @@ import (
 )
 
 var (
-	//subscriptionColumns = []string{"id", "subscriber_id", "subscribed_to_id", "created_at", "updated_at"}
 	userColumns = []string{"id", "first_name", "last_name", "email", "avatar", "date_of_birth", "created_at", "updated_at"}
 )
 
@@ -99,7 +98,7 @@ func TestGetFriendsErrNoRows(t *testing.T) {
 	repo := repository.NewSubscriptions(pool, customtime.MockTimeProvider{})
 
 	_, err := repo.GetFriends(context.Background(), 1)
-	if err != nil {
+	if err != pgx.ErrNoRows {
 		t.Errorf("unexpected error: %v", err)
 	}
 
@@ -140,7 +139,7 @@ func TestGetSubscriptionsErrNoRows(t *testing.T) {
 	repo := repository.NewSubscriptions(pool, customtime.MockTimeProvider{})
 
 	_, err := repo.GetSubscriptions(context.Background(), 1)
-	if err != nil {
+	if err != pgx.ErrNoRows {
 		t.Errorf("unexpected error: %v", err)
 	}
 }
@@ -191,7 +190,7 @@ func TestGetSubscribersErrNoRows(t *testing.T) {
 	repo := repository.NewSubscriptions(pool, customtime.MockTimeProvider{})
 
 	_, err := repo.GetSubscribers(context.Background(), 1)
-	if err != nil {
+	if err != pgx.ErrNoRows {
 		t.Errorf("unexpected error: %v", err)
 	}
 }

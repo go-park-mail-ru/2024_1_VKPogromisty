@@ -145,10 +145,6 @@ func (p *PublicGroup) SearchPublicGroupsByNameWithInfo(ctx context.Context, quer
 		userID,
 	)
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			err = errors.ErrNotFound
-		}
-
 		return
 	}
 	defer rows.Close()
@@ -173,14 +169,6 @@ func (p *PublicGroup) SearchPublicGroupsByNameWithInfo(ctx context.Context, quer
 		}
 
 		publicGroups = append(publicGroups, publicGroupWithInfo)
-	}
-
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			err = errors.ErrNotFound
-		}
-
-		return
 	}
 
 	return
@@ -251,11 +239,6 @@ func (p *PublicGroup) DeletePublicGroup(ctx context.Context, groupID uint) (err 
 		return
 	}
 
-	if result.RowsAffected() == 0 {
-		err = errors.ErrNotFound
-		return
-	}
-
 	if result.RowsAffected() > 1 {
 		err = errors.ErrRowsAffected
 		return
@@ -301,10 +284,6 @@ func (p *PublicGroup) GetPublicGroupsBySubscriberID(ctx context.Context, subscri
 		subscriberID,
 	)
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			err = errors.ErrNotFound
-		}
-
 		return
 	}
 	defer rows.Close()
@@ -363,11 +342,6 @@ func (p *PublicGroup) DeletePublicGroupSubscription(ctx context.Context, subscri
 		return
 	}
 
-	if result.RowsAffected() == 0 {
-		err = errors.ErrNotFound
-		return
-	}
-
 	if result.RowsAffected() > 1 {
 		err = errors.ErrRowsAffected
 		return
@@ -381,10 +355,6 @@ func (p *PublicGroup) GetPublicGroupSubscriptionIDs(ctx context.Context, userID 
 
 	rows, err := p.db.Query(context.Background(), getPublicGroupSubscriptionIDsQuery, userID)
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			err = errors.ErrNotFound
-		}
-
 		return
 	}
 	defer rows.Close()
