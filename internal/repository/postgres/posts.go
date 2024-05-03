@@ -6,8 +6,8 @@ import (
 	"socio/errors"
 	"socio/pkg/contextlogger"
 	customtime "socio/pkg/time"
+	"socio/pkg/utils"
 	"socio/usecase/posts"
-	"strconv"
 
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
@@ -33,14 +33,14 @@ const (
         p.created_at,
         p.updated_at;
 	`
-	getLastUserPostIDQuery = `
+	GetLastUserPostIDQuery = `
 	SELECT COALESCE(MAX(p.id), 0) AS last_post_id
 	FROM public.post AS p
 	LEFT JOIN public.public_group_post AS pgp ON pgp.post_id = p.id
 	WHERE p.author_id = $1 
 		AND pgp.post_id IS NULL;
 	`
-	getUserPostsQuery = `
+	GetUserPostsQuery = `
 	SELECT p.id,
         p.author_id,
         p.content,
@@ -63,7 +63,7 @@ const (
     ORDER BY p.created_at DESC
     LIMIT $3;
 	`
-	getLastUserFriendsPostIDQuery = `
+	GetLastUserFriendsPostIDQuery = `
 	SELECT COALESCE(MAX(p.id), 0) AS last_post_id
 	FROM public.post AS p
 		INNER JOIN public.subscription AS s ON p.author_id = s.subscribed_to_id
@@ -125,7 +125,7 @@ const (
 	DELETE FROM public.post
 	WHERE id = $1;
 	`
-	createPostLikeQuery = `
+	CreatePostLikeQuery = `
 	INSERT INTO public.post_like (post_id, user_id)
 	VALUES ($1, $2)
 	RETURNING id,
@@ -133,12 +133,12 @@ const (
 		user_id,
 		created_at;
 	`
-	deletePostLikeQuery = `
+	DeletePostLikeQuery = `
 	DELETE FROM public.post_like
 	WHERE post_id = $1
 		AND user_id = $2;
 	`
-	getLikedPosts = `
+	GetLikedPosts = `
 	SELECT
 		pl.id as like_id, 
 		pl.post_id,
@@ -168,13 +168,13 @@ const (
 	ORDER BY pl.created_at DESC
 	LIMIT $3;
 	`
-	getLastPostLikeIDQuery = `
+	GetLastPostLikeIDQuery = `
 	SELECT COALESCE(MAX(pl.id), 0) AS last_like_id
 	FROM public.post_like AS pl
 	JOIN public.post AS p ON post_id = p.id
 	WHERE p.author_id = $1;
 	`
-	storeGroupPostQuery = `
+	StoreGroupPostQuery = `
 	INSERT INTO public.public_group_post (post_id, public_group_id)
 	VALUES ($1, $2)
 	RETURNING id,
@@ -183,17 +183,17 @@ const (
 		created_at,
 		updated_at;
 	`
-	deleteGroupPostQuery = `
+	DeleteGroupPostQuery = `
 	DELETE FROM public.public_group_post
 	WHERE post_id = $1;
 	`
-	getLastPostOfGroupIDQuery = `
+	GetLastPostOfGroupIDQuery = `
 	SELECT COALESCE(MAX(p.id), 0) AS last_post_id
 	FROM public.post AS p
 		INNER JOIN public.public_group_post AS pgp ON p.id = pgp.post_id
 		WHERE pgp.public_group_id = $1;
 	`
-	getPostsOfGroupQuery = `
+	GetPostsOfGroupQuery = `
 	SELECT p.id,
 		p.author_id,
 		p.content,
@@ -215,7 +215,7 @@ const (
 		ORDER BY p.created_at DESC
 		LIMIT $3;
 	`
-	getGroupPostsBySubscriptionIDsQuery = `
+	GetGroupPostsBySubscriptionIDsQuery = `
 	SELECT p.id,
 		p.author_id,
 		p.content,
@@ -238,13 +238,13 @@ const (
 			pgp.public_group_id
 			ORDER BY p.created_at DESC
 			LIMIT $3;`
-	getLastGroupPostBySubscriptionIDsQuery = `
+	GetLastGroupPostBySubscriptionIDsQuery = `
 	SELECT COALESCE(MAX(p.id), 0) AS last_post_id
 	FROM public.post AS p
 		LEFT JOIN public.public_group_post AS pgp ON p.id = pgp.post_id
 		WHERE pgp.public_group_id IN ($1);
 	`
-	getPostsByGroupSubIDsAndUserSubIDsQuery = `
+	GetPostsByGroupSubIDsAndUserSubIDsQuery = `
 	SELECT p.id,
 		p.author_id,
 		p.content,
@@ -265,17 +265,17 @@ const (
 			p.updated_at
 			ORDER BY p.created_at DESC
 			LIMIT $4;`
-	getLastPostByGroupSubIDsAndUserSubIDsQuery = `
+	GetLastPostByGroupSubIDsAndUserSubIDsQuery = `
 	SELECT COALESCE(MAX(p.id), 0) AS last_post_id
 	FROM public.post AS p
 		LEFT JOIN public.public_group_post AS pgp ON p.id = pgp.post_id
 		WHERE pgp.public_group_id IN ($1) OR p.author_id IN ($2);
 	`
-	getLastPostIDQuery = `
+	GetLastPostIDQuery = `
 	SELECT COALESCE(MAX(id), 0) AS last_post_id
 	FROM public.post;
 	`
-	getNewPostsQuery = `
+	GetNewPostsQuery = `
 	SELECT p.id,
 		p.author_id,
 		p.content,
@@ -332,18 +332,6 @@ func int8ArrayIntoUintSlice(arr pgtype.Int8Array) (res []uint64) {
 	return
 }
 
-func uintArrayIntoString(arr []uint) (res string) {
-	res = ""
-	for i, id := range arr {
-		res += strconv.Itoa(int(id))
-		if i != len(res)-1 {
-			res += ", "
-		}
-	}
-
-	return
-}
-
 func (p *Posts) GetPostByID(ctx context.Context, postID uint) (post *domain.Post, err error) {
 	post = new(domain.Post)
 
@@ -377,26 +365,22 @@ func (p *Posts) GetPostByID(ctx context.Context, postID uint) (post *domain.Post
 
 func (p *Posts) GetUserPosts(ctx context.Context, userID uint, lastPostID uint, postsAmount uint) (posts []*domain.Post, err error) {
 	if lastPostID == 0 {
-		contextlogger.LogSQL(ctx, getLastUserPostIDQuery, userID)
+		contextlogger.LogSQL(ctx, GetLastUserPostIDQuery, userID)
 
-		err = p.db.QueryRow(context.Background(), getLastUserPostIDQuery, userID).Scan(&lastPostID)
+		err = p.db.QueryRow(context.Background(), GetLastUserPostIDQuery, userID).Scan(&lastPostID)
 		if err != nil {
-			if err == pgx.ErrNoRows {
-				err = errors.ErrNotFound
-			}
-
 			return
 		}
 
 		lastPostID += 1
 	}
 
-	contextlogger.LogSQL(ctx, getUserPostsQuery, userID, lastPostID, postsAmount)
+	contextlogger.LogSQL(ctx, GetUserPostsQuery, userID, lastPostID, postsAmount)
 
-	rows, err := p.db.Query(context.Background(), getUserPostsQuery, userID, lastPostID, postsAmount)
+	rows, err := p.db.Query(context.Background(), GetUserPostsQuery, userID, lastPostID, postsAmount)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			err = errors.ErrNotFound
+			err = nil
 		}
 
 		return
@@ -434,9 +418,9 @@ func (p *Posts) GetUserPosts(ctx context.Context, userID uint, lastPostID uint, 
 func (p *Posts) GetUserFriendsPosts(ctx context.Context, userID uint, lastPostID uint, postsAmount uint) (posts []*domain.Post, err error) {
 	contextlogger.LogSQL(ctx, GetUserFriendsPostsQuery, userID, lastPostID, postsAmount)
 	if lastPostID == 0 {
-		contextlogger.LogSQL(ctx, getLastUserFriendsPostIDQuery, userID)
+		contextlogger.LogSQL(ctx, GetLastUserFriendsPostIDQuery, userID)
 
-		err = p.db.QueryRow(context.Background(), getLastUserFriendsPostIDQuery, userID).Scan(&lastPostID)
+		err = p.db.QueryRow(context.Background(), GetLastUserFriendsPostIDQuery, userID).Scan(&lastPostID)
 		if err != nil {
 			return
 		}
@@ -448,6 +432,10 @@ func (p *Posts) GetUserFriendsPosts(ctx context.Context, userID uint, lastPostID
 
 	rows, err := p.db.Query(context.Background(), GetUserFriendsPostsQuery, userID, lastPostID, postsAmount)
 	if err != nil {
+		if err == pgx.ErrNoRows {
+			err = nil
+		}
+
 		return
 	}
 	defer rows.Close()
@@ -535,9 +523,9 @@ func (p *Posts) StorePost(ctx context.Context, post *domain.Post) (newPost *doma
 func (p *Posts) StoreGroupPost(ctx context.Context, groupPost *domain.GroupPost) (newGroupPost *domain.GroupPost, err error) {
 	newGroupPost = new(domain.GroupPost)
 
-	contextlogger.LogSQL(ctx, storeGroupPostQuery, groupPost.PostID, groupPost.GroupID)
+	contextlogger.LogSQL(ctx, StoreGroupPostQuery, groupPost.PostID, groupPost.GroupID)
 
-	err = p.db.QueryRow(context.Background(), storeGroupPostQuery, groupPost.PostID, groupPost.GroupID).Scan(
+	err = p.db.QueryRow(context.Background(), StoreGroupPostQuery, groupPost.PostID, groupPost.GroupID).Scan(
 		&newGroupPost.ID,
 		&newGroupPost.PostID,
 		&newGroupPost.GroupID,
@@ -586,9 +574,9 @@ func (p *Posts) DeletePost(ctx context.Context, postID uint) (err error) {
 }
 
 func (p *Posts) DeleteGroupPost(ctx context.Context, postID uint) (err error) {
-	contextlogger.LogSQL(ctx, deleteGroupPostQuery, postID)
+	contextlogger.LogSQL(ctx, DeleteGroupPostQuery, postID)
 
-	_, err = p.db.Exec(context.Background(), deleteGroupPostQuery, postID)
+	_, err = p.db.Exec(context.Background(), DeleteGroupPostQuery, postID)
 	if err != nil {
 		return
 	}
@@ -599,9 +587,9 @@ func (p *Posts) DeleteGroupPost(ctx context.Context, postID uint) (err error) {
 func (p *Posts) GetLikedPosts(ctx context.Context, userID uint, lastLikeID uint, limit uint) (likedPosts []posts.LikeWithPost, err error) {
 	contextlogger.LogSQL(ctx, GetUserFriendsPostsQuery, userID, lastLikeID, limit)
 	if lastLikeID == 0 {
-		contextlogger.LogSQL(ctx, getLastPostLikeIDQuery, userID)
+		contextlogger.LogSQL(ctx, GetLastPostLikeIDQuery, userID)
 
-		err = p.db.QueryRow(context.Background(), getLastPostLikeIDQuery, userID).Scan(&lastLikeID)
+		err = p.db.QueryRow(context.Background(), GetLastPostLikeIDQuery, userID).Scan(&lastLikeID)
 		if err != nil {
 			return
 		}
@@ -609,9 +597,9 @@ func (p *Posts) GetLikedPosts(ctx context.Context, userID uint, lastLikeID uint,
 		lastLikeID += 1
 	}
 
-	contextlogger.LogSQL(ctx, getLikedPosts, userID, lastLikeID, limit)
+	contextlogger.LogSQL(ctx, GetLikedPosts, userID, lastLikeID, limit)
 
-	rows, err := p.db.Query(context.Background(), getLikedPosts, userID, lastLikeID, limit)
+	rows, err := p.db.Query(context.Background(), GetLikedPosts, userID, lastLikeID, limit)
 	if err != nil {
 		return
 	}
@@ -656,9 +644,9 @@ func (p *Posts) GetLikedPosts(ctx context.Context, userID uint, lastLikeID uint,
 func (p *Posts) StorePostLike(ctx context.Context, likeData *domain.PostLike) (like *domain.PostLike, err error) {
 	like = new(domain.PostLike)
 
-	contextlogger.LogSQL(ctx, createPostLikeQuery, likeData.PostID, likeData.UserID)
+	contextlogger.LogSQL(ctx, CreatePostLikeQuery, likeData.PostID, likeData.UserID)
 
-	err = p.db.QueryRow(context.Background(), createPostLikeQuery, likeData.PostID, likeData.UserID).Scan(
+	err = p.db.QueryRow(context.Background(), CreatePostLikeQuery, likeData.PostID, likeData.UserID).Scan(
 		&like.ID,
 		&like.PostID,
 		&like.UserID,
@@ -672,9 +660,9 @@ func (p *Posts) StorePostLike(ctx context.Context, likeData *domain.PostLike) (l
 }
 
 func (p *Posts) DeletePostLike(ctx context.Context, likeData *domain.PostLike) (err error) {
-	contextlogger.LogSQL(ctx, deletePostLikeQuery, likeData.PostID, likeData.UserID)
+	contextlogger.LogSQL(ctx, DeletePostLikeQuery, likeData.PostID, likeData.UserID)
 
-	result, err := p.db.Exec(context.Background(), deletePostLikeQuery, likeData.PostID, likeData.UserID)
+	result, err := p.db.Exec(context.Background(), DeletePostLikeQuery, likeData.PostID, likeData.UserID)
 	if err != nil {
 		return
 	}
@@ -688,9 +676,9 @@ func (p *Posts) DeletePostLike(ctx context.Context, likeData *domain.PostLike) (
 
 func (p *Posts) GetPostsOfGroup(ctx context.Context, groupID, lastPostID, postsAmount uint) (posts []*domain.Post, err error) {
 	if lastPostID == 0 {
-		contextlogger.LogSQL(ctx, getLastPostOfGroupIDQuery, groupID)
+		contextlogger.LogSQL(ctx, GetLastPostOfGroupIDQuery, groupID)
 
-		err = p.db.QueryRow(context.Background(), getLastPostOfGroupIDQuery, groupID).Scan(&lastPostID)
+		err = p.db.QueryRow(context.Background(), GetLastPostOfGroupIDQuery, groupID).Scan(&lastPostID)
 		if err != nil {
 			return
 		}
@@ -698,9 +686,9 @@ func (p *Posts) GetPostsOfGroup(ctx context.Context, groupID, lastPostID, postsA
 		lastPostID += 1
 	}
 
-	contextlogger.LogSQL(ctx, getPostsOfGroupQuery, groupID, lastPostID, postsAmount)
+	contextlogger.LogSQL(ctx, GetPostsOfGroupQuery, groupID, lastPostID, postsAmount)
 
-	rows, err := p.db.Query(context.Background(), getPostsOfGroupQuery, groupID, lastPostID, postsAmount)
+	rows, err := p.db.Query(context.Background(), GetPostsOfGroupQuery, groupID, lastPostID, postsAmount)
 	if err != nil {
 		return
 	}
@@ -739,12 +727,12 @@ func (p *Posts) GetGroupPostsBySubscriptionIDs(ctx context.Context, subIDs []uin
 		subIDs = append(subIDs, 0)
 	}
 
-	subIDsStr := uintArrayIntoString(subIDs)
+	subIDsStr := utils.UintArrayIntoString(subIDs)
 
 	if lastPostID == 0 {
-		contextlogger.LogSQL(ctx, getLastGroupPostBySubscriptionIDsQuery, subIDsStr)
+		contextlogger.LogSQL(ctx, GetLastGroupPostBySubscriptionIDsQuery, subIDsStr)
 
-		err = p.db.QueryRow(context.Background(), getLastGroupPostBySubscriptionIDsQuery, subIDsStr).Scan(&lastPostID)
+		err = p.db.QueryRow(context.Background(), GetLastGroupPostBySubscriptionIDsQuery, subIDsStr).Scan(&lastPostID)
 		if err != nil {
 			return
 		}
@@ -752,9 +740,9 @@ func (p *Posts) GetGroupPostsBySubscriptionIDs(ctx context.Context, subIDs []uin
 		lastPostID += 1
 	}
 
-	contextlogger.LogSQL(ctx, getGroupPostsBySubscriptionIDsQuery, subIDsStr, lastPostID, postsAmount)
+	contextlogger.LogSQL(ctx, GetGroupPostsBySubscriptionIDsQuery, subIDsStr, lastPostID, postsAmount)
 
-	rows, err := p.db.Query(context.Background(), getGroupPostsBySubscriptionIDsQuery, subIDsStr, lastPostID, postsAmount)
+	rows, err := p.db.Query(context.Background(), GetGroupPostsBySubscriptionIDsQuery, subIDsStr, lastPostID, postsAmount)
 	if err != nil {
 		return
 	}
@@ -798,13 +786,13 @@ func (p *Posts) GetPostsByGroupSubIDsAndUserSubIDs(ctx context.Context, groupSub
 		userSubIDs = append(userSubIDs, 0)
 	}
 
-	groupSubIDsStr := uintArrayIntoString(groupSubIDs)
-	userSubIDsStr := uintArrayIntoString(userSubIDs)
+	groupSubIDsStr := utils.UintArrayIntoString(groupSubIDs)
+	userSubIDsStr := utils.UintArrayIntoString(userSubIDs)
 
 	if lastPostID == 0 {
-		contextlogger.LogSQL(ctx, getLastPostByGroupSubIDsAndUserSubIDsQuery, groupSubIDsStr, userSubIDsStr)
+		contextlogger.LogSQL(ctx, GetLastPostByGroupSubIDsAndUserSubIDsQuery, groupSubIDsStr, userSubIDsStr)
 
-		err = p.db.QueryRow(context.Background(), getLastPostByGroupSubIDsAndUserSubIDsQuery, groupSubIDsStr, userSubIDsStr).Scan(&lastPostID)
+		err = p.db.QueryRow(context.Background(), GetLastPostByGroupSubIDsAndUserSubIDsQuery, groupSubIDsStr, userSubIDsStr).Scan(&lastPostID)
 		if err != nil {
 			return
 		}
@@ -812,9 +800,9 @@ func (p *Posts) GetPostsByGroupSubIDsAndUserSubIDs(ctx context.Context, groupSub
 		lastPostID += 1
 	}
 
-	contextlogger.LogSQL(ctx, getPostsByGroupSubIDsAndUserSubIDsQuery, groupSubIDsStr, userSubIDsStr, lastPostID, postsAmount)
+	contextlogger.LogSQL(ctx, GetPostsByGroupSubIDsAndUserSubIDsQuery, groupSubIDsStr, userSubIDsStr, lastPostID, postsAmount)
 
-	rows, err := p.db.Query(context.Background(), getPostsByGroupSubIDsAndUserSubIDsQuery, groupSubIDsStr, userSubIDsStr, lastPostID, postsAmount)
+	rows, err := p.db.Query(context.Background(), GetPostsByGroupSubIDsAndUserSubIDsQuery, groupSubIDsStr, userSubIDsStr, lastPostID, postsAmount)
 	if err != nil {
 		return
 	}
@@ -850,9 +838,9 @@ func (p *Posts) GetPostsByGroupSubIDsAndUserSubIDs(ctx context.Context, groupSub
 
 func (p *Posts) GetNewPosts(ctx context.Context, lastPostID, postsAmount uint) (posts []*domain.Post, err error) {
 	if lastPostID == 0 {
-		contextlogger.LogSQL(ctx, getLastPostIDQuery)
+		contextlogger.LogSQL(ctx, GetLastPostIDQuery)
 
-		err = p.db.QueryRow(context.Background(), getLastPostIDQuery).Scan(&lastPostID)
+		err = p.db.QueryRow(context.Background(), GetLastPostIDQuery).Scan(&lastPostID)
 		if err != nil {
 			return
 		}
@@ -860,9 +848,9 @@ func (p *Posts) GetNewPosts(ctx context.Context, lastPostID, postsAmount uint) (
 		lastPostID += 1
 	}
 
-	contextlogger.LogSQL(ctx, getNewPostsQuery, lastPostID, postsAmount)
+	contextlogger.LogSQL(ctx, GetNewPostsQuery, lastPostID, postsAmount)
 
-	rows, err := p.db.Query(context.Background(), getNewPostsQuery, lastPostID, postsAmount)
+	rows, err := p.db.Query(context.Background(), GetNewPostsQuery, lastPostID, postsAmount)
 	if err != nil {
 		return
 	}

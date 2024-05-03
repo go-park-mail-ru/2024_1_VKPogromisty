@@ -50,7 +50,7 @@ const (
 func (s *Users) StorePublicGroupAdmin(ctx context.Context, publicGroupAdmin *domain.PublicGroupAdmin) (newPublicGroupAdmin *domain.PublicGroupAdmin, err error) {
 	newPublicGroupAdmin = new(domain.PublicGroupAdmin)
 
-	contextlogger.LogSQL(ctx, getPostsByGroupSubIDsAndUserSubIDsQuery, publicGroupAdmin.PublicGroupID, publicGroupAdmin.UserID)
+	contextlogger.LogSQL(ctx, GetPostsByGroupSubIDsAndUserSubIDsQuery, publicGroupAdmin.PublicGroupID, publicGroupAdmin.UserID)
 
 	err = s.db.QueryRow(
 		context.Background(),
