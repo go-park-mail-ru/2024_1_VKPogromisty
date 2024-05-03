@@ -120,7 +120,7 @@ func (p *Service) CreateUser(ctx context.Context, userInput CreateUserInput) (us
 
 	err = p.UserStorage.StoreUser(ctx, user)
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	return
@@ -154,7 +154,7 @@ func (p *Service) UpdateUser(ctx context.Context, input UpdateUserInput) (update
 	updatedUser = oldUser
 
 	if err = p.ValidateUpdateUserInput(ctx, input, oldUser); err != nil {
-		return
+		return nil, err
 	}
 
 	if len(input.FirstName) > 0 {
@@ -181,7 +181,7 @@ func (p *Service) UpdateUser(ctx context.Context, input UpdateUserInput) (update
 	if len(input.Avatar) > 0 {
 		err = p.AvatarStorage.Delete(updatedUser.Avatar)
 		if err != nil {
-			return
+			return nil, err
 		}
 
 		updatedUser.Avatar = input.Avatar
@@ -189,7 +189,7 @@ func (p *Service) UpdateUser(ctx context.Context, input UpdateUserInput) (update
 
 	updatedUser, err = p.UserStorage.UpdateUser(ctx, updatedUser, prevPassword)
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	p.Sanitizer.SanitizeUser(updatedUser)

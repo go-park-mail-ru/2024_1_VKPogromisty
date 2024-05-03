@@ -728,6 +728,8 @@ func (h *PublicGroupHandler) HandleGetGroupPosts(w http.ResponseWriter, r *http.
 //	@Param			X-CSRF-Token	header	string	true	"CSRF token"
 //	@Param			groupID	path	string	true	"Group ID"
 //
+// @Param			userId	body	uint64	true	"User ID"
+//
 //	@Produce		json
 //	@Success		201	{object}	json.JSONResponse
 //	@Failure		400	{object}	errors.HTTPError

@@ -1189,6 +1189,15 @@ const docTemplate = `{
                         "name": "groupID",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "User ID",
+                        "name": "userId",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
                     }
                 ],
                 "responses": {

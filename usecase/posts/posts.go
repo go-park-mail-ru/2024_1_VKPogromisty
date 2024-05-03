@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	defaultPostsAmount      = 20
-	defaultLikedPostsAmount = 20
+	DefaultPostsAmount      = uint(20)
+	DefaultLikedPostsAmount = uint(20)
 )
 
 type PostInput struct {
@@ -106,7 +106,7 @@ func (s *Service) GetPostByID(ctx context.Context, postID uint) (post *domain.Po
 
 func (s *Service) GetUserPosts(ctx context.Context, userID uint, lastPostID uint, postsAmount uint) (posts []*domain.Post, err error) {
 	if postsAmount == 0 {
-		postsAmount = defaultPostsAmount
+		postsAmount = DefaultPostsAmount
 	}
 
 	posts, err = s.PostsStorage.GetUserPosts(ctx, userID, lastPostID, postsAmount)
@@ -123,7 +123,7 @@ func (s *Service) GetUserPosts(ctx context.Context, userID uint, lastPostID uint
 
 func (s *Service) GetUserFriendsPosts(ctx context.Context, userID uint, lastPostID uint, postsAmount uint) (posts []*domain.Post, err error) {
 	if postsAmount == 0 {
-		postsAmount = defaultPostsAmount
+		postsAmount = DefaultPostsAmount
 	}
 
 	posts, err = s.PostsStorage.GetUserFriendsPosts(ctx, userID, lastPostID, postsAmount)
@@ -194,7 +194,10 @@ func (s *Service) DeletePost(ctx context.Context, userID uint, postID uint) (err
 	}
 
 	for _, attachment := range post.Attachments {
-		s.AttachmentStorage.Delete(attachment)
+		err = s.AttachmentStorage.Delete(attachment)
+		if err != nil {
+			return
+		}
 	}
 
 	err = s.PostsStorage.DeleteGroupPost(ctx, postID)
@@ -212,7 +215,7 @@ func (s *Service) DeletePost(ctx context.Context, userID uint, postID uint) (err
 
 func (s *Service) GetLikedPosts(ctx context.Context, userID uint, lastLikeID uint, limit uint) (likedPosts []LikeWithPost, err error) {
 	if limit == 0 {
-		limit = defaultLikedPostsAmount
+		limit = DefaultLikedPostsAmount
 	}
 
 	likedPosts, err = s.PostsStorage.GetLikedPosts(ctx, userID, lastLikeID, limit)
@@ -265,7 +268,7 @@ func (s *Service) CreateGroupPost(ctx context.Context, groupPost *domain.GroupPo
 
 func (s *Service) GetPostsOfGroup(ctx context.Context, groupID, lastPostID, postsAmount uint) (posts []*domain.Post, err error) {
 	if postsAmount == 0 {
-		postsAmount = defaultPostsAmount
+		postsAmount = DefaultPostsAmount
 	}
 
 	posts, err = s.PostsStorage.GetPostsOfGroup(ctx, groupID, lastPostID, postsAmount)
@@ -282,7 +285,7 @@ func (s *Service) GetPostsOfGroup(ctx context.Context, groupID, lastPostID, post
 
 func (s *Service) GetGroupPostsBySubscriptionIDs(ctx context.Context, subIDs []uint, lastPostID, postsAmount uint) (posts []*domain.Post, err error) {
 	if postsAmount == 0 {
-		postsAmount = defaultPostsAmount
+		postsAmount = DefaultPostsAmount
 	}
 
 	posts, err = s.PostsStorage.GetGroupPostsBySubscriptionIDs(ctx, subIDs, lastPostID, postsAmount)
@@ -299,7 +302,7 @@ func (s *Service) GetGroupPostsBySubscriptionIDs(ctx context.Context, subIDs []u
 
 func (s *Service) GetPostsByGroupSubIDsAndUserSubIDs(ctx context.Context, groupSubIDs, userSubIDs []uint, lastPostID, postsAmount uint) (posts []*domain.Post, err error) {
 	if postsAmount == 0 {
-		postsAmount = defaultPostsAmount
+		postsAmount = DefaultPostsAmount
 	}
 
 	posts, err = s.PostsStorage.GetPostsByGroupSubIDsAndUserSubIDs(ctx, groupSubIDs, userSubIDs, lastPostID, postsAmount)
@@ -316,7 +319,7 @@ func (s *Service) GetPostsByGroupSubIDsAndUserSubIDs(ctx context.Context, groupS
 
 func (s *Service) GetNewPosts(ctx context.Context, lastPostID, postsAmount uint) (posts []*domain.Post, err error) {
 	if postsAmount == 0 {
-		postsAmount = defaultPostsAmount
+		postsAmount = DefaultPostsAmount
 	}
 
 	posts, err = s.PostsStorage.GetNewPosts(ctx, lastPostID, postsAmount)

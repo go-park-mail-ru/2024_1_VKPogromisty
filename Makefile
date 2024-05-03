@@ -12,7 +12,7 @@ mocks:
 
 test:
 	go test ./... -coverprofile cover.out.tmp
-	cat cover.out.tmp | grep -v "docs" | grep -v "mocks" > cover.out
+	cat cover.out.tmp | grep -v "docs" | grep -v "mocks" | grep -v "proto" > cover.out
 
 coverage:
 	go tool cover -func cover.out
