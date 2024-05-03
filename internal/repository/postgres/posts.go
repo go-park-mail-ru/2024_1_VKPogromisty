@@ -34,10 +34,10 @@ const (
         p.updated_at;
 	`
 	getLastUserPostIDQuery = `
-	SELECT COALESCE(MAX(id), 0) AS last_post_id
+	SELECT COALESCE(MAX(p.id), 0) AS last_post_id
 	FROM public.post AS p
 	LEFT JOIN public.public_group_post AS pgp ON pgp.post_id = p.id
-	WHERE author_id = $1 
+	WHERE p.author_id = $1 
 		AND pgp.post_id IS NULL;
 	`
 	getUserPostsQuery = `
