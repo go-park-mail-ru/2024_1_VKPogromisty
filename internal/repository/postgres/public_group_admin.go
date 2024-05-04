@@ -50,7 +50,7 @@ const (
 func (s *Users) StorePublicGroupAdmin(ctx context.Context, publicGroupAdmin *domain.PublicGroupAdmin) (newPublicGroupAdmin *domain.PublicGroupAdmin, err error) {
 	newPublicGroupAdmin = new(domain.PublicGroupAdmin)
 
-	contextlogger.LogSQL(ctx, getPostsByGroupSubIDsAndUserSubIDsQuery, publicGroupAdmin.PublicGroupID, publicGroupAdmin.UserID)
+	contextlogger.LogSQL(ctx, GetPostsByGroupSubIDsAndUserSubIDsQuery, publicGroupAdmin.PublicGroupID, publicGroupAdmin.UserID)
 
 	err = s.db.QueryRow(
 		context.Background(),
@@ -79,8 +79,8 @@ func (s *Users) DeletePublicGroupAdmin(ctx context.Context, publicGroupAdmin *do
 		return
 	}
 
-	if result.RowsAffected() == 0 {
-		err = errors.ErrNotFound
+	if result.RowsAffected() > 1 {
+		err = errors.ErrRowsAffected
 		return
 	}
 

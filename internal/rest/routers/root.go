@@ -111,7 +111,7 @@ func MountRootRouter(router *mux.Router) (err error) {
 	MountSubscriptionsRouter(rootRouter, userClient, authClient)
 	MountPublicGroupRouter(rootRouter, publicGroupClient, postClient, userClient, authClient)
 
-	prodLogger, err := logger.NewZapLogger()
+	prodLogger, err := logger.NewZapLogger(nil)
 	if err != nil {
 		return
 	}

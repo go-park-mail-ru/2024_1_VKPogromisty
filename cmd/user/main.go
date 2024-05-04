@@ -59,7 +59,7 @@ func main() {
 
 	manager := user.NewUserManager(userStorage, subsciptionsStorage, avatarStorage)
 
-	prodLogger, err := logger.NewZapLogger()
+	prodLogger, err := logger.NewZapLogger(nil)
 	if err != nil {
 		return
 	}

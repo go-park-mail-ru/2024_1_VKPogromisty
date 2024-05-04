@@ -4,15 +4,24 @@
 
 MOCKS_DESTINATION=mocks
 mocks: 
-	@echo "Generating mocks...";
-	@rm -rf $(MOCKS_DESTINATION);
+	@echo "Generating mocks..."
+	@rm -rf $(MOCKS_DESTINATION)
 	@for file in $(shell find usecase -type f -name '*.go' ! -name '*_test.go'); do \
 		mkdir -p $(MOCKS_DESTINATION)/`dirname $$file` && mockgen -source=$$file -destination=$(MOCKS_DESTINATION)/$$file; \
 	done
+	@mkdir -p mocks/grpc
+	@find internal/grpc -name '*.proto' -print0 | while IFS= read -r -d '' file; do \
+		service=$$(dirname "$$file"); \
+        service=$${service%/proto}; \
+		service_name=$$(basename "$$service"); \
+		source_name=$$service_name"_grpc.pb.go"; \
+		mockgen -source=$$service"/proto/"$$source_name -destination="mocks/grpc/"$$service_name"_grpc/"$$service_name"_mock.go" -package=$$service_name"_grpc"; \
+	done
+	@echo "Mocks generated."
 
 test:
 	go test ./... -coverprofile cover.out.tmp
-	cat cover.out.tmp | grep -v "docs" | grep -v "mocks" > cover.out
+	cat cover.out.tmp | grep -v "docs" | grep -v "mocks" | grep -v "proto" > cover.out
 
 coverage:
 	go tool cover -func cover.out

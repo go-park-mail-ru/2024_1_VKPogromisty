@@ -197,8 +197,8 @@ func (api *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 //	@Router			/auth/logout/ [delete]
 func (api *AuthHandler) HandleLogout(w http.ResponseWriter, r *http.Request) {
 	session, err := r.Cookie("session_id")
-	if err == http.ErrNoCookie {
-		json.ServeJSONError(r.Context(), w, err)
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, errors.ErrUnauthorized)
 		return
 	}
 

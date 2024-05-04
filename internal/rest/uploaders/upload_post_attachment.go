@@ -5,12 +5,16 @@ import (
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
+	"socio/errors"
 	postpb "socio/internal/grpc/post/proto"
 
 	"github.com/google/uuid"
 )
 
 func UploadPostAttachment(r *http.Request, postClient postpb.PostClient, fh *multipart.FileHeader) (string, error) {
+	if fh == nil {
+		return "", errors.ErrInvalidData
+	}
 	fileName := uuid.NewString() + filepath.Ext(fh.Filename)
 	contentType := fh.Header.Get("Content-Type")
 

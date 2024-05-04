@@ -58,7 +58,7 @@ func main() {
 	postsStorage := pgRepo.NewPublicGroup(db, customtime.RealTimeProvider{})
 	manager := publicgroup.NewPublicGroupManager(postsStorage, avatarStorage)
 
-	prodLogger, err := logger.NewZapLogger()
+	prodLogger, err := logger.NewZapLogger(nil)
 	if err != nil {
 		return
 	}

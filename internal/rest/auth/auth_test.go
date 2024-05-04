@@ -1,173 +1,235 @@
 package rest_test
 
-// import (
-// 	"bytes"
-// 	"encoding/json"
-// 	"net/http"
-// 	"net/http/httptest"
-// 	"socio/domain"
-// 	"socio/errors"
-// 	rest "socio/internal/rest/auth"
-// 	mock_auth "socio/mocks/usecase/auth"
-// 	"socio/pkg/hash"
-// 	"socio/pkg/sanitizer"
-// 	"socio/usecase/auth"
-// 	"testing"
+import (
+	"bytes"
+	"encoding/json"
+	"mime/multipart"
+	"net/http"
+	"net/http/httptest"
+	"testing"
 
-// 	"github.com/stretchr/testify/assert"
+	"socio/errors"
+	authpb "socio/internal/grpc/auth/proto"
+	userpb "socio/internal/grpc/user/proto"
+	rest "socio/internal/rest/auth"
+	auth_mocks "socio/mocks/grpc/auth_grpc"
+	user_mocks "socio/mocks/grpc/user_grpc"
+	auth "socio/usecase/auth"
+	"socio/usecase/user"
 
-// 	"github.com/golang/mock/gomock"
-// 	"github.com/microcosm-cc/bluemonday"
-// )
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+)
 
-// type fields struct {
-// 	UserStorage    *mock_auth.MockUserStorage
-// 	SessionStorage *mock_auth.MockSessionStorage
-// 	Sanitizer      *sanitizer.Sanitizer
-// }
+func TestHandleLogin(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-// func TestHandleLogin(t *testing.T) {
-// 	ctrl := gomock.NewController(t)
-// 	defer ctrl.Finish()
+	mockAuthClient := auth_mocks.NewMockAuthClient(ctrl)
 
-// 	tests := []struct {
-// 		name           string
-// 		input          *auth.LoginInput
-// 		expectedStatus int
-// 		setupMocks     func(*fields)
-// 	}{
-// 		{
-// 			name: "valid input",
-// 			input: &auth.LoginInput{
-// 				Email:    "john.doe@example.com",
-// 				Password: "secret",
-// 			},
-// 			expectedStatus: http.StatusOK,
-// 			setupMocks: func(fields *fields) {
-// 				fields.UserStorage.EXPECT().GetUserByEmail(gomock.Any(), gomock.Any()).Return(&domain.User{
-// 					ID:       1,
-// 					Email:    "john.doe@example.com",
-// 					Password: hash.HashPassword("secret", []byte("salt")),
-// 					Salt:     "salt",
-// 				}, nil)
-// 				fields.UserStorage.EXPECT().RefreshSaltAndRehashPassword(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-// 				fields.SessionStorage.EXPECT().CreateSession(gomock.Any(), gomock.Any()).Return("session_id", nil)
-// 			},
-// 		},
-// 		{
-// 			name: "no user",
-// 			input: &auth.LoginInput{
-// 				Email:    "john.doe@example.com",
-// 				Password: "secret",
-// 			},
-// 			expectedStatus: http.StatusUnauthorized,
-// 			setupMocks: func(fields *fields) {
-// 				fields.UserStorage.EXPECT().GetUserByEmail(gomock.Any(), gomock.Any()).Return(nil, errors.ErrNotFound)
-// 			},
-// 		},
-// 	}
+	tests := []struct {
+		name           string
+		input          interface{}
+		mockResponse   interface{}
+		mockError      error
+		expectedStatus int
+	}{
+		{
+			name: "Successful login",
+			input: &auth.LoginInput{
+				Email:    "test@example.com",
+				Password: "password",
+			},
+			mockResponse: &authpb.LoginResponse{
+				SessionId: "some_session_id",
+				User:      &authpb.UserResponse{ /* fill user details */ },
+			},
+			mockError:      nil,
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "no body",
+			input:          &auth.LoginInput{},
+			mockResponse:   &authpb.LoginResponse{},
+			mockError:      errors.ErrInvalidLoginData.GRPCStatus().Err(),
+			expectedStatus: http.StatusUnauthorized,
+		},
+	}
 
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			ctrl := gomock.NewController(t)
-// 			defer ctrl.Finish()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Set up the request body
+			body, _ := json.Marshal(tt.input)
+			req, _ := http.NewRequest("POST", "/auth/login", bytes.NewBuffer(body))
+			rr := httptest.NewRecorder()
 
-// 			fields := &fields{
-// 				UserStorage:    mock_auth.NewMockUserStorage(ctrl),
-// 				SessionStorage: mock_auth.NewMockSessionStorage(ctrl),
-// 				Sanitizer:      sanitizer.NewSanitizer(bluemonday.UGCPolicy()),
-// 			}
+			// Set up the mock expectations
+			mockAuthClient.EXPECT().Login(gomock.Any(), gomock.Any()).Return(tt.mockResponse, tt.mockError)
 
-// 			tt.setupMocks(fields)
+			// Create the handler with the mock AuthClient
+			handler := rest.NewAuthHandler(mockAuthClient, nil, nil)
 
-// 			handler := rest.NewAuthHandler(fields.UserStorage, fields.SessionStorage, fields.Sanitizer)
+			// Call the handler function
+			handler.HandleLogin(rr, req)
 
-// 			b, err := json.Marshal(tt.input)
-// 			if err != nil {
-// 				t.Fatal(err)
-// 			}
+			// Check the status code
+			assert.Equal(t, tt.expectedStatus, rr.Code)
+		})
+	}
+}
 
-// 			req, err := http.NewRequest("POST", "/login", bytes.NewBuffer(b))
-// 			if err != nil {
-// 				t.Fatal(err)
-// 			}
-// 			req.Header.Set("Content-Type", "application/json")
+func TestHandleLogout(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-// 			rr := httptest.NewRecorder()
-// 			handler.HandleLogin(rr, req)
+	mockAuthClient := auth_mocks.NewMockAuthClient(ctrl)
 
-// 			assert.Equal(t, tt.expectedStatus, rr.Code)
-// 		})
-// 	}
-// }
+	tests := []struct {
+		name           string
+		cookieName     string
+		sessionID      string
+		mockError      error
+		expectedStatus int
+		mock           func(authClient *auth_mocks.MockAuthClient, sessionID string, err error)
+	}{
+		{
+			name:           "Successful logout",
+			cookieName:     "session_id",
+			sessionID:      "some_session_id",
+			mockError:      nil,
+			expectedStatus: http.StatusOK,
+			mock: func(authClient *auth_mocks.MockAuthClient, sessionID string, err error) {
+				authClient.EXPECT().Logout(gomock.Any(), &authpb.LogoutRequest{SessionId: sessionID}).Return(
+					&authpb.LogoutResponse{}, err,
+				)
+			},
+		},
+		{
+			name:           "no session",
+			cookieName:     "opa",
+			sessionID:      "some_session_id",
+			mockError:      nil,
+			expectedStatus: http.StatusUnauthorized,
+			mock:           func(authClient *auth_mocks.MockAuthClient, sessionID string, err error) {},
+		},
+		{
+			name:           "err",
+			cookieName:     "session_id",
+			sessionID:      "some_session_id",
+			mockError:      errors.ErrInternal,
+			expectedStatus: http.StatusInternalServerError,
+			mock: func(authClient *auth_mocks.MockAuthClient, sessionID string, err error) {
+				authClient.EXPECT().Logout(gomock.Any(), &authpb.LogoutRequest{SessionId: sessionID}).Return(
+					&authpb.LogoutResponse{}, err,
+				)
+			},
+		},
+	}
 
-// func TestHandleLogout(t *testing.T) {
-// 	ctrl := gomock.NewController(t)
-// 	defer ctrl.Finish()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Set up the request
+			req, _ := http.NewRequest("POST", "/auth/logout", nil)
+			req.AddCookie(&http.Cookie{Name: tt.cookieName, Value: tt.sessionID})
+			rr := httptest.NewRecorder()
 
-// 	tests := []struct {
-// 		name           string
-// 		cookie         *http.Cookie
-// 		expectedStatus int
-// 		setupMocks     func(*fields)
-// 	}{
-// 		{
-// 			name: "valid session",
-// 			cookie: &http.Cookie{
-// 				Name:  "session_id",
-// 				Value: "valid_session_id",
-// 			},
-// 			expectedStatus: http.StatusOK,
-// 			setupMocks: func(fields *fields) {
-// 				fields.SessionStorage.EXPECT().DeleteSession(gomock.Any(), "valid_session_id").Return(nil)
-// 			},
-// 		},
-// 		{
-// 			name: "no session",
-// 			cookie: &http.Cookie{
-// 				Value: "",
-// 			},
-// 			expectedStatus: http.StatusUnauthorized,
-// 			setupMocks:     func(fields *fields) {},
-// 		},
-// 		{
-// 			name: "err",
-// 			cookie: &http.Cookie{
-// 				Name:  "session_id",
-// 				Value: "valid_session_id",
-// 			},
-// 			expectedStatus: http.StatusUnauthorized,
-// 			setupMocks: func(fields *fields) {
-// 				fields.SessionStorage.EXPECT().DeleteSession(gomock.Any(), gomock.Any()).Return(errors.ErrInternal)
-// 			},
-// 		},
-// 	}
+			tt.mock(mockAuthClient, tt.sessionID, tt.mockError)
 
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			ctrl := gomock.NewController(t)
-// 			defer ctrl.Finish()
+			// Create the handler with the mock AuthClient
+			// Create the handler with the mock AuthClient
+			handler := rest.NewAuthHandler(mockAuthClient, nil, nil)
 
-// 			fields := &fields{
-// 				UserStorage:    mock_auth.NewMockUserStorage(ctrl),
-// 				SessionStorage: mock_auth.NewMockSessionStorage(ctrl),
-// 				Sanitizer:      sanitizer.NewSanitizer(bluemonday.UGCPolicy()),
-// 			}
+			// Call the handler function
+			handler.HandleLogout(rr, req)
 
-// 			tt.setupMocks(fields)
+			// Check the status code
+			assert.Equal(t, tt.expectedStatus, rr.Code)
+		})
+	}
+}
 
-// 			handler := rest.NewAuthHandler(fields.UserStorage, fields.SessionStorage, fields.Sanitizer)
+func TestHandleRegistration(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-// 			req, err := http.NewRequest("POST", "/logout", nil)
-// 			if err != nil {
-// 				t.Fatal(err)
-// 			}
-// 			req.AddCookie(tt.cookie)
+	mockAuthClient := auth_mocks.NewMockAuthClient(ctrl)
+	mockUserClient := user_mocks.NewMockUserClient(ctrl)
 
-// 			rr := httptest.NewRecorder()
-// 			handler.HandleLogout(rr, req)
+	tests := []struct {
+		name           string
+		input          *user.CreateUserInput
+		mockCreateUser *userpb.CreateResponse
+		mockLogin      *authpb.LoginResponse
+		mockError      error
+		expectedStatus int
+		mock           func(userClient *user_mocks.MockUserClient, authClient *auth_mocks.MockAuthClient, input *user.CreateUserInput, err error)
+	}{
+		{
+			name: "Successful registration",
+			input: &user.CreateUserInput{
+				FirstName:      "Test",
+				LastName:       "User",
+				Email:          "test@example.com",
+				Password:       "password",
+				RepeatPassword: "password",
+				DateOfBirth:    "2000-01-01",
+			},
+			mockCreateUser: &userpb.CreateResponse{
+				User: &userpb.UserResponse{
+					Avatar: "default_avatar.png",
+				},
+			},
+			mockLogin: &authpb.LoginResponse{
+				SessionId: "some_session_id",
+				User:      &authpb.UserResponse{ 
+					
+				 },
+			},
+			mockError:      nil,
+			expectedStatus: http.StatusCreated,
+			mock: func(userClient *user_mocks.MockUserClient, authClient *auth_mocks.MockAuthClient, input *user.CreateUserInput, err error) {
+				userClient.EXPECT().Create(gomock.Any(), userpb.ToCreateRequest(input)).Return(&userpb.CreateResponse{
+					User: &userpb.UserResponse{Avatar: "default_avatar.png"},
+				}, err)
+				authClient.EXPECT().Login(gomock.Any(), &authpb.LoginRequest{
+					Email:    input.Email,
+					Password: input.Password,
+				}).Return(&authpb.LoginResponse{}, err)
+			},
+		},
+		// Add more test cases here
+	}
 
-// 			assert.Equal(t, tt.expectedStatus, rr.Code)
-// 		})
-// 	}
-// }
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Set up the request body
+			body := &bytes.Buffer{}
+			writer := multipart.NewWriter(body)
+
+			_ = writer.WriteField("firstName", tt.input.FirstName)
+			_ = writer.WriteField("lastName", tt.input.LastName)
+			_ = writer.WriteField("email", tt.input.Email)
+			_ = writer.WriteField("password", tt.input.Password)
+			_ = writer.WriteField("repeatPassword", tt.input.RepeatPassword)
+			_ = writer.WriteField("dateOfBirth", tt.input.DateOfBirth)
+
+			// Close the multipart writer
+			_ = writer.Close()
+
+			req, _ := http.NewRequest("POST", "/auth/register", body)
+			req.Header.Set("Content-Type", writer.FormDataContentType())
+			rr := httptest.NewRecorder()
+
+			// Set up the mock expectations
+			tt.mock(mockUserClient, mockAuthClient, tt.input, tt.mockError)
+			// Create the handler with the mock AuthClient and UserClient
+			handler := rest.NewAuthHandler(mockAuthClient, mockUserClient, nil)
+
+			// Call the handler function
+			handler.HandleRegistration(rr, req)
+
+			// Check the status code
+			assert.Equal(t, tt.expectedStatus, rr.Code)
+		})
+	}
+}

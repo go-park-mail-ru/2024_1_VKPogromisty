@@ -9,18 +9,26 @@ import (
 )
 
 func ToUser(user *UserResponse) *domain.User {
-	return &domain.User{
+	if user == nil {
+		return nil
+	}
+
+	newUser := &domain.User{
 		ID:        uint(user.Id),
 		FirstName: user.FirstName,
 		LastName:  user.LastName,
 		Email:     user.Email,
 		Avatar:    user.Avatar,
-		DateOfBirth: customtime.CustomTime{
-			Time: user.DateOfBirth.AsTime(),
-		},
-		Salt:     user.Salt,
-		Password: user.HashedPassword,
+		Salt:      user.Salt,
+		Password:  user.HashedPassword,
 	}
+
+	if user.DateOfBirth != nil {
+		newUser.DateOfBirth = customtime.CustomTime{
+			Time: user.DateOfBirth.AsTime(),
+		}
+	}
+	return newUser
 }
 
 func ToUserResponse(user *domain.User) *UserResponse {

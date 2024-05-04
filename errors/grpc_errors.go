@@ -50,7 +50,7 @@ func (e *CustomError) GRPCStatus() (grpcStatus *status.Status) {
 }
 
 func ParseGRPCError(err error) (msg string, code int) {
-	if err.Error() != "" {
+	if err != nil && err.Error() != "" {
 		st, ok := status.FromError(err)
 		if ok {
 			msg = st.Message()
@@ -59,7 +59,12 @@ func ParseGRPCError(err error) (msg string, code int) {
 			msg = err.Error()
 			code = http.StatusInternalServerError
 		}
+
+		return
 	}
+
+	code = int(http.StatusInternalServerError)
+	msg = InternalMsg
 
 	return
 }

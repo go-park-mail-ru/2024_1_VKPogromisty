@@ -388,10 +388,6 @@ func (s *Users) SearchByName(ctx context.Context, query string) (users []*domain
 
 	rows, err := s.db.Query(context.Background(), getUsersByNameQuery, query)
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			err = errors.ErrNotFound
-		}
-
 		return
 	}
 

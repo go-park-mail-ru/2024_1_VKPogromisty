@@ -1,54 +1,55 @@
 package routers_test
 
-// import (
-// 	"net/http"
-// 	"net/http/httptest"
-// 	"testing"
+import (
+	"net/http"
+	"testing"
 
-// 	routers "socio/internal/rest/routers"
-// 	mock_auth "socio/mocks/usecase/auth"
-// 	mock_user "socio/mocks/usecase/user"
+	"socio/internal/rest/routers"
+	mock_auth "socio/mocks/grpc/auth_grpc"
+	mock_user "socio/mocks/grpc/user_grpc"
 
-// 	"github.com/golang/mock/gomock"
-// 	"github.com/gorilla/mux"
-// 	"github.com/stretchr/testify/assert"
-// )
+	"github.com/golang/mock/gomock"
+	"github.com/gorilla/mux"
+	"github.com/stretchr/testify/assert"
+)
 
-// func TestMountProfileRouter(t *testing.T) {
-// 	ctrl := gomock.NewController(t)
-// 	defer ctrl.Finish()
+func TestMountProfileRouter(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-// 	userStorage := mock_user.NewMockUserStorage(ctrl)
-// 	sessionStorage := mock_auth.NewMockSessionStorage(ctrl)
+	// Mock clients
+	mockUserClient := mock_user.NewMockUserClient(ctrl)
+	mockAuthManager := mock_auth.NewMockAuthClient(ctrl)
 
-// 	router := mux.NewRouter()
-// 	routers.MountProfileRouter(router, userStorage, sessionStorage)
+	// Create a new router
+	router := mux.NewRouter()
 
-// 	// Test if the routes are correctly mounted
-// 	testCases := []struct {
-// 		method string
-// 		path   string
-// 	}{
-// 		{"GET", "/profile/{userID}"},
-// 		{"OPTIONS", "/profile/{userID}"},
-// 		{"GET", "/profile/"},
-// 		{"OPTIONS", "/profile/"},
-// 		{"PUT", "/profile/"},
-// 		{"OPTIONS", "/profile/"},
-// 		{"DELETE", "/profile/"},
-// 		{"OPTIONS", "/profile/"},
-// 	}
+	// Mount the routes
+	routers.MountProfileRouter(router, mockUserClient, mockAuthManager)
 
-// 	for _, tc := range testCases {
-// 		req, err := http.NewRequest(tc.method, tc.path, nil)
-// 		if err != nil {
-// 			t.Fatal(err)
-// 		}
+	// Define the routes to test
+	routes := []struct {
+		method string
+		path   string
+	}{
+		{"GET", "/profile/search"},
+		{"GET", "/profile/"},
+		{"PUT", "/profile/"},
+		{"DELETE", "/profile/"},
+	}
 
-// 		rr := httptest.NewRecorder()
-// 		router.ServeHTTP(rr, req)
+	// Test each route
+	for _, route := range routes {
+		req, err := http.NewRequest(route.method, route.path, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
 
-// 		// We're just checking if the routes are mounted, so a 404 status code means the route is not mounted
-// 		assert.NotEqual(t, http.StatusNotFound, rr.Code, "Route %s not mounted", tc.path)
-// 	}
-// }
+		match := mux.RouteMatch{MatchErr: http.ErrNotSupported}
+		if router.Match(req, &match) {
+			assert.NotNil(t, match.Handler, "No handler found for route %s", route.path)
+		} else {
+			t.Errorf("No match for %s %s: %v", route.method, route.path, match.MatchErr)
+		}
+	}
+}

@@ -174,7 +174,7 @@ func (h *PublicGroupHandler) HandleCreate(w http.ResponseWriter, r *http.Request
 
 	userID, err := requestcontext.GetUserID(r.Context())
 	if err != nil {
-		json.ServeJSONError(r.Context(), w, errors.ErrUnauthorized)
+		json.ServeJSONError(r.Context(), w, err)
 		return
 	}
 
@@ -409,15 +409,14 @@ func (h *PublicGroupHandler) HandleGetSubscriptionByPublicGroupIDAndSubscriberID
 //	@Failure		500	{object}	errors.HTTPError
 //	@Router			/groups/by-sub/{userID} [get]
 func (h *PublicGroupHandler) HandleGetBySubscriberID(w http.ResponseWriter, r *http.Request) {
-	userIDData := mux.Vars(r)["userID"]
-	var userID uint64
-	var err error
-
 	authorizedUserID, err := requestcontext.GetUserID(r.Context())
 	if err != nil {
 		json.ServeJSONError(r.Context(), w, err)
 		return
 	}
+
+	userIDData := mux.Vars(r)["userID"]
+	var userID uint64
 
 	if len(userIDData) != 0 {
 		userID, err = strconv.ParseUint(userIDData, 10, 0)
@@ -727,6 +726,8 @@ func (h *PublicGroupHandler) HandleGetGroupPosts(w http.ResponseWriter, r *http.
 //	@Param			Cookie	header	string	true	"session_id=some_session"
 //	@Param			X-CSRF-Token	header	string	true	"CSRF token"
 //	@Param			groupID	path	string	true	"Group ID"
+//
+// @Param			userId	body	uint64	true	"User ID"
 //
 //	@Produce		json
 //	@Success		201	{object}	json.JSONResponse

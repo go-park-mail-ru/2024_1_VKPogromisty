@@ -31,6 +31,10 @@ var HTTPErrors = map[error]int{
 }
 
 func ParseHTTPError(err error) (msg string, status int) {
+	if err == nil {
+		err = ErrInternal
+	}
+
 	if err.Error() == "" {
 		err = ErrInternal
 	}
