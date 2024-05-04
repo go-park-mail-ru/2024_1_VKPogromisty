@@ -12,9 +12,9 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func MountSubscriptionsRouter(rootRouter *mux.Router, userService uspb.UserClient, authClient authpb.AuthClient) {
+func MountSubscriptionsRouter(rootRouter *mux.Router, userClient uspb.UserClient, authClient authpb.AuthClient) {
 	r := rootRouter.PathPrefix("/subscriptions").Subrouter()
-	h := rest.NewSubscriptionsHandler(userService)
+	h := rest.NewSubscriptionsHandler(userClient)
 
 	r.HandleFunc("/", h.HandleSubscription).Methods("POST", "OPTIONS")
 	r.HandleFunc("/", h.HandleUnsubscription).Methods("DELETE", "OPTIONS")

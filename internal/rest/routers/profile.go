@@ -11,7 +11,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func MountProfileRouter(rootRouter *mux.Router, userClient uspb.UserClient, authManager authpb.AuthClient) {
+func MountProfileRouter(rootRouter *mux.Router, userClient uspb.UserClient, authClient authpb.AuthClient) {
 	r := rootRouter.PathPrefix("/profile").Subrouter()
 
 	h := rest.NewProfileHandler(userClient)
@@ -21,6 +21,6 @@ func MountProfileRouter(rootRouter *mux.Router, userClient uspb.UserClient, auth
 	r.HandleFunc("/", h.HandleGetProfile).Methods("GET", "OPTIONS")
 	r.HandleFunc("/", h.HandleUpdateProfile).Methods("PUT", "OPTIONS")
 	r.HandleFunc("/", h.HandleDeleteProfile).Methods("DELETE", "OPTIONS")
-	r.Use(middleware.CreateCheckIsAuthorizedMiddleware(authManager))
+	r.Use(middleware.CreateCheckIsAuthorizedMiddleware(authClient))
 	r.Use(middleware.CreateCSRFMiddleware(csrf.NewCSRFService(customtime.RealTimeProvider{})))
 }

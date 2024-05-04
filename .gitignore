@@ -17,7 +17,6 @@ privkey.pem
 socio.conf
 /static
 /volumes
-/mocks
 mc
 post-attachments.txt
 user-avatars.txt

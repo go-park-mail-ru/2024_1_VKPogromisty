@@ -6,6 +6,8 @@ import (
 
 	"socio/internal/rest/routers"
 	mock_auth "socio/mocks/grpc/auth_grpc"
+	mock_post "socio/mocks/grpc/post_grpc"
+	mock_public_group "socio/mocks/grpc/public_group_grpc"
 	mock_user "socio/mocks/grpc/user_grpc"
 
 	"github.com/golang/mock/gomock"
@@ -13,11 +15,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMountProfileRouter(t *testing.T) {
+func TestMountPublicGroupRouter(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	// Mock clients
+	mockGroupClient := mock_public_group.NewMockPublicGroupClient(ctrl)
+	mockPostClient := mock_post.NewMockPostClient(ctrl)
 	mockUserClient := mock_user.NewMockUserClient(ctrl)
 	mockAuthManager := mock_auth.NewMockAuthClient(ctrl)
 
@@ -25,17 +29,28 @@ func TestMountProfileRouter(t *testing.T) {
 	router := mux.NewRouter()
 
 	// Mount the routes
-	routers.MountProfileRouter(router, mockUserClient, mockAuthManager)
+	routers.MountPublicGroupRouter(router, mockGroupClient, mockPostClient, mockUserClient, mockAuthManager)
 
 	// Define the routes to test
 	routes := []struct {
 		method string
 		path   string
 	}{
-		{"GET", "/profile/search"},
-		{"GET", "/profile/"},
-		{"PUT", "/profile/"},
-		{"DELETE", "/profile/"},
+		{"GET", "/groups/search"},
+		{"GET", "/groups/1"},
+		{"GET", "/groups/by-sub/1"},
+		{"GET", "/groups/1/is-sub"},
+		{"POST", "/groups/1/sub"},
+		{"POST", "/groups/1/unsub"},
+		{"POST", "/groups/"},
+		{"GET", "/groups/1/posts/"},
+		{"GET", "/groups/1/admins/"},
+		{"GET", "/groups/1/admins/check"},
+		{"POST", "/groups/1/admins/"},
+		{"DELETE", "/groups/1/admins/"},
+		{"PUT", "/groups/1"},
+		{"DELETE", "/groups/1"},
+		{"POST", "/groups/1/posts/"},
 	}
 
 	// Test each route

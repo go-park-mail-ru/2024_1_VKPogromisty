@@ -16,6 +16,10 @@ const (
 )
 
 func UploadAvatar(r *http.Request, userClient uspb.UserClient, avatarFH *multipart.FileHeader) (string, error) {
+	if avatarFH == nil {
+		return "", nil
+	}
+
 	fileName := uuid.NewString() + filepath.Ext(avatarFH.Filename)
 	contentType := avatarFH.Header.Get("Content-Type")
 

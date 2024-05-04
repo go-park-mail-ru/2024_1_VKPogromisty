@@ -22,7 +22,7 @@ func CreateCheckPublicGroupAdminMiddleware(userClient uspb.UserClient) func(http
 				return
 			}
 
-			groupID, err := strconv.ParseInt(mux.Vars(r)["groupID"], 0, 0)
+			groupID, err := strconv.ParseInt(mux.Vars(r)["groupID"], 10, 64)
 			if err != nil {
 				json.ServeJSONError(r.Context(), w, errors.ErrInvalidSlug)
 				return

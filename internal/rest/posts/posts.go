@@ -27,6 +27,14 @@ const (
 	BatchSize             = 1 << 23
 )
 
+type LikePostInput struct {
+	PostID uint `json:"postId"`
+}
+
+type UnlikePostInput struct {
+	PostID uint `json:"postId"`
+}
+
 type ListUserPostsResponse struct {
 	Posts  []*domain.Post `json:"posts"`
 	Author *domain.User   `json:"author"`
@@ -400,7 +408,6 @@ func (h *PostsHandler) HandleUpdatePost(w http.ResponseWriter, r *http.Request) 
 	}
 
 	json.ServeJSONBody(r.Context(), w, postspb.ToPost(updatedPost.Post), http.StatusOK)
-
 }
 
 // HandleDeletePost godoc
@@ -568,7 +575,7 @@ func (h *PostsHandler) HandleGetLikedPosts(w http.ResponseWriter, r *http.Reques
 func (h *PostsHandler) HandleLikePost(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	var input *domain.PostLike
+	var input *LikePostInput
 
 	decoder := defJSON.NewDecoder(r.Body)
 	err := decoder.Decode(&input)
@@ -619,8 +626,7 @@ func (h *PostsHandler) HandleLikePost(w http.ResponseWriter, r *http.Request) {
 func (h *PostsHandler) HandleUnlikePost(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	var input *domain.PostLike
-
+	var input UnlikePostInput
 	decoder := defJSON.NewDecoder(r.Body)
 	err := decoder.Decode(&input)
 	if err != nil {
@@ -675,21 +681,6 @@ func (h *PostsHandler) HandleGetGroupPostsBySubscriptions(w http.ResponseWriter,
 		return
 	}
 
-	subscriptions, err := h.PublicGroupClient.GetBySubscriberID(r.Context(), &pgpb.GetBySubscriberIDRequest{
-		SubscriberId: uint64(userID),
-	})
-	if err != nil {
-		json.ServeGRPCStatus(r.Context(), w, err)
-		return
-	}
-
-	subIDs := make([]uint64, 0, len(subscriptions.GetPublicGroups()))
-	groupsByID := map[uint64]*domain.PublicGroup{}
-	for _, sub := range subscriptions.GetPublicGroups() {
-		subIDs = append(subIDs, sub.Id)
-		groupsByID[sub.Id] = pgpb.ToPublicGroup(sub)
-	}
-
 	lastPostIDData := r.URL.Query().Get(LastPostIDQueryParam)
 	var lastPostID uint64
 
@@ -714,6 +705,21 @@ func (h *PostsHandler) HandleGetGroupPostsBySubscriptions(w http.ResponseWriter,
 			json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
 			return
 		}
+	}
+
+	subscriptions, err := h.PublicGroupClient.GetBySubscriberID(r.Context(), &pgpb.GetBySubscriberIDRequest{
+		SubscriberId: uint64(userID),
+	})
+	if err != nil {
+		json.ServeGRPCStatus(r.Context(), w, err)
+		return
+	}
+
+	subIDs := make([]uint64, 0, len(subscriptions.GetPublicGroups()))
+	groupsByID := map[uint64]*domain.PublicGroup{}
+	for _, sub := range subscriptions.GetPublicGroups() {
+		subIDs = append(subIDs, sub.Id)
+		groupsByID[sub.Id] = pgpb.ToPublicGroup(sub)
 	}
 
 	postsRes, err := h.PostsClient.GetGroupPostsBySubscriptionIDs(r.Context(), &postspb.GetGroupPostsBySubscriptionIDsRequest{
@@ -777,31 +783,6 @@ func (h *PostsHandler) HandleGetPostsByGroupSubIDsAndUserSubIDs(w http.ResponseW
 		return
 	}
 
-	groupSubs, err := h.PublicGroupClient.GetBySubscriberID(r.Context(), &pgpb.GetBySubscriberIDRequest{
-		SubscriberId: uint64(userID),
-	})
-	if err != nil {
-		json.ServeGRPCStatus(r.Context(), w, err)
-		return
-	}
-
-	groupSubIDs := make([]uint64, 0, len(groupSubs.GetPublicGroups()))
-	groupsByID := map[uint64]*domain.PublicGroup{}
-	for _, sub := range groupSubs.GetPublicGroups() {
-		groupSubIDs = append(groupSubIDs, sub.Id)
-		groupsByID[sub.Id] = pgpb.ToPublicGroup(sub)
-	}
-
-	userSubIDsRes, err := h.UserClient.GetSubscriptionIDs(r.Context(), &uspb.GetSubscriptionIDsRequest{
-		UserId: uint64(userID),
-	})
-	if err != nil {
-		json.ServeGRPCStatus(r.Context(), w, err)
-		return
-	}
-
-	userSubIDs := userSubIDsRes.GetSubscriptionIds()
-
 	lastPostIDData := r.URL.Query().Get(LastPostIDQueryParam)
 	var lastPostID uint64
 
@@ -827,6 +808,31 @@ func (h *PostsHandler) HandleGetPostsByGroupSubIDsAndUserSubIDs(w http.ResponseW
 			return
 		}
 	}
+
+	groupSubs, err := h.PublicGroupClient.GetBySubscriberID(r.Context(), &pgpb.GetBySubscriberIDRequest{
+		SubscriberId: uint64(userID),
+	})
+	if err != nil {
+		json.ServeGRPCStatus(r.Context(), w, err)
+		return
+	}
+
+	groupSubIDs := make([]uint64, 0, len(groupSubs.GetPublicGroups()))
+	groupsByID := map[uint64]*domain.PublicGroup{}
+	for _, sub := range groupSubs.GetPublicGroups() {
+		groupSubIDs = append(groupSubIDs, sub.Id)
+		groupsByID[sub.Id] = pgpb.ToPublicGroup(sub)
+	}
+
+	userSubIDsRes, err := h.UserClient.GetSubscriptionIDs(r.Context(), &uspb.GetSubscriptionIDsRequest{
+		UserId: uint64(userID),
+	})
+	if err != nil {
+		json.ServeGRPCStatus(r.Context(), w, err)
+		return
+	}
+
+	userSubIDs := userSubIDsRes.GetSubscriptionIds()
 
 	postsRes, err := h.PostsClient.GetPostsByGroupSubIDsAndUserSubIDs(r.Context(), &postspb.GetPostsByGroupSubIDsAndUserSubIDsRequest{
 		GroupSubscriptionIds: groupSubIDs,

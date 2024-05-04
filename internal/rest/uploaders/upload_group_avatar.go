@@ -12,6 +12,10 @@ import (
 )
 
 func UploadPublicGroupAvatar(r *http.Request, publicGroupClient pgpb.PublicGroupClient, avatarFH *multipart.FileHeader) (string, error) {
+	if avatarFH == nil {
+		return "", nil
+	}
+
 	fileName := uuid.NewString() + filepath.Ext(avatarFH.Filename)
 	contentType := avatarFH.Header.Get("Content-Type")
 
