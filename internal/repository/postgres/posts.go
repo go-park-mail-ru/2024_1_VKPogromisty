@@ -256,7 +256,7 @@ const (
 		LEFT JOIN public.post_attachment AS pa ON p.id = pa.post_id
 		LEFT JOIN public.post_like AS pl ON p.id = pl.post_id
 		LEFT JOIN public.public_group_post AS pgp ON p.id = pgp.post_id
-		WHERE pgp.public_group_id = ANY($1::bigint[]) OR p.author_id = ANY($2::bigint[])
+		WHERE (pgp.public_group_id = ANY($1::bigint[]) OR p.author_id = ANY($2::bigint[]))
 			AND p.id < $3
 			GROUP BY p.id,
 			p.author_id,
@@ -775,7 +775,7 @@ func (p *Posts) GetGroupPostsBySubscriptionIDs(ctx context.Context, subIDs []uin
 	return
 }
 
-func (p *Posts) GetPostsByGroupSubIDsAndUserSubIDs(ctx context.Context, groupSubIDs, userSubIDs []uint, lastPostID, postsAmount uint) (posts []*domain.Post, err error) {
+func (p *Posts) GetPostsByGroupSubIDsAndUserSubIDs(ctx context.Context, groupSubIDs, userSubIDs []uint, lastPostID uint, postsAmount uint) (posts []*domain.Post, err error) {
 	if len(groupSubIDs) == 0 {
 		groupSubIDs = append(groupSubIDs, 0)
 	}
