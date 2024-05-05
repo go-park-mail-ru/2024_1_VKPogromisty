@@ -6,12 +6,11 @@ import (
 	"socio/errors"
 	"socio/pkg/contextlogger"
 	customtime "socio/pkg/time"
-	"socio/pkg/utils"
 	"socio/usecase/posts"
 
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
-	_ "github.com/lib/pq"
+	"github.com/lib/pq"
 )
 
 const (
@@ -228,7 +227,7 @@ const (
 		LEFT JOIN public.post_attachment AS pa ON p.id = pa.post_id
 		LEFT JOIN public.post_like AS pl ON p.id = pl.post_id
 		LEFT JOIN public.public_group_post AS pgp ON p.id = pgp.post_id
-		WHERE pgp.public_group_id IN ($1)
+		WHERE pgp.public_group_id = ANY($1::bigint[])
 			AND p.id < $2
 			GROUP BY p.id,
 			p.author_id,
@@ -242,7 +241,7 @@ const (
 	SELECT COALESCE(MAX(p.id), 0) AS last_post_id
 	FROM public.post AS p
 		LEFT JOIN public.public_group_post AS pgp ON p.id = pgp.post_id
-		WHERE pgp.public_group_id IN ($1);
+		WHERE pgp.public_group_id = ANY($1::bigint[]);
 	`
 	GetPostsByGroupSubIDsAndUserSubIDsQuery = `
 	SELECT p.id,
@@ -251,25 +250,28 @@ const (
 		p.created_at,
 		p.updated_at,
 		array_agg(DISTINCT pa.file_name) AS attachments,
-		array_agg(DISTINCT pl.user_id) AS liked_by_users
+		array_agg(DISTINCT pl.user_id) AS liked_by_users,
+		COALESCE(pgp.public_group_id, 0)
 		FROM public.post AS p
 		LEFT JOIN public.post_attachment AS pa ON p.id = pa.post_id
 		LEFT JOIN public.post_like AS pl ON p.id = pl.post_id
 		LEFT JOIN public.public_group_post AS pgp ON p.id = pgp.post_id
-		WHERE pgp.public_group_id IN ($1) OR p.author_id IN ($2)
+		WHERE pgp.public_group_id = ANY($1::bigint[]) OR p.author_id = ANY($2::bigint[])
 			AND p.id < $3
 			GROUP BY p.id,
 			p.author_id,
 			p.content,
 			p.created_at,
-			p.updated_at
+			p.updated_at,
+			pgp.public_group_id
 			ORDER BY p.created_at DESC
-			LIMIT $4;`
+			LIMIT $4;
+	`
 	GetLastPostByGroupSubIDsAndUserSubIDsQuery = `
 	SELECT COALESCE(MAX(p.id), 0) AS last_post_id
 	FROM public.post AS p
 		LEFT JOIN public.public_group_post AS pgp ON p.id = pgp.post_id
-		WHERE pgp.public_group_id IN ($1) OR p.author_id IN ($2);
+		WHERE pgp.public_group_id = ANY($1::bigint[]) OR p.author_id = ANY($2::bigint[]);
 	`
 	GetLastPostIDQuery = `
 	SELECT COALESCE(MAX(id), 0) AS last_post_id
@@ -723,12 +725,12 @@ func (p *Posts) GetGroupPostsBySubscriptionIDs(ctx context.Context, subIDs []uin
 		subIDs = append(subIDs, 0)
 	}
 
-	subIDsStr := utils.UintArrayIntoString(subIDs)
+	subIDsPGArray := pq.Array(subIDs)
 
 	if lastPostID == 0 {
-		contextlogger.LogSQL(ctx, GetLastGroupPostBySubscriptionIDsQuery, subIDsStr)
+		contextlogger.LogSQL(ctx, GetLastGroupPostBySubscriptionIDsQuery, subIDsPGArray)
 
-		err = p.db.QueryRow(context.Background(), GetLastGroupPostBySubscriptionIDsQuery, subIDsStr).Scan(&lastPostID)
+		err = p.db.QueryRow(context.Background(), GetLastGroupPostBySubscriptionIDsQuery, subIDsPGArray).Scan(&lastPostID)
 		if err != nil {
 			return
 		}
@@ -736,9 +738,9 @@ func (p *Posts) GetGroupPostsBySubscriptionIDs(ctx context.Context, subIDs []uin
 		lastPostID += 1
 	}
 
-	contextlogger.LogSQL(ctx, GetGroupPostsBySubscriptionIDsQuery, subIDsStr, lastPostID, postsAmount)
+	contextlogger.LogSQL(ctx, GetGroupPostsBySubscriptionIDsQuery, subIDsPGArray, lastPostID, postsAmount)
 
-	rows, err := p.db.Query(context.Background(), GetGroupPostsBySubscriptionIDsQuery, subIDsStr, lastPostID, postsAmount)
+	rows, err := p.db.Query(context.Background(), GetGroupPostsBySubscriptionIDsQuery, subIDsPGArray, lastPostID, postsAmount)
 	if err != nil {
 		return
 	}
@@ -782,13 +784,13 @@ func (p *Posts) GetPostsByGroupSubIDsAndUserSubIDs(ctx context.Context, groupSub
 		userSubIDs = append(userSubIDs, 0)
 	}
 
-	groupSubIDsStr := utils.UintArrayIntoString(groupSubIDs)
-	userSubIDsStr := utils.UintArrayIntoString(userSubIDs)
+	groupSubIDsPGArr := pq.Array(groupSubIDs)
+	userSubIDsPGArr := pq.Array(userSubIDs)
 
 	if lastPostID == 0 {
-		contextlogger.LogSQL(ctx, GetLastPostByGroupSubIDsAndUserSubIDsQuery, groupSubIDsStr, userSubIDsStr)
+		contextlogger.LogSQL(ctx, GetLastPostByGroupSubIDsAndUserSubIDsQuery, groupSubIDsPGArr, userSubIDsPGArr)
 
-		err = p.db.QueryRow(context.Background(), GetLastPostByGroupSubIDsAndUserSubIDsQuery, groupSubIDsStr, userSubIDsStr).Scan(&lastPostID)
+		err = p.db.QueryRow(context.Background(), GetLastPostByGroupSubIDsAndUserSubIDsQuery, groupSubIDsPGArr, userSubIDsPGArr).Scan(&lastPostID)
 		if err != nil {
 			return
 		}
@@ -796,9 +798,9 @@ func (p *Posts) GetPostsByGroupSubIDsAndUserSubIDs(ctx context.Context, groupSub
 		lastPostID += 1
 	}
 
-	contextlogger.LogSQL(ctx, GetPostsByGroupSubIDsAndUserSubIDsQuery, groupSubIDsStr, userSubIDsStr, lastPostID, postsAmount)
+	contextlogger.LogSQL(ctx, GetPostsByGroupSubIDsAndUserSubIDsQuery, groupSubIDsPGArr, userSubIDsPGArr, lastPostID, postsAmount)
 
-	rows, err := p.db.Query(context.Background(), GetPostsByGroupSubIDsAndUserSubIDsQuery, groupSubIDsStr, userSubIDsStr, lastPostID, postsAmount)
+	rows, err := p.db.Query(context.Background(), GetPostsByGroupSubIDsAndUserSubIDsQuery, groupSubIDsPGArr, userSubIDsPGArr, lastPostID, postsAmount)
 	if err != nil {
 		return
 	}
@@ -818,6 +820,7 @@ func (p *Posts) GetPostsByGroupSubIDsAndUserSubIDs(ctx context.Context, groupSub
 			&post.UpdatedAt.Time,
 			&attachments,
 			&likedByUsers,
+			&post.GroupID,
 		)
 		if err != nil {
 			return
