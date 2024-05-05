@@ -3,17 +3,22 @@ package main
 import (
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"socio/internal/grpc/interceptors"
 	"socio/internal/grpc/user"
 	uspb "socio/internal/grpc/user/proto"
 	minioRepo "socio/internal/repository/minio"
 	pgRepo "socio/internal/repository/postgres"
+	"socio/pkg/appmetrics"
 	"socio/pkg/logger"
 	customtime "socio/pkg/time"
 
+	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"github.com/minio/minio-go"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 )
 
@@ -68,10 +73,26 @@ func main() {
 
 	logger := logger.NewLogger(prodLogger)
 
-	server := grpc.NewServer(
-		grpc.ChainUnaryInterceptor(logger.UnaryLoggerInterceptor),
-		grpc.ChainUnaryInterceptor(interceptors.UnaryRecoveryInterceptor),
+	prometheus.MustRegister(
+		appmetrics.AuthTotalHits,
+		appmetrics.AuthHits,
+		appmetrics.UserHitDuration,
 	)
+
+	server := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(
+			logger.UnaryLoggerInterceptor,
+			interceptors.UserHitMetricsInterceptor,
+			interceptors.UnaryRecoveryInterceptor,
+		),
+	)
+
+	metricsPort := os.Getenv("GRPC_USER_SERVICE_METRICS_PORT")
+
+	r := mux.NewRouter()
+	r.Handle("/metrics", promhttp.Handler())
+	go http.ListenAndServe(metricsPort, r)
+	fmt.Println("Metrics of user service is running on port:", metricsPort)
 
 	uspb.RegisterUserServer(server, manager)
 

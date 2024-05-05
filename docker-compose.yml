@@ -51,7 +51,7 @@ services:
     tty: true
     ports:
       - 8082:8082
-    restart: on-failure
+    restart: always
     volumes:
       - ./volumes/logs/:/var/log/socio/
     depends_on:
@@ -74,7 +74,7 @@ services:
     tty: true
     ports:
       - 8083:8083
-    restart: on-failure
+    restart: always
     volumes:
       - ./volumes/logs/:/var/log/socio/
     depends_on:
@@ -98,7 +98,7 @@ services:
     tty: true
     ports:
       - 8085:8085
-    restart: on-failure
+    restart: always
     volumes:
       - ./volumes/logs/:/var/log/socio/
     depends_on:
@@ -121,7 +121,8 @@ services:
     tty: true
     ports:
       - 8084:8084
-    restart: on-failure
+      - 9096:9096
+    restart: always
     volumes:
       - ./volumes/logs/:/var/log/socio/
     depends_on:
@@ -145,7 +146,7 @@ services:
     ports:
       - 8001:8001
       - 8080:8080
-    restart: on-failure
+    restart: always
     volumes:
       - .:/app
       - ./static/:/static/

@@ -7,6 +7,10 @@ scrape_configs:
     metrics_path: '/api/v1/metrics/'
     static_configs:
       - targets: ['app:8080']
+  
+  - job_name: 'auth_service'
+    static_configs:
+      - targets: ['auth_service_container:9096']
 
   - job_name: 'node'
     scrape_interval: 5s
