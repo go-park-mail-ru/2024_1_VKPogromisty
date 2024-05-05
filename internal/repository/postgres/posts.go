@@ -250,7 +250,8 @@ const (
 		p.created_at,
 		p.updated_at,
 		array_agg(DISTINCT pa.file_name) AS attachments,
-		array_agg(DISTINCT pl.user_id) AS liked_by_users
+		array_agg(DISTINCT pl.user_id) AS liked_by_users,
+		COALESCE(pgp.public_group_id, 0)
 		FROM public.post AS p
 		LEFT JOIN public.post_attachment AS pa ON p.id = pa.post_id
 		LEFT JOIN public.post_like AS pl ON p.id = pl.post_id
@@ -261,9 +262,11 @@ const (
 			p.author_id,
 			p.content,
 			p.created_at,
-			p.updated_at
+			p.updated_at,
+			pgp.public_group_id
 			ORDER BY p.created_at DESC
-			LIMIT $4;`
+			LIMIT $4;
+	`
 	GetLastPostByGroupSubIDsAndUserSubIDsQuery = `
 	SELECT COALESCE(MAX(p.id), 0) AS last_post_id
 	FROM public.post AS p
@@ -817,6 +820,7 @@ func (p *Posts) GetPostsByGroupSubIDsAndUserSubIDs(ctx context.Context, groupSub
 			&post.UpdatedAt.Time,
 			&attachments,
 			&likedByUsers,
+			&post.GroupID,
 		)
 		if err != nil {
 			return
