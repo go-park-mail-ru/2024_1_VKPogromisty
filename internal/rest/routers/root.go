@@ -110,6 +110,7 @@ func MountRootRouter(router *mux.Router) (err error) {
 	MountPostsRouter(rootRouter, postClient, userClient, publicGroupClient, authClient)
 	MountSubscriptionsRouter(rootRouter, userClient, authClient)
 	MountPublicGroupRouter(rootRouter, publicGroupClient, postClient, userClient, authClient)
+	MountMetricsRouter(rootRouter)
 
 	prodLogger, err := logger.NewZapLogger(nil)
 	if err != nil {

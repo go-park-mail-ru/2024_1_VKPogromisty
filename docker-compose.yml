@@ -157,6 +157,63 @@ services:
       - post_service
       - auth_service
   
+  prometheus:
+    image: prom/prometheus:v2.52.0-rc.1
+    container_name: prometheus
+    command:
+      - '--config.file=/etc/config/prometheus.yml'
+    volumes:
+      - ./prometheus:/etc/config
+    ports:
+      - 9090:9090
+    depends_on:
+      - app
+  
+  node_exporter:
+    image: prom/node-exporter:v1.8.0
+    container_name: node_exporter
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/rootfs'
+      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+    restart: unless-stopped
+    depends_on:
+      - app
+
+  cadvisor:
+    image: google/cadvisor:v0.32.0
+    container_name: cadvisor
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    ports:
+      - 9091:8080
+    depends_on:
+      - app
+  
+  grafana:
+    image: grafana/grafana:10.4.2-ubuntu
+    container_name: grafana
+    ports:
+      - 3000:3000
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+        - app
+        - prometheus
+        - node_exporter
+        - cadvisor
+  
   nginx:
     image: nginx:1.25.4
     restart: always
@@ -170,19 +227,8 @@ services:
       - 443:443
     depends_on:
       - app
-    
-  # certbot:
-  #   image: certbot/certbot:v2.9.0
-  #   command: certonly --standalone --non-interactive --agree-tos --email petr09mitin@mail.ru --domains socio-project.ru   
-  #   volumes:
-  #     - ./volumes/certbot/www/:/var/www/certbot/:rw
-  #     - ./volumes/certbot/conf/:/etc/letsencrypt/:rw
-  #   environment:
-  #     - LETSENCRYPT_EMAIL=petr09mitin@mail.ru
-  #     - LETSENCRYPT_DOMAIN=socio-project.ru
-  #   depends_on:
-  #     - nginx
 
 volumes:
   pg_data:
   redis_data:
+  grafana_data:
