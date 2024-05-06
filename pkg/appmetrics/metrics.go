@@ -1,7 +1,17 @@
 package appmetrics
 
 import (
+	customtime "socio/pkg/time"
+	"time"
+
 	"github.com/prometheus/client_golang/prometheus"
+)
+
+const (
+	PostgresDBSystemName   = "postgres_db"
+	RedisStorageSystemName = "redis"
+	RedisPubSubSystemName  = "redis_pubsub"
+	MinioStorageSystemName = "minio"
 )
 
 var (
@@ -110,4 +120,27 @@ var (
 		},
 		[]string{"method"},
 	)
+	AppExternalSystemsHitDuration = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "app_external_systems_response_time_ms",
+			Help: "Duration of hits in main app to external systems.",
+		},
+		[]string{"system"},
+	)
+	AppExternalSystemsErrorsCount = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "app_external_systems_errors_count",
+			Help: "Count of call errors in main app to external systems.",
+		},
+		[]string{"system"},
+	)
 )
+
+func TrackAppExternalServiceMetrics(systemName string, startTime customtime.CustomTime, err error) {
+	duration := time.Since(startTime.Time)
+	AppExternalSystemsHitDuration.WithLabelValues(systemName).Set(float64(duration.Milliseconds()))
+
+	if err != nil {
+		AppExternalSystemsErrorsCount.WithLabelValues(systemName).Inc()
+	}
+}

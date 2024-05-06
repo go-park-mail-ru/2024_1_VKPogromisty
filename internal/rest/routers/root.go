@@ -127,6 +127,8 @@ func MountRootRouter(router *mux.Router) (err error) {
 		appmetrics.AppTotalHits,
 		appmetrics.AppHits,
 		appmetrics.AppHitDuration,
+		appmetrics.AppExternalSystemsHitDuration,
+		appmetrics.AppExternalSystemsErrorsCount,
 	)
 
 	rootRouter.Use(logger.LoggerMiddleware)
