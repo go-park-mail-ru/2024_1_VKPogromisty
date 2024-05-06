@@ -14,10 +14,10 @@ func TrackDuration(next http.Handler) http.Handler {
 		start := time.Now()
 
 		// Create a response writer that allows us to capture the status code
-		ww := &responseWriter{ResponseWriter: w}
+		// ww := &responseWriter{ResponseWriter: w}
 
 		// Call the next handler
-		next.ServeHTTP(ww, r)
+		next.ServeHTTP(w, r)
 
 		// Calculate the duration and record it in the histogram
 		duration := time.Since(start)
@@ -36,17 +36,25 @@ func TrackDuration(next http.Handler) http.Handler {
 		}
 
 		appmetrics.AppHitDuration.WithLabelValues(r.Method, pathTemplate).Set(float64(duration.Milliseconds()))
-		appmetrics.AppHits.WithLabelValues(r.Method, pathTemplate, http.StatusText(ww.status)).Inc()
+		appmetrics.AppHits.WithLabelValues(r.Method, pathTemplate, http.StatusText(http.StatusOK)).Inc()
 		appmetrics.AppTotalHits.WithLabelValues().Inc()
 	})
 }
 
-type responseWriter struct {
-	http.ResponseWriter
-	status int
-}
+// type responseWriter struct {
+// 	http.ResponseWriter
+// 	status int
+// }
 
-func (w *responseWriter) WriteHeader(status int) {
-	w.status = status
-	w.ResponseWriter.WriteHeader(status)
-}
+// func (w *responseWriter) WriteHeader(status int) {
+// 	w.status = status
+// 	w.ResponseWriter.WriteHeader(status)
+// }
+
+// func (rw *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+// 	hijacker, ok := rw.ResponseWriter.(http.Hijacker)
+// 	if !ok {
+// 		return nil, nil, fmt.Errorf("the ResponseWriter does not support the Hijacker interface")
+// 	}
+// 	return hijacker.Hijack()
+// }
