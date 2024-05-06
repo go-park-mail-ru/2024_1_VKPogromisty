@@ -62,6 +62,10 @@ func MountRootRouter(router *mux.Router) (err error) {
 	userClientConn, err := grpc.Dial(
 		os.Getenv("GRPC_USER_SERVICE_HOST")+os.Getenv("GRPC_USER_SERVICE_PORT"),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithDefaultCallOptions(
+			grpc.MaxCallRecvMsgSize(1024*1024*100),
+			grpc.MaxCallSendMsgSize(1024*1024*100),
+		),
 	)
 	if err != nil {
 		return
@@ -73,6 +77,10 @@ func MountRootRouter(router *mux.Router) (err error) {
 	postClientConn, err := grpc.Dial(
 		os.Getenv("GRPC_POST_SERVICE_HOST")+os.Getenv("GRPC_POST_SERVICE_PORT"),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithDefaultCallOptions(
+			grpc.MaxCallRecvMsgSize(1024*1024*100),
+			grpc.MaxCallSendMsgSize(1024*1024*100),
+		),
 	)
 	if err != nil {
 		return
@@ -95,6 +103,10 @@ func MountRootRouter(router *mux.Router) (err error) {
 	publicGroupClientConn, err := grpc.Dial(
 		os.Getenv("GRPC_PUBLIC_GROUP_SERVICE_HOST")+os.Getenv("GRPC_PUBLIC_GROUP_SERVICE_PORT"),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithDefaultCallOptions(
+			grpc.MaxCallRecvMsgSize(1024*1024*100),
+			grpc.MaxCallSendMsgSize(1024*1024*100),
+		),
 	)
 	if err != nil {
 		return

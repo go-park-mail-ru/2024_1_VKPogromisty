@@ -18,7 +18,8 @@ import (
 )
 
 var (
-	DotenvPath = "../../.env"
+	DotenvPath     = "../../.env"
+	MaxMessageSize = 1024 * 1024 * 100
 )
 
 func main() {
@@ -69,6 +70,8 @@ func main() {
 	logger := logger.NewLogger(prodLogger)
 
 	server := grpc.NewServer(
+		grpc.MaxRecvMsgSize(MaxMessageSize),
+		grpc.MaxSendMsgSize(MaxMessageSize),
 		grpc.ChainUnaryInterceptor(logger.UnaryLoggerInterceptor),
 		grpc.ChainUnaryInterceptor(interceptors.UnaryRecoveryInterceptor),
 	)
