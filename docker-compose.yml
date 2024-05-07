@@ -168,6 +168,10 @@ services:
     ports:
       - 9090:9090
     depends_on:
+      - user_service
+      - post_service
+      - public_group_service
+      - auth_service
       - app
   
   node_exporter:
