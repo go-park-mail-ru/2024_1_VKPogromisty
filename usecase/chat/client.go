@@ -6,10 +6,7 @@ import (
 	"encoding/json"
 	"socio/domain"
 	"socio/errors"
-	"socio/pkg/appmetrics"
 	"socio/pkg/sanitizer"
-	customtime "socio/pkg/time"
-	"time"
 )
 
 const (
@@ -105,10 +102,6 @@ func (c *Client) handleSendMessageAction(ctx context.Context, action *Action, me
 		ReceiverID: action.Receiver,
 	}
 
-	storeMsgStartTime := customtime.CustomTime{
-		Time: time.Now(),
-	}
-
 	newMessage, err := c.PersonalMessagesRepo.StoreMessage(ctx, msg)
 	if err != nil {
 		action.Payload, err = errors.MarshalError(err)
@@ -116,21 +109,13 @@ func (c *Client) handleSendMessageAction(ctx context.Context, action *Action, me
 			return
 		}
 
-		writeActionStartTime := customtime.CustomTime{
-			Time: time.Now(),
-		}
-
 		err = c.PubSubRepository.WriteAction(ctx, action)
 		if err != nil {
 			return
 		}
 
-		appmetrics.TrackAppExternalServiceMetrics(appmetrics.RedisPubSubSystemName, writeActionStartTime, err)
-
 		return
 	}
-
-	appmetrics.TrackAppExternalServiceMetrics(appmetrics.RedisPubSubSystemName, storeMsgStartTime, err)
 
 	c.Sanitizer.SanitizePersonalMessage(newMessage)
 
@@ -141,30 +126,18 @@ func (c *Client) handleSendMessageAction(ctx context.Context, action *Action, me
 			return
 		}
 
-		writeActionStartTime := customtime.CustomTime{
-			Time: time.Now(),
-		}
-
 		err = c.PubSubRepository.WriteAction(ctx, action)
 		if err != nil {
 			return
 		}
 
-		appmetrics.TrackAppExternalServiceMetrics(appmetrics.RedisPubSubSystemName, writeActionStartTime, err)
-
 		return
-	}
-
-	writeActionStartTime := customtime.CustomTime{
-		Time: time.Now(),
 	}
 
 	err = c.PubSubRepository.WriteAction(ctx, action)
 	if err != nil {
 		return
 	}
-
-	appmetrics.TrackAppExternalServiceMetrics(appmetrics.RedisPubSubSystemName, writeActionStartTime, err)
 }
 
 func (c *Client) handleUpdateMessageAction(ctx context.Context, action *Action, message *UpdateMessagePayload) {
