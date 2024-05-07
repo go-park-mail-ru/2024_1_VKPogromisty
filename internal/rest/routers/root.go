@@ -11,9 +11,11 @@ import (
 	pgRepo "socio/internal/repository/postgres"
 	redisRepo "socio/internal/repository/redis"
 	"socio/internal/rest/middleware"
+	"socio/pkg/appmetrics"
 	"socio/pkg/logger"
 	customtime "socio/pkg/time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/cors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -122,6 +124,7 @@ func MountRootRouter(router *mux.Router) (err error) {
 	MountPostsRouter(rootRouter, postClient, userClient, publicGroupClient, authClient)
 	MountSubscriptionsRouter(rootRouter, userClient, authClient)
 	MountPublicGroupRouter(rootRouter, publicGroupClient, postClient, userClient, authClient)
+	MountMetricsRouter(rootRouter)
 
 	prodLogger, err := logger.NewZapLogger(nil)
 	if err != nil {
@@ -132,9 +135,18 @@ func MountRootRouter(router *mux.Router) (err error) {
 
 	logger := logger.NewLogger(prodLogger)
 
-	rootRouter.Use(middleware.Recovery)
+	prometheus.MustRegister(
+		appmetrics.AppTotalHits,
+		appmetrics.AppHits,
+		appmetrics.AppHitDuration,
+		appmetrics.AppExternalSystemsHitDuration,
+		appmetrics.AppExternalSystemsErrorsCount,
+	)
+
 	rootRouter.Use(logger.LoggerMiddleware)
 	rootRouter.Use(middleware.DisableCache)
+	rootRouter.Use(middleware.TrackDuration)
+	rootRouter.Use(middleware.Recovery)
 
 	handler := cors.New(cors.Options{
 		AllowedOrigins:   middleware.ALLOWED_ORIGINS,

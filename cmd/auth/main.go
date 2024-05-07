@@ -3,16 +3,21 @@ package main
 import (
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"socio/internal/grpc/auth"
 	"socio/internal/grpc/interceptors"
+	"socio/pkg/appmetrics"
 	"socio/pkg/logger"
 
 	authpb "socio/internal/grpc/auth/proto"
 	uspb "socio/internal/grpc/user/proto"
 	redisRepo "socio/internal/repository/redis"
 
+	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -61,10 +66,26 @@ func main() {
 
 	logger := logger.NewLogger(prodLogger)
 
-	server := grpc.NewServer(
-		grpc.ChainUnaryInterceptor(logger.UnaryLoggerInterceptor),
-		grpc.ChainUnaryInterceptor(interceptors.UnaryRecoveryInterceptor),
+	prometheus.MustRegister(
+		appmetrics.AuthTotalHits,
+		appmetrics.AuthHits,
+		appmetrics.AuthHitDuration,
 	)
+
+	server := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(
+			logger.UnaryLoggerInterceptor,
+			interceptors.AuthHitMetricsInterceptor,
+			interceptors.UnaryRecoveryInterceptor,
+		),
+	)
+
+	metricsPort := os.Getenv("GRPC_AUTH_SERVICE_METRICS_PORT")
+
+	r := mux.NewRouter()
+	r.Handle("/metrics", promhttp.Handler())
+	go http.ListenAndServe(metricsPort, r)
+	fmt.Println("Metrics of auth service is running on port:", metricsPort)
 
 	authpb.RegisterAuthServer(server, manager)
 

@@ -12,6 +12,7 @@ var (
 	ALLOWED_ORIGINS = []string{
 		"http://localhost",
 		"http://localhost:3000",
+		"http://localhost:8079",
 		"http://94.139.246.134",
 		"http://socio-project.ru",
 		"http://127.0.0.1",

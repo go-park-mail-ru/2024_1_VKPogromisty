@@ -23,7 +23,7 @@ FROM gcr.io/distroless/base-debian11 AS build-release-stage
 COPY --from=build-stage /build/auth /build/auth
 COPY --from=build-stage .env .
 
-EXPOSE 8083
+EXPOSE 8083 9096
 
 # Run the executable
 CMD ["/build/auth"]

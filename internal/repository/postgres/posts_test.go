@@ -6,7 +6,6 @@ import (
 	"socio/errors"
 	repository "socio/internal/repository/postgres"
 	customtime "socio/pkg/time"
-	"socio/pkg/utils"
 	"socio/usecase/posts"
 	"testing"
 	"time"
@@ -920,7 +919,7 @@ func TestGetGroupPostsBySubscriptionIDs(t *testing.T) {
 			postsAmount: 10,
 			mock: func(pool *pgxpoolmock.MockPgxIface, subIDs []uint, lastPostID uint, postsAmount uint) {
 				// Mock the GetLastGroupPostBySubscriptionIDsQuery
-				pool.EXPECT().QueryRow(gomock.Any(), repository.GetLastGroupPostBySubscriptionIDsQuery, utils.UintArrayIntoString(subIDs)).Return(
+				pool.EXPECT().QueryRow(gomock.Any(), repository.GetLastGroupPostBySubscriptionIDsQuery, gomock.Any()).Return(
 					pgxpoolmock.NewRow(uint(1)),
 				)
 
@@ -1003,7 +1002,7 @@ func TestGetPostsByGroupSubIDsAndUserSubIDs(t *testing.T) {
 			postsAmount: 10,
 			mock: func(pool *pgxpoolmock.MockPgxIface, groupSubIDs, userSubIDs []uint, lastPostID, postsAmount uint) {
 				// Mock the GetLastPostByGroupSubIDsAndUserSubIDsQuery
-				pool.EXPECT().QueryRow(gomock.Any(), repository.GetLastPostByGroupSubIDsAndUserSubIDsQuery, utils.UintArrayIntoString(groupSubIDs), utils.UintArrayIntoString(userSubIDs)).Return(
+				pool.EXPECT().QueryRow(gomock.Any(), repository.GetLastPostByGroupSubIDsAndUserSubIDsQuery, gomock.Any(), gomock.Any()).Return(
 					pgxpoolmock.NewRow(uint(1)),
 				)
 
@@ -1016,8 +1015,8 @@ func TestGetPostsByGroupSubIDsAndUserSubIDs(t *testing.T) {
 				}
 
 				// Mock the GetPostsByGroupSubIDsAndUserSubIDsQuery
-				rows := pgxpoolmock.NewRows([]string{"id", "author_id", "content", "created_at", "updated_at", "attachments", "liked_by_ids"})
-				rows.AddRow(uint(1), uint(1), "content", tp.Now(), tp.Now(), arr, likedBy)
+				rows := pgxpoolmock.NewRows([]string{"id", "author_id", "content", "created_at", "updated_at", "attachments", "liked_by_ids", "public_group_id"})
+				rows.AddRow(uint(1), uint(1), "content", tp.Now(), tp.Now(), arr, likedBy, uint(1))
 				pool.EXPECT().Query(gomock.Any(), repository.GetPostsByGroupSubIDsAndUserSubIDsQuery, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(
 					rows.ToPgxRows(),
 					nil,

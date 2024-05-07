@@ -109,7 +109,11 @@ func (c *Client) handleSendMessageAction(ctx context.Context, action *Action, me
 			return
 		}
 
-		c.PubSubRepository.WriteAction(ctx, action)
+		err = c.PubSubRepository.WriteAction(ctx, action)
+		if err != nil {
+			return
+		}
+
 		return
 	}
 
@@ -122,11 +126,18 @@ func (c *Client) handleSendMessageAction(ctx context.Context, action *Action, me
 			return
 		}
 
-		c.PubSubRepository.WriteAction(ctx, action)
+		err = c.PubSubRepository.WriteAction(ctx, action)
+		if err != nil {
+			return
+		}
+
 		return
 	}
 
-	c.PubSubRepository.WriteAction(ctx, action)
+	err = c.PubSubRepository.WriteAction(ctx, action)
+	if err != nil {
+		return
+	}
 }
 
 func (c *Client) handleUpdateMessageAction(ctx context.Context, action *Action, message *UpdateMessagePayload) {
