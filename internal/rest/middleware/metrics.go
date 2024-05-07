@@ -40,21 +40,3 @@ func TrackDuration(next http.Handler) http.Handler {
 		appmetrics.AppTotalHits.WithLabelValues().Inc()
 	})
 }
-
-// type responseWriter struct {
-// 	http.ResponseWriter
-// 	status int
-// }
-
-// func (w *responseWriter) WriteHeader(status int) {
-// 	w.status = status
-// 	w.ResponseWriter.WriteHeader(status)
-// }
-
-// func (rw *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
-// 	hijacker, ok := rw.ResponseWriter.(http.Hijacker)
-// 	if !ok {
-// 		return nil, nil, fmt.Errorf("the ResponseWriter does not support the Hijacker interface")
-// 	}
-// 	return hijacker.Hijack()
-// }
