@@ -18,6 +18,9 @@ https://socio-project.ru/login
 <b>Swagger-документация:</b>
 https://socio-project.ru/swagger/index.html#/
 
+<b>Метрики в Grafana:</b>
+https://socio-project.ru/grafana
+
 Разработчики:
 <ul>
   <li>Митин Пётр - https://github.com/Petr09Mitin</li>
