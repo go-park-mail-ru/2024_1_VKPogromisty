@@ -74,7 +74,7 @@ func main() {
 	logger := logger.NewLogger(prodLogger)
 
 	prometheus.MustRegister(
-		appmetrics.AppTotalHits,
+		appmetrics.PublicGroupTotalHits,
 		appmetrics.PublicGroupHits,
 		appmetrics.PublicGroupHitDuration,
 	)
