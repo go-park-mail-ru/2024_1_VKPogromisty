@@ -19,7 +19,7 @@ https://socio-project.ru/login
 https://socio-project.ru/swagger/index.html#/
 
 <b>Метрики в Grafana:</b>
-https://socio-project.ru/grafana
+[https://socio-project.ru/grafana](https://socio-project.ru/grafana/d/adl2cco0xfmdca/socio?orgId=1)
 
 Разработчики:
 <ul>
