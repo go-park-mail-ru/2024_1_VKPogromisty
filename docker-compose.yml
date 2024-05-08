@@ -164,7 +164,7 @@ services:
     command:
       - '--config.file=/etc/config/prometheus.yml'
     volumes:
-      - ./prometheus:/etc/config
+      - ./config/prometheus:/etc/config
     ports:
       - 9090:9090
     depends_on:
@@ -191,13 +191,14 @@ services:
       - app
 
   cadvisor:
-    image: google/cadvisor:v0.32.0
+    image: gcr.io/cadvisor/cadvisor:latest
     container_name: cadvisor
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:rw
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
     ports:
       - 9091:8080
     depends_on:
@@ -210,6 +211,7 @@ services:
       - 3000:3000
     volumes:
       - grafana_data:/var/lib/grafana
+      - ./config/grafana:/etc/grafana
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
@@ -232,6 +234,8 @@ services:
       - 443:443
     depends_on:
       - app
+      - grafana
+      - prometheus
 
 volumes:
   pg_data:
