@@ -7,20 +7,21 @@ import (
 	"socio/errors"
 	"socio/pkg/json"
 	"socio/pkg/requestcontext"
-	"socio/usecase/subscriptions"
+
+	uspb "socio/internal/grpc/user/proto"
 )
 
 type SubscriptionsHandler struct {
-	Service *subscriptions.Service
+	UserService uspb.UserClient
 }
 
 type SubscriptionInput struct {
 	SubscribedToID uint `json:"subscribedTo"`
 }
 
-func NewSubscriptionsHandler(subStorage subscriptions.SubscriptionsStorage, userStorage subscriptions.UserStorage) (handler *SubscriptionsHandler) {
+func NewSubscriptionsHandler(userService uspb.UserClient) (handler *SubscriptionsHandler) {
 	handler = &SubscriptionsHandler{
-		Service: subscriptions.NewService(subStorage, userStorage),
+		UserService: userService,
 	}
 	return
 }
@@ -61,13 +62,18 @@ func (api *SubscriptionsHandler) HandleSubscription(w http.ResponseWriter, r *ht
 		return
 	}
 
-	subscription, err := api.Service.Subscribe(r.Context(), &domain.Subscription{SubscriberID: userID, SubscribedToID: input.SubscribedToID})
+	subscription, err := api.UserService.Subscribe(r.Context(), &uspb.SubscribeRequest{
+		SubscriberId:   uint64(userID),
+		SubscribedToId: uint64(input.SubscribedToID),
+	})
 	if err != nil {
-		json.ServeJSONError(r.Context(), w, err)
+		json.ServeGRPCStatus(r.Context(), w, err)
 		return
 	}
 
-	json.ServeJSONBody(r.Context(), w, map[string]*domain.Subscription{"subscription": subscription})
+	json.ServeJSONBody(r.Context(), w, map[string]*domain.Subscription{
+		"subscription": uspb.ToSubscription(subscription.Subscription),
+	}, http.StatusCreated)
 }
 
 // HandleUnsubscription godoc
@@ -108,9 +114,12 @@ func (api *SubscriptionsHandler) HandleUnsubscription(w http.ResponseWriter, r *
 		return
 	}
 
-	err = api.Service.Unsubscribe(r.Context(), &domain.Subscription{SubscriberID: userID, SubscribedToID: input.SubscribedToID})
+	_, err = api.UserService.Unsubscribe(r.Context(), &uspb.UnsubscribeRequest{
+		SubscriberId:   uint64(userID),
+		SubscribedToId: uint64(input.SubscribedToID),
+	})
 	if err != nil {
-		json.ServeJSONError(r.Context(), w, err)
+		json.ServeGRPCStatus(r.Context(), w, err)
 		return
 	}
 
@@ -142,13 +151,17 @@ func (api *SubscriptionsHandler) HandleGetSubscriptions(w http.ResponseWriter, r
 		return
 	}
 
-	subscriptions, err := api.Service.GetSubscriptions(r.Context(), userID)
+	subscriptions, err := api.UserService.GetSubscriptions(r.Context(), &uspb.GetSubscriptionsRequest{
+		UserId: uint64(userID),
+	})
 	if err != nil {
-		json.ServeJSONError(r.Context(), w, err)
+		json.ServeGRPCStatus(r.Context(), w, err)
 		return
 	}
 
-	json.ServeJSONBody(r.Context(), w, map[string][]*domain.User{"subscriptions": subscriptions})
+	json.ServeJSONBody(r.Context(), w, map[string][]*domain.User{
+		"subscriptions": uspb.ToSubscriptions(subscriptions.Subscriptions),
+	}, http.StatusOK)
 }
 
 // HandleGetSubscribers godoc
@@ -178,13 +191,17 @@ func (api *SubscriptionsHandler) HandleGetSubscribers(w http.ResponseWriter, r *
 		return
 	}
 
-	subscribers, err := api.Service.GetSubscribers(r.Context(), userID)
+	subscribers, err := api.UserService.GetSubscribers(r.Context(), &uspb.GetSubscribersRequest{
+		UserId: uint64(userID),
+	})
 	if err != nil {
-		json.ServeJSONError(r.Context(), w, err)
+		json.ServeGRPCStatus(r.Context(), w, err)
 		return
 	}
 
-	json.ServeJSONBody(r.Context(), w, map[string][]*domain.User{"subscribers": subscribers})
+	json.ServeJSONBody(r.Context(), w, map[string][]*domain.User{
+		"subscribers": uspb.ToSubscriptions(subscribers.Subscribers),
+	}, http.StatusOK)
 }
 
 // HandleGetFriends godoc
@@ -214,11 +231,15 @@ func (api *SubscriptionsHandler) HandleGetFriends(w http.ResponseWriter, r *http
 		return
 	}
 
-	friends, err := api.Service.GetFriends(r.Context(), userID)
+	friends, err := api.UserService.GetFriends(r.Context(), &uspb.GetFriendsRequest{
+		UserId: uint64(userID),
+	})
 	if err != nil {
 		json.ServeJSONError(r.Context(), w, err)
 		return
 	}
 
-	json.ServeJSONBody(r.Context(), w, map[string][]*domain.User{"friends": friends})
+	json.ServeJSONBody(r.Context(), w, map[string][]*domain.User{
+		"friends": uspb.ToSubscriptions(friends.Friends),
+	}, http.StatusOK)
 }

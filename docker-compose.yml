@@ -20,14 +20,118 @@ services:
       - 6379:6379
     volumes:
       - redis_data:/root/redis/
-      - ./volumes/redis_data/redis.conf:/usr/local/etc/redis/redis.conf
     environment:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - REDIS_PORT=6379
       - REDIS_DATABASES=16
 
+  minio:
+    image: minio/minio:RELEASE.2024-04-18T19-09-19Z
+    volumes:
+      - ./static/:/data/
+    ports:
+      - 9000:9000
+    command: server /data
+    environment:
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+
+  user_service:
+    image: socio/user-service:latest
+    container_name: user_service_container
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - PG_USER=${PG_USER}
+      - PG_PASSWORD=${PG_PASSWORD}
+      - PG_DBNAME=${PG_DBNAME}
+      - PG_HOST=postgresdb
+      - PG_PORT=${PG_PORT}
+    tty: true
+    ports:
+      - 8082:8082
+    restart: always
+    volumes:
+      - ./volumes/logs/:/var/log/socio/
+    depends_on:
+      - postgresdb
+      - redis
+      - minio
+  
+  post_service:
+    image: socio/post-service:latest
+    container_name: post_service_container
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - PG_USER=${PG_USER}
+      - PG_PASSWORD=${PG_PASSWORD}
+      - PG_DBNAME=${PG_DBNAME}
+      - PG_HOST=postgresdb
+      - PG_PORT=${PG_PORT}
+    tty: true
+    ports:
+      - 8083:8083
+    restart: always
+    volumes:
+      - ./volumes/logs/:/var/log/socio/
+    depends_on:
+      - postgresdb
+      - redis
+      - minio
+      - user_service
+  
+  public_group_service:
+    image: socio/public-group-service:latest
+    container_name: public_group_service_container
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - PG_USER=${PG_USER}
+      - PG_PASSWORD=${PG_PASSWORD}
+      - PG_DBNAME=${PG_DBNAME}
+      - PG_HOST=postgresdb
+      - PG_PORT=${PG_PORT}
+    tty: true
+    ports:
+      - 8085:8085
+    restart: always
+    volumes:
+      - ./volumes/logs/:/var/log/socio/
+    depends_on:
+      - postgresdb
+      - redis
+      - minio
+    
+  auth_service:
+    image: socio/auth-service:latest
+    container_name: auth_service_container
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - PG_USER=${PG_USER}
+      - PG_PASSWORD=${PG_PASSWORD}
+      - PG_DBNAME=${PG_DBNAME}
+      - PG_HOST=postgresdb
+      - PG_PORT=${PG_PORT}
+    tty: true
+    ports:
+      - 8084:8084
+      - 9096:9096
+    restart: always
+    volumes:
+      - ./volumes/logs/:/var/log/socio/
+    depends_on:
+      - postgresdb
+      - redis
+      - user_service
+
   app:
-    image: socio:1.0.0
+    image: socio/app-service:latest
     container_name: golang_container
     environment:
       - REDIS_HOST=redis
@@ -39,11 +143,10 @@ services:
       - PG_HOST=postgresdb
       - PG_PORT=${PG_PORT}
     tty: true
-    build: .
     ports:
       - 8001:8001
       - 8080:8080
-    restart: on-failure
+    restart: always
     volumes:
       - .:/app
       - ./static/:/static/
@@ -51,6 +154,72 @@ services:
     depends_on:
       - postgresdb
       - redis
+      - user_service
+      - post_service
+      - auth_service
+  
+  prometheus:
+    image: prom/prometheus:v2.52.0-rc.1
+    container_name: prometheus
+    command:
+      - '--config.file=/etc/config/prometheus.yml'
+    volumes:
+      - ./config/prometheus:/etc/config
+    ports:
+      - 9090:9090
+    depends_on:
+      - user_service
+      - post_service
+      - public_group_service
+      - auth_service
+      - app
+  
+  node_exporter:
+    image: prom/node-exporter:v1.8.0
+    container_name: node_exporter
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/rootfs'
+      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+    restart: unless-stopped
+    depends_on:
+      - app
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    ports:
+      - 9091:8080
+    depends_on:
+      - app
+  
+  grafana:
+    image: grafana/grafana:10.4.2-ubuntu
+    container_name: grafana
+    ports:
+      - 3000:3000
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/grafana:/etc/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+        - app
+        - prometheus
+        - node_exporter
+        - cadvisor
   
   nginx:
     image: nginx:1.25.4
@@ -65,19 +234,10 @@ services:
       - 443:443
     depends_on:
       - app
-    
-  # certbot:
-  #   image: certbot/certbot:v2.9.0
-  #   command: certonly --standalone --non-interactive --agree-tos --email petr09mitin@mail.ru --domains socio-project.ru   
-  #   volumes:
-  #     - ./volumes/certbot/www/:/var/www/certbot/:rw
-  #     - ./volumes/certbot/conf/:/etc/letsencrypt/:rw
-  #   environment:
-  #     - LETSENCRYPT_EMAIL=petr09mitin@mail.ru
-  #     - LETSENCRYPT_DOMAIN=socio-project.ru
-  #   depends_on:
-  #     - nginx
+      - grafana
+      - prometheus
 
 volumes:
   pg_data:
   redis_data:
+  grafana_data:

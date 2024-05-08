@@ -5,21 +5,23 @@ import (
 	"socio/errors"
 	"socio/pkg/json"
 	"socio/pkg/requestcontext"
-	"socio/pkg/sanitizer"
-	"socio/usecase/profile"
+	"socio/usecase/user"
 	"strconv"
 	"strings"
+
+	uspb "socio/internal/grpc/user/proto"
+	"socio/internal/rest/uploaders"
 
 	"github.com/gorilla/mux"
 )
 
 type ProfileHandler struct {
-	Service *profile.Service
+	UserClient uspb.UserClient
 }
 
-func NewProfileHandler(userStorage profile.UserStorage, sessionStorage profile.SessionStorage, sanitizer *sanitizer.Sanitizer) (h *ProfileHandler) {
+func NewProfileHandler(userClient uspb.UserClient) (h *ProfileHandler) {
 	return &ProfileHandler{
-		Service: profile.NewProfileService(userStorage, sessionStorage, sanitizer),
+		UserClient: userClient,
 	}
 }
 
@@ -37,7 +39,7 @@ func NewProfileHandler(userStorage profile.UserStorage, sessionStorage profile.S
 //	@Param			userID	path	string	false	"User ID, if empty - get authorized user profile"
 //
 //	@Produce		json
-//	@Success		200	{object}	json.JSONResponse{body=profile.UserWithSubsInfo}
+//	@Success		200	{object}	json.JSONResponse{body=user.UserWithSubsInfo}
 //	@Failure		401	{object}	errors.HTTPError
 //	@Failure		403	{object}	errors.HTTPError
 //	@Failure		404	{object}	errors.HTTPError
@@ -64,13 +66,16 @@ func (h *ProfileHandler) HandleGetProfile(w http.ResponseWriter, r *http.Request
 		userID = uint64(authorizedUserID)
 	}
 
-	userWithInfo, err := h.Service.GetUserByIDWithSubsInfo(r.Context(), uint(userID), authorizedUserID)
+	userWithInfo, err := h.UserClient.GetByIDWithSubsInfo(r.Context(), &uspb.GetByIDWithSubsInfoRequest{
+		UserId:           userID,
+		AuthorizedUserId: uint64(authorizedUserID),
+	})
 	if err != nil {
-		json.ServeJSONError(r.Context(), w, err)
+		json.ServeGRPCStatus(r.Context(), w, err)
 		return
 	}
 
-	json.ServeJSONBody(r.Context(), w, userWithInfo)
+	json.ServeJSONBody(r.Context(), w, uspb.ToUserWithInfo(userWithInfo), http.StatusOK)
 }
 
 // HandleUpdateProfile godoc
@@ -114,27 +119,39 @@ func (h *ProfileHandler) HandleUpdateProfile(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	var input profile.UpdateUserInput
+	var input user.UpdateUserInput
 	input.ID = userID
-	input.FirstName = strings.Trim(r.PostFormValue("firstName"), " \n\r\t")
-	input.LastName = strings.Trim(r.PostFormValue("lastName"), " \n\r\t")
-	input.Email = strings.Trim(r.PostFormValue("email"), " \n\r\t")
+	input.FirstName = strings.TrimSpace(r.PostFormValue("firstName"))
+	input.LastName = strings.TrimSpace(r.PostFormValue("lastName"))
+	input.Email = strings.TrimSpace(r.PostFormValue("email"))
 	input.Password = r.PostFormValue("password")
 	input.RepeatPassword = r.PostFormValue("repeatPassword")
-	input.DateOfBirth = strings.Trim(r.PostFormValue("dateOfBirth"), " \n\r\t")
-	_, input.Avatar, err = r.FormFile("avatar")
+	input.DateOfBirth = strings.TrimSpace(r.PostFormValue("dateOfBirth"))
+	_, avatarFH, err := r.FormFile("avatar")
 	if err != nil && err != http.ErrMissingFile {
 		json.ServeJSONError(r.Context(), w, err)
 		return
 	}
 
-	updatedUser, err := h.Service.UpdateUser(r.Context(), input)
+	if avatarFH != nil {
+		avatarFileName, err := uploaders.UploadAvatar(r, h.UserClient, avatarFH)
+		if err != nil {
+			json.ServeJSONError(r.Context(), w, err)
+			return
+		}
+
+		input.Avatar = avatarFileName
+	}
+
+	var grpcInput = uspb.ToUpdateRequest(&input)
+
+	updatedUser, err := h.UserClient.Update(r.Context(), grpcInput)
 	if err != nil {
-		json.ServeJSONError(r.Context(), w, err)
+		json.ServeGRPCStatus(r.Context(), w, err)
 		return
 	}
 
-	json.ServeJSONBody(r.Context(), w, updatedUser)
+	json.ServeJSONBody(r.Context(), w, uspb.ToUser(updatedUser.User), http.StatusOK)
 }
 
 // HandleDeleteProfile godoc
@@ -162,17 +179,52 @@ func (h *ProfileHandler) HandleDeleteProfile(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	sessionID, err := requestcontext.GetSessionID(r.Context())
+	_, err = h.UserClient.Delete(r.Context(), &uspb.DeleteRequest{
+		UserId: uint64(userID),
+	})
 	if err != nil {
-		json.ServeJSONError(r.Context(), w, err)
-		return
-	}
-
-	err = h.Service.DeleteUser(r.Context(), userID, sessionID)
-	if err != nil {
-		json.ServeJSONError(r.Context(), w, err)
+		json.ServeGRPCStatus(r.Context(), w, err)
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// HandleSearchByName godoc
+//
+//	@Summary		search users by name
+//	@Description	search users by name
+//	@Tags			profile
+//	@license.name	Apache 2.0
+//	@ID				profile/search
+//	@Accept			json
+//
+//	@Param			Cookie	header	string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
+//	@Param			query	query	string	true	"Search query"
+//
+//	@Produce		json
+//	@Success		200	{object}	json.JSONResponse{body=[]domain.User}
+//	@Failure		400	{object}	errors.HTTPError
+//	@Failure		401	{object}	errors.HTTPError
+//	@Failure		403	{object}	errors.HTTPError
+//	@Failure		404	{object}	errors.HTTPError
+//	@Failure		500	{object}	errors.HTTPError
+//	@Router			/profile/search [get]
+func (h *ProfileHandler) HandleSearchByName(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query().Get("query")
+	if query == "" {
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
+		return
+	}
+
+	users, err := h.UserClient.SearchByName(r.Context(), &uspb.SearchByNameRequest{
+		Query: query,
+	})
+	if err != nil {
+		json.ServeGRPCStatus(r.Context(), w, err)
+		return
+	}
+
+	json.ServeJSONBody(r.Context(), w, uspb.ToUsers(users.Users), http.StatusOK)
 }

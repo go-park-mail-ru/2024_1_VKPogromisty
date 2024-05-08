@@ -1,0 +1,50 @@
+syntax="proto3";
+
+option go_package = "./;auth";
+
+package auth;
+
+import "google/protobuf/timestamp.proto";
+
+service Auth {
+    rpc Login(LoginRequest) returns (LoginResponse);
+    rpc Logout(LogoutRequest) returns (LogoutResponse);
+    rpc ValidateSession(ValidateSessionRequest) returns (ValidateSessionResponse);
+}
+
+message UserResponse {
+    uint64 id = 1;
+    string first_name = 2;
+    string last_name = 3;
+    string email = 4;
+    string avatar = 5;
+    google.protobuf.Timestamp date_of_birth = 6;
+    google.protobuf.Timestamp created_at = 7;
+    google.protobuf.Timestamp updated_at = 8;
+    string hashed_password = 9;
+    string salt = 10;
+}
+
+message LoginRequest {
+    string email = 1;
+    string password = 2;
+}
+
+message LoginResponse {
+    string session_id = 1;
+    UserResponse user = 2;
+}
+
+message LogoutRequest {
+    string session_id = 1;
+}
+
+message LogoutResponse {}
+
+message ValidateSessionRequest {
+    string session_id = 1;
+}
+
+message ValidateSessionResponse {
+    uint64 user_id = 1;
+}

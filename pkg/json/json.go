@@ -16,17 +16,23 @@ func MarshalResponseBody(value any) (data []byte, err error) {
 	data, err = json.Marshal(map[string]any{"body": value})
 	if err != nil {
 		err = errors.ErrJSONMarshalling
-		data = MarshalResponseError(err.Error())
+		return
 	}
+
 	return
 }
 
-func MarshalResponseError(errMsg string) (data []byte) {
-	data, _ = json.Marshal(map[string]string{"error": errMsg})
+func MarshalResponseError(errMsg string) (data []byte, err error) {
+	data, err = json.Marshal(map[string]string{"error": errMsg})
+	if err != nil {
+		err = errors.ErrJSONMarshalling
+		return
+	}
+
 	return
 }
 
-func ServeJSONBody(ctx context.Context, w http.ResponseWriter, value any) {
+func ServeJSONBody(ctx context.Context, w http.ResponseWriter, value any, statusCode int) {
 	contextlogger.LogInfo(ctx)
 
 	data, err := MarshalResponseBody(value)
@@ -36,7 +42,35 @@ func ServeJSONBody(ctx context.Context, w http.ResponseWriter, value any) {
 	}
 
 	w.Header().Set("Content-Type", "application/json;")
-	w.Write(data)
+
+	w.WriteHeader(statusCode)
+	_, err = w.Write(data)
+	if err != nil {
+		ServeJSONError(ctx, w, err)
+		return
+	}
+}
+
+func ServeGRPCStatus(ctx context.Context, w http.ResponseWriter, err error) {
+	contextlogger.LogErr(ctx, err)
+
+	msg, statusCode := errors.ParseGRPCError(err)
+
+	w.Header().Set("Content-Type", "application/json;")
+
+	data, marshallErr := MarshalResponseError(msg)
+	if marshallErr != nil {
+		contextlogger.LogErr(ctx, marshallErr)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(statusCode)
+	_, marshallErr = w.Write(data)
+	if marshallErr != nil {
+		contextlogger.LogErr(ctx, marshallErr)
+		return
+	}
 }
 
 func ServeJSONError(ctx context.Context, w http.ResponseWriter, err error) {
@@ -45,6 +79,18 @@ func ServeJSONError(ctx context.Context, w http.ResponseWriter, err error) {
 	msg, status := errors.ParseHTTPError(err)
 
 	w.Header().Set("Content-Type", "application/json;")
+
+	data, err := MarshalResponseError(msg)
+	if err != nil {
+		contextlogger.LogErr(ctx, err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(status)
-	w.Write(MarshalResponseError(msg))
+	_, err = w.Write(data)
+	if err != nil {
+		contextlogger.LogErr(ctx, err)
+		return
+	}
 }

@@ -137,10 +137,6 @@ func (s *Subscriptions) GetSubscriptions(ctx context.Context, userID uint) (subs
 	rows, err := s.db.Query(context.Background(), getSubscriptionsQuery, userID)
 
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, nil
-		}
-
 		return
 	}
 
@@ -163,10 +159,6 @@ func (s *Subscriptions) GetFriends(ctx context.Context, userID uint) (friends []
 
 	rows, err := s.db.Query(context.Background(), getFriendsQuery, userID)
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, nil
-		}
-
 		return
 	}
 
@@ -189,10 +181,6 @@ func (s *Subscriptions) GetSubscribers(ctx context.Context, userID uint) (subscr
 
 	rows, err := s.db.Query(context.Background(), getSubscribersQuery, userID)
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, nil
-		}
-
 		return
 	}
 

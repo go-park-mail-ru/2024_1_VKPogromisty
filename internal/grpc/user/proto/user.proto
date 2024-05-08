@@ -1,0 +1,210 @@
+// protoc --go_out=. --go-grpc_out=. --go-grpc_opt=paths=source_relative --go_opt=paths=source_relative *.proto 
+syntax="proto3";
+
+option go_package = "./;user";
+
+package user;
+
+import "google/protobuf/timestamp.proto";
+
+service User {
+    rpc GetByID(GetByIDRequest) returns (GetByIDResponse) {}
+    rpc GetByEmail(GetByEmailRequest) returns (GetByEmailResponse) {}
+    rpc GetByIDWithSubsInfo(GetByIDWithSubsInfoRequest) returns (GetByIDWithSubsInfoResponse) {}
+    rpc Create(CreateRequest) returns (CreateResponse) {}
+    rpc Update(UpdateRequest) returns (UpdateResponse) {}
+    rpc Delete(DeleteRequest) returns (DeleteResponse) {}
+    rpc Upload(stream UploadRequest) returns (UploadResponse) {}
+    rpc Subscribe(SubscribeRequest) returns (SubscribeResponse) {}
+    rpc Unsubscribe(UnsubscribeRequest) returns (UnsubscribeResponse) {}
+    rpc GetSubscriptions(GetSubscriptionsRequest) returns (GetSubscriptionsResponse) {}
+    rpc GetSubscribers(GetSubscribersRequest) returns (GetSubscribersResponse) {} 
+    rpc GetFriends(GetFriendsRequest) returns (GetFriendsResponse) {}
+    rpc SearchByName(SearchByNameRequest) returns (SearchByNameResponse) {}
+    rpc GetSubscriptionIDs(GetSubscriptionIDsRequest) returns (GetSubscriptionIDsResponse) {}
+    rpc CreatePublicGroupAdmin(CreatePublicGroupAdminRequest) returns (CreatePublicGroupAdminResponse) {}
+    rpc DeletePublicGroupAdmin(DeletePublicGroupAdminRequest) returns (DeletePublicGroupAdminResponse) {}
+    rpc GetAdminsByPublicGroupID(GetAdminsByPublicGroupIDRequest) returns (GetAdminsByPublicGroupIDResponse) {}
+    rpc CheckIfUserIsAdmin(CheckIfUserIsAdminRequest) returns (CheckIfUserIsAdminResponse) {}
+}
+
+message GetByIDRequest {
+    uint64 user_id = 1;
+}
+
+message GetByIDResponse {
+    UserResponse user = 1;
+}
+
+message UserResponse {
+    uint64 id = 1;
+    string first_name = 2;
+    string last_name = 3;
+    string email = 4;
+    string avatar = 5;
+    google.protobuf.Timestamp date_of_birth = 6;
+    google.protobuf.Timestamp created_at = 7;
+    google.protobuf.Timestamp updated_at = 8;
+    string hashed_password = 9;
+    string salt = 10;
+}
+
+message GetByEmailRequest {
+   string email = 1; 
+}
+
+message GetByEmailResponse {
+    UserResponse user = 1;
+}
+
+message GetByIDWithSubsInfoRequest {
+    uint64 user_id = 1;
+    uint64 authorized_user_id = 2;
+}
+
+message GetByIDWithSubsInfoResponse {
+    UserResponse user = 1;
+    bool is_subscribed = 2;
+    bool is_subscriber = 3;
+}
+
+message CreateRequest {
+    string first_name = 1;
+    string last_name = 2;
+    string email = 3;
+    string avatar = 4;
+    string password = 5;
+    string repeat_password = 6;
+    string date_of_birth = 7;
+}
+
+message CreateResponse {
+    UserResponse user = 1;
+}
+
+message UpdateRequest {
+    uint64 user_id = 1;
+    string first_name = 2;
+    string last_name = 3;
+    string email = 4;
+    string avatar = 5;
+    string password = 6;
+    string repeat_password = 7;
+    string date_of_birth = 8;
+}
+
+message UpdateResponse {
+    UserResponse user = 1;
+}
+
+message DeleteRequest {
+    uint64 user_id = 1;
+}
+
+message DeleteResponse {}
+
+message UploadRequest {
+    string file_name = 1;
+    bytes chunk = 2;
+    string contentType = 3;
+}
+
+message UploadResponse {
+    string file_name = 1;
+    uint64 size = 2;
+}
+
+message SubscriptionResponse {
+    uint64 id = 1;
+    uint64 subscriber_id = 2;
+    uint64 subscribed_to_id = 3;
+    google.protobuf.Timestamp created_at = 4;
+    google.protobuf.Timestamp updated_at = 5;
+}
+
+message SubscribeRequest {
+    uint64 subscriber_id = 1;
+    uint64 subscribed_to_id = 2;
+}
+
+message SubscribeResponse {
+    SubscriptionResponse subscription = 1;
+}
+
+message UnsubscribeRequest {
+    uint64 subscriber_id = 1;
+    uint64 subscribed_to_id = 2;
+}
+
+message UnsubscribeResponse {}
+
+message GetSubscriptionsRequest {
+    uint64 user_id = 1;
+}
+
+message GetSubscriptionsResponse {
+    repeated UserResponse subscriptions = 1;
+}
+
+message GetSubscribersRequest {
+    uint64 user_id = 1;
+}
+
+message GetSubscribersResponse {
+    repeated UserResponse subscribers = 1;
+}
+
+message GetFriendsRequest {
+    uint64 user_id = 1;
+}
+
+message GetFriendsResponse {
+    repeated UserResponse friends = 1;
+}
+
+message SearchByNameRequest {
+    string query = 1;
+}
+
+message SearchByNameResponse {
+    repeated UserResponse users = 1;
+}
+
+message GetSubscriptionIDsRequest {
+    uint64 user_id = 1;
+}
+
+message GetSubscriptionIDsResponse {
+    repeated uint64 subscription_ids = 1;
+}
+
+message CreatePublicGroupAdminRequest {
+    uint64 user_id = 1;
+    uint64 public_group_id = 2;
+}
+
+message CreatePublicGroupAdminResponse {}
+
+message DeletePublicGroupAdminRequest {
+    uint64 user_id = 1;
+    uint64 public_group_id = 2;
+}
+
+message DeletePublicGroupAdminResponse {}
+
+message GetAdminsByPublicGroupIDRequest {
+    uint64 public_group_id = 1;
+}
+
+message GetAdminsByPublicGroupIDResponse {
+    repeated UserResponse admins = 1;
+}
+
+message CheckIfUserIsAdminRequest {
+    uint64 user_id = 1;
+    uint64 public_group_id = 2;
+}
+
+message CheckIfUserIsAdminResponse {
+    bool is_admin = 1;
+}

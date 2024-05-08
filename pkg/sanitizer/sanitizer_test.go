@@ -191,3 +191,49 @@ func TestSanitizer_SanitizeDialog(t *testing.T) {
 		})
 	}
 }
+
+func TestSanitizePublicGroup(t *testing.T) {
+	s := NewSanitizer(bluemonday.UGCPolicy())
+
+	tests := []struct {
+		name     string
+		input    *domain.PublicGroup
+		expected *domain.PublicGroup
+	}{
+		{
+			name: "Test 1",
+			input: &domain.PublicGroup{
+				Name:        "<script>alert('xss')</script>",
+				Description: "<script>alert('xss')</script>",
+				Avatar:      "<script>alert('xss')</script>",
+			},
+			expected: &domain.PublicGroup{
+				Name:        "",
+				Description: "",
+				Avatar:      "",
+			},
+		},
+		{
+			name:     "Test 2",
+			input:    nil,
+			expected: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s.SanitizePublicGroup(tt.input)
+			if tt.input == nil && tt.expected == nil {
+				return
+			} else {
+				if tt.input == nil || tt.expected == nil {
+					t.Errorf("got %v, want %v", tt.input, tt.expected)
+				}
+			}
+
+			if tt.input.Name != tt.expected.Name || tt.input.Description != tt.expected.Description || tt.input.Avatar != tt.expected.Avatar {
+				t.Errorf("got %v, want %v", tt.input, tt.expected)
+			}
+		})
+	}
+}

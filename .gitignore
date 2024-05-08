@@ -4,8 +4,10 @@ virt.cer
 socio.exe
 app.exe
 .env
-/app/app
-/app/app.exe
+/cmd/app/app
+/cmd/app/app.exe
+/cmd/user/user
+/cmd/user/user.exe
 dump.rdb
 tern.conf
 .vscode
@@ -15,4 +17,7 @@ privkey.pem
 socio.conf
 /static
 /volumes
-/mocks
+mc
+post-attachments.txt
+user-avatars.txt
+node_exporter-1.2.2.linux-amd64

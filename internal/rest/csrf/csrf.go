@@ -60,5 +60,5 @@ func (api *CSRFHandler) GetCSRFToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.ServeJSONBody(r.Context(), w, map[string]string{"csrfToken": token})
+	json.ServeJSONBody(r.Context(), w, map[string]string{"csrfToken": token}, http.StatusOK)
 }

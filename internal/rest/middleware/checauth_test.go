@@ -4,7 +4,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"socio/errors"
-	mock_auth "socio/mocks/usecase/auth"
+	authpb "socio/internal/grpc/auth/proto"
+	mock_auth "socio/mocks/grpc/auth_grpc"
 	"socio/pkg/requestcontext"
 	"testing"
 
@@ -17,15 +18,17 @@ func TestCreateCheckIsAuthorizedMiddleware(t *testing.T) {
 		cookie         *http.Cookie
 		userID         uint
 		expectedStatus int
-		prepareMocks   func(sessStorage *mock_auth.MockSessionStorage)
+		prepareMocks   func(authClient *mock_auth.MockAuthClient)
 	}{
 		{
 			name:           "valid session",
 			cookie:         &http.Cookie{Name: "session_id", Value: "testSessionID"},
 			userID:         1,
 			expectedStatus: http.StatusOK,
-			prepareMocks: func(sessStorage *mock_auth.MockSessionStorage) {
-				sessStorage.EXPECT().GetUserIDBySession(gomock.Any(), gomock.Any()).Return(uint(1), nil)
+			prepareMocks: func(sessStorage *mock_auth.MockAuthClient) {
+				sessStorage.EXPECT().ValidateSession(gomock.Any(), gomock.Any()).Return(
+					&authpb.ValidateSessionResponse{UserId: 1}, nil,
+				)
 			},
 		},
 		{
@@ -33,15 +36,17 @@ func TestCreateCheckIsAuthorizedMiddleware(t *testing.T) {
 			cookie:         &http.Cookie{Value: ""},
 			userID:         0,
 			expectedStatus: http.StatusUnauthorized,
-			prepareMocks:   func(sessStorage *mock_auth.MockSessionStorage) {},
+			prepareMocks:   func(sessStorage *mock_auth.MockAuthClient) {},
 		},
 		{
 			name:           "error getting user ID",
 			cookie:         &http.Cookie{Name: "session_id", Value: "testSessionID"},
 			userID:         0,
 			expectedStatus: http.StatusUnauthorized,
-			prepareMocks: func(sessStorage *mock_auth.MockSessionStorage) {
-				sessStorage.EXPECT().GetUserIDBySession(gomock.Any(), gomock.Any()).Return(uint(0), errors.ErrUnauthorized)
+			prepareMocks: func(sessStorage *mock_auth.MockAuthClient) {
+				sessStorage.EXPECT().ValidateSession(gomock.Any(), gomock.Any()).Return(
+					nil, errors.ErrUnauthorized.GRPCStatus().Err(),
+				)
 			},
 		},
 	}
@@ -51,11 +56,11 @@ func TestCreateCheckIsAuthorizedMiddleware(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockSessionStorage := mock_auth.NewMockSessionStorage(ctrl)
+			mockAuthClient := mock_auth.NewMockAuthClient(ctrl)
 
-			tc.prepareMocks(mockSessionStorage)
+			tc.prepareMocks(mockAuthClient)
 
-			handler := CreateCheckIsAuthorizedMiddleware(mockSessionStorage)
+			handler := CreateCheckIsAuthorizedMiddleware(mockAuthClient)
 
 			req, err := http.NewRequest("GET", "/", nil)
 			if err != nil {

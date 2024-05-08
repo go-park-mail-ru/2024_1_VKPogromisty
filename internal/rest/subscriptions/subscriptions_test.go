@@ -6,20 +6,16 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"socio/domain"
 	"socio/errors"
-	mock_subscriptions "socio/mocks/usecase/subscriptions"
 	"socio/pkg/requestcontext"
 	"testing"
+
+	uspb "socio/internal/grpc/user/proto"
+	mock_user "socio/mocks/grpc/user_grpc"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
-
-type fields struct {
-	UserStorage         *mock_subscriptions.MockUserStorage
-	SubscriptionStorage *mock_subscriptions.MockSubscriptionsStorage
-}
 
 func TestHandleSubscription(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -27,80 +23,72 @@ func TestHandleSubscription(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		input          *SubscriptionInput
-		expectedStatus int
 		ctx            context.Context
-		setupMocks     func(*fields)
+		body           *SubscriptionInput
+		mockError      error
+		expectedStatus int
+		mock           func(userClient *mock_user.MockUserClient)
 	}{
 		{
-			name: "valid input",
-			input: &SubscriptionInput{
-				SubscribedToID: 1,
-			},
-			expectedStatus: http.StatusOK,
-			ctx:            context.WithValue(context.Background(), requestcontext.UserIDKey, uint(2)),
-			setupMocks: func(fields *fields) {
-				fields.UserStorage.EXPECT().GetUserByID(gomock.Any(), gomock.Any()).Return(&domain.User{
-					ID: 1,
-				}, nil).AnyTimes()
-				fields.SubscriptionStorage.EXPECT().Store(gomock.Any(), gomock.Any()).Return(&domain.Subscription{
-					SubscriberID: 1,
+			name:           "Successful subscription",
+			ctx:            context.WithValue(context.Background(), requestcontext.UserIDKey, uint(1)),
+			body:           &SubscriptionInput{SubscribedToID: 2},
+			mockError:      nil,
+			expectedStatus: http.StatusCreated,
+			mock: func(userClient *mock_user.MockUserClient) {
+				userClient.EXPECT().Subscribe(gomock.Any(), gomock.Any()).Return(&uspb.SubscribeResponse{
+					Subscription: &uspb.SubscriptionResponse{
+						SubscriberId:   1,
+						SubscribedToId: 2,
+					},
 				}, nil)
 			},
 		},
 		{
-			name: "invalid context",
-			input: &SubscriptionInput{
-				SubscribedToID: 1,
-			},
-			expectedStatus: http.StatusBadRequest,
+			name:           "Successful subscription",
 			ctx:            context.Background(),
-			setupMocks: func(fields *fields) {
+			body:           &SubscriptionInput{SubscribedToID: 2},
+			mockError:      nil,
+			expectedStatus: http.StatusBadRequest,
+			mock: func(userClient *mock_user.MockUserClient) {
+
 			},
 		},
 		{
-			name: "err get user",
-			input: &SubscriptionInput{
-				SubscribedToID: 1,
-			},
-			expectedStatus: http.StatusBadRequest,
-			ctx:            context.WithValue(context.Background(), requestcontext.UserIDKey, uint(2)),
-			setupMocks: func(fields *fields) {
-				fields.UserStorage.EXPECT().GetUserByID(gomock.Any(), gomock.Any()).Return(nil, errors.ErrNotFound).AnyTimes()
+			name:           "Successful subscription",
+			ctx:            context.WithValue(context.Background(), requestcontext.UserIDKey, uint(1)),
+			body:           &SubscriptionInput{SubscribedToID: 2},
+			mockError:      nil,
+			expectedStatus: http.StatusInternalServerError,
+			mock: func(userClient *mock_user.MockUserClient) {
+				userClient.EXPECT().Subscribe(gomock.Any(), gomock.Any()).Return(
+					nil, errors.ErrInternal.GRPCStatus().Err(),
+				)
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
+			// Set up the request
+			body, _ := json.Marshal(tt.body)
+			r := httptest.NewRequest("POST", "/", bytes.NewBuffer(body))
+			r.Header.Set("Content-Type", "application/json")
+			r = r.WithContext(tt.ctx)
 
-			fields := &fields{
-				SubscriptionStorage: mock_subscriptions.NewMockSubscriptionsStorage(ctrl),
-				UserStorage:         mock_subscriptions.NewMockUserStorage(ctrl),
-			}
-
-			tt.setupMocks(fields)
-
-			handler := NewSubscriptionsHandler(fields.SubscriptionStorage, fields.UserStorage)
-
-			b, err := json.Marshal(tt.input)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			req, err := http.NewRequest("POST", "/subscribe", bytes.NewBuffer(b))
-			if err != nil {
-				t.Fatal(err)
-			}
-			req.Header.Set("Content-Type", "application/json")
-
-			req = req.WithContext(tt.ctx)
-
+			// Set up the response recorder
 			rr := httptest.NewRecorder()
-			handler.HandleSubscription(rr, req)
 
+			mockUserClient := mock_user.NewMockUserClient(ctrl)
+			tt.mock(mockUserClient)
+
+			// Set up the handler
+			h := NewSubscriptionsHandler(mockUserClient)
+
+			// Call the handler
+			h.HandleSubscription(rr, r)
+
+			// Check the status code
 			assert.Equal(t, tt.expectedStatus, rr.Code)
 		})
 	}
@@ -112,78 +100,66 @@ func TestHandleUnsubscription(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		input          *SubscriptionInput
-		expectedStatus int
 		ctx            context.Context
-		setupMocks     func(*fields)
+		body           *SubscriptionInput
+		mockError      error
+		expectedStatus int
+		mock           func(userClient *mock_user.MockUserClient)
 	}{
 		{
-			name: "valid input",
-			input: &SubscriptionInput{
-				SubscribedToID: 1,
-			},
+			name:           "Successful unsubscription",
+			ctx:            context.WithValue(context.Background(), requestcontext.UserIDKey, uint(1)),
+			body:           &SubscriptionInput{SubscribedToID: 2},
+			mockError:      nil,
 			expectedStatus: http.StatusNoContent,
-			ctx:            context.WithValue(context.Background(), requestcontext.UserIDKey, uint(2)),
-			setupMocks: func(fields *fields) {
-				fields.UserStorage.EXPECT().GetUserByID(gomock.Any(), gomock.Any()).Return(&domain.User{
-					ID: 1,
-				}, nil).AnyTimes()
-				fields.SubscriptionStorage.EXPECT().Delete(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			mock: func(userClient *mock_user.MockUserClient) {
+				userClient.EXPECT().Unsubscribe(gomock.Any(), gomock.Any()).Return(&uspb.UnsubscribeResponse{}, nil)
 			},
 		},
 		{
-			name: "invalid context",
-			input: &SubscriptionInput{
-				SubscribedToID: 1,
-			},
-			expectedStatus: http.StatusBadRequest,
+			name:           "Successful unsubscription",
 			ctx:            context.Background(),
-			setupMocks: func(fields *fields) {
+			body:           &SubscriptionInput{SubscribedToID: 2},
+			mockError:      nil,
+			expectedStatus: http.StatusBadRequest,
+			mock: func(userClient *mock_user.MockUserClient) {
 			},
 		},
 		{
-			name: "err get user",
-			input: &SubscriptionInput{
-				SubscribedToID: 1,
-			},
-			expectedStatus: http.StatusBadRequest,
-			ctx:            context.WithValue(context.Background(), requestcontext.UserIDKey, uint(2)),
-			setupMocks: func(fields *fields) {
-				fields.UserStorage.EXPECT().GetUserByID(gomock.Any(), gomock.Any()).Return(nil, errors.ErrNotFound).AnyTimes()
+			name:           "Successful unsubscription",
+			ctx:            context.WithValue(context.Background(), requestcontext.UserIDKey, uint(1)),
+			body:           &SubscriptionInput{SubscribedToID: 2},
+			mockError:      nil,
+			expectedStatus: http.StatusInternalServerError,
+			mock: func(userClient *mock_user.MockUserClient) {
+				userClient.EXPECT().Unsubscribe(gomock.Any(), gomock.Any()).Return(
+					nil, errors.ErrInternal.GRPCStatus().Err(),
+				)
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
+			// Set up the request
+			body, _ := json.Marshal(tt.body)
+			r := httptest.NewRequest("POST", "/", bytes.NewBuffer(body))
+			r.Header.Set("Content-Type", "application/json")
+			r = r.WithContext(tt.ctx)
 
-			fields := &fields{
-				SubscriptionStorage: mock_subscriptions.NewMockSubscriptionsStorage(ctrl),
-				UserStorage:         mock_subscriptions.NewMockUserStorage(ctrl),
-			}
-
-			tt.setupMocks(fields)
-
-			handler := NewSubscriptionsHandler(fields.SubscriptionStorage, fields.UserStorage)
-
-			b, err := json.Marshal(tt.input)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			req, err := http.NewRequest("POST", "/unsubscribe", bytes.NewBuffer(b))
-			if err != nil {
-				t.Fatal(err)
-			}
-			req.Header.Set("Content-Type", "application/json")
-
-			req = req.WithContext(tt.ctx)
-
+			// Set up the response recorder
 			rr := httptest.NewRecorder()
-			handler.HandleUnsubscription(rr, req)
 
+			mockUserClient := mock_user.NewMockUserClient(ctrl)
+			tt.mock(mockUserClient)
+
+			// Set up the handler
+			h := NewSubscriptionsHandler(mockUserClient)
+
+			// Call the handler
+			h.HandleUnsubscription(rr, r)
+
+			// Check the status code
 			assert.Equal(t, tt.expectedStatus, rr.Code)
 		})
 	}
@@ -195,61 +171,60 @@ func TestHandleGetSubscriptions(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		expectedStatus int
 		ctx            context.Context
-		setupMocks     func(*fields)
+		mockError      error
+		expectedStatus int
+		mock           func(userClient *mock_user.MockUserClient)
 	}{
 		{
-			name:           "valid context",
+			name:           "Successful get subscriptions",
+			ctx:            context.WithValue(context.Background(), requestcontext.UserIDKey, uint(1)),
+			mockError:      nil,
 			expectedStatus: http.StatusOK,
-			ctx:            context.WithValue(context.Background(), requestcontext.UserIDKey, uint(2)),
-			setupMocks: func(fields *fields) {
-				fields.UserStorage.EXPECT().GetUserByID(gomock.Any(), gomock.Any()).Return(&domain.User{}, nil)
-				fields.SubscriptionStorage.EXPECT().GetSubscriptions(gomock.Any(), gomock.Any()).Return([]*domain.User{}, nil)
+			mock: func(userClient *mock_user.MockUserClient) {
+				userClient.EXPECT().GetSubscriptions(gomock.Any(), gomock.Any()).Return(&uspb.GetSubscriptionsResponse{}, nil)
 			},
 		},
 		{
-			name:           "invalid context",
-			expectedStatus: http.StatusBadRequest,
+			name:           "Successful get subscriptions",
 			ctx:            context.Background(),
-			setupMocks: func(fields *fields) {
+			mockError:      nil,
+			expectedStatus: http.StatusBadRequest,
+			mock: func(userClient *mock_user.MockUserClient) {
 			},
 		},
 		{
-			name:           "error getting subscriptions",
-			expectedStatus: http.StatusNotFound,
-			ctx:            context.WithValue(context.Background(), requestcontext.UserIDKey, uint(2)),
-			setupMocks: func(fields *fields) {
-				fields.UserStorage.EXPECT().GetUserByID(gomock.Any(), gomock.Any()).Return(nil, errors.ErrNotFound)
+			name:           "Successful get subscriptions",
+			ctx:            context.WithValue(context.Background(), requestcontext.UserIDKey, uint(1)),
+			mockError:      nil,
+			expectedStatus: http.StatusInternalServerError,
+			mock: func(userClient *mock_user.MockUserClient) {
+				userClient.EXPECT().GetSubscriptions(gomock.Any(), gomock.Any()).Return(
+					nil, errors.ErrInternal.GRPCStatus().Err(),
+				)
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
+			// Set up the request
+			r := httptest.NewRequest("GET", "/", nil)
+			r = r.WithContext(tt.ctx)
 
-			fields := &fields{
-				SubscriptionStorage: mock_subscriptions.NewMockSubscriptionsStorage(ctrl),
-				UserStorage:         mock_subscriptions.NewMockUserStorage(ctrl),
-			}
-
-			tt.setupMocks(fields)
-
-			handler := NewSubscriptionsHandler(fields.SubscriptionStorage, fields.UserStorage)
-
-			req, err := http.NewRequest("GET", "/get-subs", bytes.NewBuffer(nil))
-			if err != nil {
-				t.Fatal(err)
-			}
-			req.Header.Set("Content-Type", "application/json")
-
-			req = req.WithContext(tt.ctx)
-
+			// Set up the response recorder
 			rr := httptest.NewRecorder()
-			handler.HandleGetSubscriptions(rr, req)
 
+			mockUserClient := mock_user.NewMockUserClient(ctrl)
+			tt.mock(mockUserClient)
+
+			// Set up the handler
+			h := NewSubscriptionsHandler(mockUserClient)
+
+			// Call the handler
+			h.HandleGetSubscriptions(rr, r)
+
+			// Check the status code
 			assert.Equal(t, tt.expectedStatus, rr.Code)
 		})
 	}
@@ -261,60 +236,60 @@ func TestHandleGetSubscribers(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		expectedStatus int
 		ctx            context.Context
-		setupMocks     func(*fields)
+		mockError      error
+		expectedStatus int
+		mock           func(userClient *mock_user.MockUserClient)
 	}{
 		{
-			name:           "valid context",
+			name:           "Successful get subscribers",
+			ctx:            context.WithValue(context.Background(), requestcontext.UserIDKey, uint(1)),
+			mockError:      nil,
 			expectedStatus: http.StatusOK,
-			ctx:            context.WithValue(context.Background(), requestcontext.UserIDKey, uint(2)),
-			setupMocks: func(fields *fields) {
-				fields.UserStorage.EXPECT().GetUserByID(gomock.Any(), gomock.Any()).Return(&domain.User{}, nil)
-				fields.SubscriptionStorage.EXPECT().GetSubscribers(gomock.Any(), uint(2)).Return([]*domain.User{}, nil)
+			mock: func(userClient *mock_user.MockUserClient) {
+				userClient.EXPECT().GetSubscribers(gomock.Any(), gomock.Any()).Return(&uspb.GetSubscribersResponse{}, nil)
 			},
 		},
 		{
-			name:           "invalid context",
-			expectedStatus: http.StatusBadRequest,
+			name:           "Successful get subscribers",
 			ctx:            context.Background(),
-			setupMocks: func(fields *fields) {
+			mockError:      nil,
+			expectedStatus: http.StatusBadRequest,
+			mock: func(userClient *mock_user.MockUserClient) {
 			},
 		},
 		{
-			name:           "error",
-			expectedStatus: http.StatusNotFound,
-			ctx:            context.WithValue(context.Background(), requestcontext.UserIDKey, uint(2)),
-			setupMocks: func(fields *fields) {
-				fields.UserStorage.EXPECT().GetUserByID(gomock.Any(), gomock.Any()).Return(nil, errors.ErrNotFound)
+			name:           "Successful get subscribers",
+			ctx:            context.WithValue(context.Background(), requestcontext.UserIDKey, uint(1)),
+			mockError:      nil,
+			expectedStatus: http.StatusInternalServerError,
+			mock: func(userClient *mock_user.MockUserClient) {
+				userClient.EXPECT().GetSubscribers(gomock.Any(), gomock.Any()).Return(
+					nil, errors.ErrInternal.GRPCStatus().Err(),
+				)
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
+			// Set up the request
+			r := httptest.NewRequest("GET", "/", nil)
+			r = r.WithContext(tt.ctx)
 
-			fields := &fields{
-				SubscriptionStorage: mock_subscriptions.NewMockSubscriptionsStorage(ctrl),
-				UserStorage:         mock_subscriptions.NewMockUserStorage(ctrl),
-			}
-
-			tt.setupMocks(fields)
-
-			handler := NewSubscriptionsHandler(fields.SubscriptionStorage, fields.UserStorage)
-
-			req, err := http.NewRequest("GET", "/subscribers", nil)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			req = req.WithContext(tt.ctx)
-
+			// Set up the response recorder
 			rr := httptest.NewRecorder()
-			handler.HandleGetSubscribers(rr, req)
 
+			mockUserClient := mock_user.NewMockUserClient(ctrl)
+			tt.mock(mockUserClient)
+
+			// Set up the handler
+			h := NewSubscriptionsHandler(mockUserClient)
+
+			// Call the handler
+			h.HandleGetSubscribers(rr, r)
+
+			// Check the status code
 			assert.Equal(t, tt.expectedStatus, rr.Code)
 		})
 	}
@@ -326,60 +301,60 @@ func TestHandleGetFriends(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		expectedStatus int
 		ctx            context.Context
-		setupMocks     func(*fields)
+		mockError      error
+		expectedStatus int
+		mock           func(userClient *mock_user.MockUserClient)
 	}{
 		{
-			name:           "valid context",
+			name:           "Successful get friends",
+			ctx:            context.WithValue(context.Background(), requestcontext.UserIDKey, uint(1)),
+			mockError:      nil,
 			expectedStatus: http.StatusOK,
-			ctx:            context.WithValue(context.Background(), requestcontext.UserIDKey, uint(2)),
-			setupMocks: func(fields *fields) {
-				fields.UserStorage.EXPECT().GetUserByID(gomock.Any(), gomock.Any()).Return(&domain.User{}, nil)
-				fields.SubscriptionStorage.EXPECT().GetFriends(gomock.Any(), uint(2)).Return([]*domain.User{}, nil)
+			mock: func(userClient *mock_user.MockUserClient) {
+				userClient.EXPECT().GetFriends(gomock.Any(), gomock.Any()).Return(&uspb.GetFriendsResponse{}, nil)
 			},
 		},
 		{
-			name:           "invalid context",
-			expectedStatus: http.StatusBadRequest,
+			name:           "Successful get friends",
 			ctx:            context.Background(),
-			setupMocks: func(fields *fields) {
+			mockError:      nil,
+			expectedStatus: http.StatusBadRequest,
+			mock: func(userClient *mock_user.MockUserClient) {
 			},
 		},
 		{
-			name:           "error",
-			expectedStatus: http.StatusNotFound,
-			ctx:            context.WithValue(context.Background(), requestcontext.UserIDKey, uint(2)),
-			setupMocks: func(fields *fields) {
-				fields.UserStorage.EXPECT().GetUserByID(gomock.Any(), gomock.Any()).Return(nil, errors.ErrNotFound)
+			name:           "Successful get friends",
+			ctx:            context.WithValue(context.Background(), requestcontext.UserIDKey, uint(1)),
+			mockError:      nil,
+			expectedStatus: http.StatusInternalServerError,
+			mock: func(userClient *mock_user.MockUserClient) {
+				userClient.EXPECT().GetFriends(gomock.Any(), gomock.Any()).Return(
+					nil, errors.ErrInternal.GRPCStatus().Err(),
+				)
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
+			// Set up the request
+			r := httptest.NewRequest("GET", "/", nil)
+			r = r.WithContext(tt.ctx)
 
-			fields := &fields{
-				SubscriptionStorage: mock_subscriptions.NewMockSubscriptionsStorage(ctrl),
-				UserStorage:         mock_subscriptions.NewMockUserStorage(ctrl),
-			}
-
-			tt.setupMocks(fields)
-
-			handler := NewSubscriptionsHandler(fields.SubscriptionStorage, fields.UserStorage)
-
-			req, err := http.NewRequest("GET", "/friends", nil)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			req = req.WithContext(tt.ctx)
-
+			// Set up the response recorder
 			rr := httptest.NewRecorder()
-			handler.HandleGetFriends(rr, req)
 
+			mockUserClient := mock_user.NewMockUserClient(ctrl)
+			tt.mock(mockUserClient)
+
+			// Set up the handler
+			h := NewSubscriptionsHandler(mockUserClient)
+
+			// Call the handler
+			h.HandleGetFriends(rr, r)
+
+			// Check the status code
 			assert.Equal(t, tt.expectedStatus, rr.Code)
 		})
 	}

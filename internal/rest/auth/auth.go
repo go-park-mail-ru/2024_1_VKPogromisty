@@ -5,23 +5,50 @@ import (
 	"net/http"
 	"socio/domain"
 	"socio/errors"
+	authpb "socio/internal/grpc/auth/proto"
+	uspb "socio/internal/grpc/user/proto"
+	"socio/internal/rest/uploaders"
 	"socio/pkg/json"
-	"socio/pkg/sanitizer"
 	customtime "socio/pkg/time"
 	"socio/usecase/auth"
+	"socio/usecase/user"
 	"strings"
 )
 
 type AuthHandler struct {
-	Service      *auth.Service
+	AuthClient   authpb.AuthClient
+	UserClient   uspb.UserClient
 	TimeProvider customtime.TimeProvider
 }
 
-func NewAuthHandler(userStorage auth.UserStorage, sessionStorage auth.SessionStorage, sanitizer *sanitizer.Sanitizer) (handler *AuthHandler) {
+func NewAuthHandler(authClient authpb.AuthClient, userClient uspb.UserClient, tp customtime.TimeProvider) (handler *AuthHandler) {
 	handler = &AuthHandler{
-		Service: auth.NewService(userStorage, sessionStorage, sanitizer),
+		AuthClient:   authClient,
+		UserClient:   userClient,
+		TimeProvider: tp,
 	}
 	return
+}
+
+func newSessionCookie(sessionID string) *http.Cookie {
+	return &http.Cookie{
+		Name:     "session_id",
+		Value:    sessionID,
+		MaxAge:   10 * 60 * 60,
+		HttpOnly: true,
+		Secure:   true,
+		Path:     "/",
+		SameSite: http.SameSiteNoneMode,
+	}
+}
+
+func clearSessionCookie(cookie *http.Cookie) {
+	cookie.MaxAge = 0
+	cookie.Value = ""
+	cookie.Path = "/"
+	cookie.HttpOnly = true
+	cookie.Secure = true
+	cookie.SameSite = http.SameSiteNoneMode
 }
 
 // HandleRegistration godoc
@@ -54,28 +81,46 @@ func (api *AuthHandler) HandleRegistration(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	var regInput auth.RegistrationInput
-	regInput.FirstName = strings.Trim(r.PostFormValue("firstName"), " \n\r\t")
-	regInput.LastName = strings.Trim(r.PostFormValue("lastName"), " \n\r\t")
-	regInput.Email = strings.Trim(r.PostFormValue("email"), " \n\r\t")
+	var regInput user.CreateUserInput
+	regInput.FirstName = strings.TrimSpace(r.PostFormValue("firstName"))
+	regInput.LastName = strings.TrimSpace(r.PostFormValue("lastName"))
+	regInput.Email = strings.TrimSpace(r.PostFormValue("email"))
 	regInput.Password = r.PostFormValue("password")
 	regInput.RepeatPassword = r.PostFormValue("repeatPassword")
-	regInput.DateOfBirth = strings.Trim(r.PostFormValue("dateOfBirth"), " \n\r\t")
-	_, regInput.Avatar, err = r.FormFile("avatar")
+	regInput.DateOfBirth = strings.TrimSpace(r.PostFormValue("dateOfBirth"))
+	_, avatarFH, err := r.FormFile("avatar")
 	if err != nil && err != http.ErrMissingFile {
 		json.ServeJSONError(r.Context(), w, err)
 		return
 	}
 
-	user, session, err := api.Service.RegistrateUser(r.Context(), regInput)
+	regInput.Avatar, err = uploaders.UploadAvatar(r, api.UserClient, avatarFH)
 	if err != nil {
 		json.ServeJSONError(r.Context(), w, err)
 		return
 	}
 
-	http.SetCookie(w, session)
-	w.WriteHeader(http.StatusCreated)
-	json.ServeJSONBody(r.Context(), w, map[string]*domain.User{"user": user})
+	_, err = api.UserClient.Create(r.Context(), uspb.ToCreateRequest(&regInput))
+	if err != nil {
+		json.ServeGRPCStatus(r.Context(), w, err)
+		return
+	}
+
+	res, err := api.AuthClient.Login(r.Context(), &authpb.LoginRequest{
+		Email:    regInput.Email,
+		Password: regInput.Password,
+	})
+	if err != nil {
+		json.ServeGRPCStatus(r.Context(), w, err)
+		return
+	}
+
+	sessionCookie := newSessionCookie(res.SessionId)
+
+	http.SetCookie(w, sessionCookie)
+	json.ServeJSONBody(r.Context(), w, map[string]*domain.User{
+		"user": authpb.ToUser(res.User),
+	}, http.StatusCreated)
 }
 
 // HandleLogin godoc
@@ -90,7 +135,7 @@ func (api *AuthHandler) HandleRegistration(w http.ResponseWriter, r *http.Reques
 //	@Param			email		body	string	true	"Email of the user"
 //	@Param			password	body	string	true	"Password of the user"
 //	@Produce		json
-//	@Success		200	{object}	json.JSONResponse{body=auth.LoginResponse}
+//	@Success		200	{object}	json.JSONResponse{body=domain.User}
 //	@Failure		400	{object}	errors.HTTPError
 //	@Failure		401	{object}	errors.HTTPError
 //	@Failure		500	{object}	errors.HTTPError
@@ -115,14 +160,19 @@ func (api *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, session, err := api.Service.Login(r.Context(), *loginInput)
+	res, err := api.AuthClient.Login(r.Context(), &authpb.LoginRequest{
+		Email:    loginInput.Email,
+		Password: loginInput.Password,
+	})
 	if err != nil {
-		json.ServeJSONError(r.Context(), w, err)
+		json.ServeGRPCStatus(r.Context(), w, err)
 		return
 	}
 
-	http.SetCookie(w, session)
-	json.ServeJSONBody(r.Context(), w, map[string]any{"user": user})
+	sessionCookie := newSessionCookie(res.SessionId)
+
+	http.SetCookie(w, sessionCookie)
+	json.ServeJSONBody(r.Context(), w, map[string]any{"user": authpb.ToUser(res.User)}, http.StatusOK)
 }
 
 // HandleLogout godoc
@@ -147,15 +197,20 @@ func (api *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 //	@Router			/auth/logout/ [delete]
 func (api *AuthHandler) HandleLogout(w http.ResponseWriter, r *http.Request) {
 	session, err := r.Cookie("session_id")
-	if err == http.ErrNoCookie {
-		json.ServeJSONError(r.Context(), w, err)
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, errors.ErrUnauthorized)
 		return
 	}
 
-	if err = api.Service.Logout(r.Context(), session); err != nil {
-		json.ServeJSONError(r.Context(), w, err)
+	_, err = api.AuthClient.Logout(r.Context(), &authpb.LogoutRequest{
+		SessionId: session.Value,
+	})
+	if err != nil {
+		json.ServeGRPCStatus(r.Context(), w, err)
 		return
 	}
+
+	clearSessionCookie(session)
 
 	http.SetCookie(w, session)
 }

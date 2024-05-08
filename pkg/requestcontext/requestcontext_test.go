@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -97,15 +98,15 @@ func TestGetLogger(t *testing.T) {
 	tests := []struct {
 		name       string
 		args       args
-		wantLogger *zap.SugaredLogger
+		wantLogger *zap.Logger
 		wantErr    bool
 	}{
 		{
 			name: "Valid logger",
 			args: args{
-				ctx: context.WithValue(context.Background(), LoggerKey, zap.NewNop().Sugar()),
+				ctx: context.WithValue(context.Background(), LoggerKey, zap.NewNop()),
 			},
-			wantLogger: zap.NewNop().Sugar(),
+			wantLogger: zap.NewNop(),
 			wantErr:    false,
 		},
 		{
@@ -126,6 +127,43 @@ func TestGetLogger(t *testing.T) {
 			}
 			if !reflect.DeepEqual(gotLogger, tt.wantLogger) {
 				t.Errorf("GetLogger() = %v, want %v", gotLogger, tt.wantLogger)
+			}
+		})
+	}
+}
+
+func TestGetRequestID(t *testing.T) {
+	tests := []struct {
+		name     string
+		ctx      context.Context
+		expected string
+	}{
+		{
+			name:     "Context with RequestID",
+			ctx:      context.WithValue(context.Background(), RequestIDKey, "test-id"),
+			expected: "test-id",
+		},
+		{
+			name:     "Context without RequestID",
+			ctx:      context.Background(),
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GetRequestID(tt.ctx)
+			if err != nil {
+				t.Errorf("GetRequestID() error = %v", err)
+				return
+			}
+			if tt.name == "Context without RequestID" {
+				_, err := uuid.Parse(got)
+				if err != nil {
+					t.Errorf("GetRequestID() = %v, want a valid UUID", got)
+				}
+			} else if got != tt.expected {
+				t.Errorf("GetRequestID() = %v, want %v", got, tt.expected)
 			}
 		})
 	}

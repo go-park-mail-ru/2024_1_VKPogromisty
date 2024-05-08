@@ -4,6 +4,7 @@ import (
 	"context"
 	"socio/errors"
 
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -36,10 +37,20 @@ func GetSessionID(ctx context.Context) (sessionID string, err error) {
 	return
 }
 
-func GetLogger(ctx context.Context) (logger *zap.SugaredLogger, err error) {
-	logger, ok := ctx.Value(LoggerKey).(*zap.SugaredLogger)
+func GetLogger(ctx context.Context) (logger *zap.Logger, err error) {
+	logger, ok := ctx.Value(LoggerKey).(*zap.Logger)
 	if !ok {
 		err = errors.ErrInvalidData
+		return
+	}
+
+	return
+}
+
+func GetRequestID(ctx context.Context) (requestID string, err error) {
+	requestID, ok := ctx.Value(RequestIDKey).(string)
+	if !ok {
+		requestID = uuid.NewString()
 		return
 	}
 

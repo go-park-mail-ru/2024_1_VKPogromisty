@@ -79,13 +79,14 @@ const (
 	INSERT INTO public.user (
 			first_name,
 			last_name,
+			full_name,
 			email,
 			hashed_password,
 			salt,
 			avatar,
 			date_of_birth
 		)
-	VALUES ($1, $2, $3, $4, $5, $6, $7)
+	VALUES ($1, $2, $1 || ' ' || $2, $3, $4, $5, $6, $7)
 	RETURNING id,
 		first_name,
 		last_name,
@@ -115,15 +116,37 @@ const (
 		created_at,
 		updated_at;
 	`
-	refreshSaltAndRehashPasswordQuery = `
-	UPDATE public.user
-	SET hashed_password = $1,
-		salt = $2
-	WHERE id = $3;
+	deleteUserPostsQuery = `
+	DELETE FROM public.post
+	WHERE author_id=$1;
+	`
+	deleteUserMessagesQuery = `
+	DELETE FROM public.personal_message
+	WHERE sender_id = $1
+		OR receiver_id = $1;
 	`
 	deleteUserQuery = `
 	DELETE FROM public.user
 	WHERE id = $1;
+	`
+	getUsersByNameQuery = `
+	SELECT id,
+		first_name,
+		last_name,
+		email,
+		hashed_password,
+		salt,
+		avatar,
+		date_of_birth,
+		created_at,
+		updated_at
+	FROM public.user
+	WHERE full_name ILIKE '%' || $1 || '%';
+	`
+	getSubscriptionIDsQuery = `
+	SELECT subscribed_to_id
+	FROM subscription
+	WHERE subscriber_id = $1;
 	`
 )
 
@@ -310,20 +333,40 @@ func (s *Users) UpdateUser(ctx context.Context, user *domain.User, prevPassword 
 	return
 }
 
-func (s *Users) RefreshSaltAndRehashPassword(ctx context.Context, user *domain.User, password string) (err error) {
-	salt := uuid.NewString()
-	user.Password = hash.HashPassword(password, []byte(salt))
-	user.Salt = salt
+func (s *Users) DeleteUser(ctx context.Context, userID uint) (err error) {
+	tx, err := s.db.BeginTx(context.Background(), pgx.TxOptions{})
+	if err != nil {
+		return
+	}
 
-	contextlogger.LogSQL(ctx, refreshSaltAndRehashPasswordQuery,
-		user.ID,
-	)
+	defer func() {
+		if err != nil {
+			return
+		}
+		if err = tx.Rollback(context.Background()); err != nil && err != pgx.ErrTxClosed {
+			return
+		}
 
-	result, err := s.db.Exec(context.Background(), refreshSaltAndRehashPasswordQuery,
-		user.Password,
-		user.Salt,
-		user.ID,
-	)
+		err = nil
+	}()
+
+	contextlogger.LogSQL(ctx, deleteUserMessagesQuery, userID)
+
+	_, err = tx.Exec(context.Background(), deleteUserMessagesQuery, userID)
+	if err != nil {
+		return
+	}
+
+	contextlogger.LogSQL(ctx, deleteUserPostsQuery, userID)
+
+	_, err = tx.Exec(context.Background(), deleteUserPostsQuery, userID)
+	if err != nil {
+		return
+	}
+
+	contextlogger.LogSQL(ctx, deleteUserQuery, userID)
+
+	result, err := tx.Exec(context.Background(), deleteUserQuery, userID)
 	if err != nil {
 		return
 	}
@@ -332,24 +375,68 @@ func (s *Users) RefreshSaltAndRehashPassword(ctx context.Context, user *domain.U
 		return errors.ErrRowsAffected
 	}
 
-	return
-}
-
-func (s *Users) DeleteUser(ctx context.Context, userID uint) (err error) {
-	contextlogger.LogSQL(ctx, deleteUserQuery, userID)
-
-	result, err := s.db.Exec(context.Background(), deleteUserQuery, userID)
+	err = tx.Commit(context.Background())
 	if err != nil {
 		return
 	}
 
-	rowsAffected := result.RowsAffected()
+	return
+}
 
-	if rowsAffected == 0 {
-		err = errors.ErrNotFound
+func (s *Users) SearchByName(ctx context.Context, query string) (users []*domain.User, err error) {
+	contextlogger.LogSQL(ctx, getUsersByNameQuery, query)
+
+	rows, err := s.db.Query(context.Background(), getUsersByNameQuery, query)
+	if err != nil {
 		return
-	} else if rowsAffected != 1 {
-		return errors.ErrRowsAffected
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		user := new(domain.User)
+
+		err = rows.Scan(
+			&user.ID,
+			&user.FirstName,
+			&user.LastName,
+			&user.Email,
+			&user.Password,
+			&user.Salt,
+			&user.Avatar,
+			&user.DateOfBirth.Time,
+			&user.CreatedAt.Time,
+			&user.UpdatedAt.Time,
+		)
+		if err != nil {
+			return
+		}
+
+		users = append(users, user)
+	}
+
+	return
+}
+
+func (s *Users) GetSubscriptionIDs(ctx context.Context, userID uint) (subscribedToIDs []uint, err error) {
+	contextlogger.LogSQL(ctx, getSubscriptionIDsQuery, userID)
+
+	rows, err := s.db.Query(context.Background(), getSubscriptionIDsQuery, userID)
+	if err != nil {
+		return
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var subscribedToID uint
+
+		err = rows.Scan(&subscribedToID)
+		if err != nil {
+			return
+		}
+
+		subscribedToIDs = append(subscribedToIDs, subscribedToID)
 	}
 
 	return

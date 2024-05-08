@@ -20,13 +20,16 @@ import (
 )
 
 const (
-	pongWait        = 60 * time.Second
-	writeWait       = 10 * time.Second
-	pingPeriod      = 1 * time.Second
-	maxMessageSize  = 10000
-	readBufferSize  = 4096
-	writeBufferSize = 4096
-	newline         = '\n'
+	pongWait                 = 60 * time.Second
+	writeWait                = 10 * time.Second
+	pingPeriod               = 1 * time.Second
+	maxMessageSize           = 10000
+	readBufferSize           = 4096
+	writeBufferSize          = 4096
+	newline                  = '\n'
+	PeerIDQueryParam         = "peerId"
+	LastMessageIDQueryParam  = "lastMessageId"
+	MessagesAmountQueryParam = "messagesAmount"
 )
 
 type ChatServer struct {
@@ -77,7 +80,7 @@ func (c *ChatServer) HandleGetDialogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.ServeJSONBody(r.Context(), w, dialogs)
+	json.ServeJSONBody(r.Context(), w, dialogs, http.StatusOK)
 }
 
 // HandleGetMessagesByDialog godoc
@@ -108,7 +111,7 @@ func (c *ChatServer) HandleGetMessagesByDialog(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	peerIDData := r.URL.Query().Get("peerId")
+	peerIDData := r.URL.Query().Get(PeerIDQueryParam)
 	if peerIDData == "" {
 		json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
 		return
@@ -120,7 +123,7 @@ func (c *ChatServer) HandleGetMessagesByDialog(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	lastMessageIDData := r.URL.Query().Get("lastMessageId")
+	lastMessageIDData := r.URL.Query().Get(LastMessageIDQueryParam)
 	var lastMessageID uint64
 	if lastMessageIDData == "" {
 		lastMessageID = 0
@@ -132,7 +135,20 @@ func (c *ChatServer) HandleGetMessagesByDialog(w http.ResponseWriter, r *http.Re
 		}
 	}
 
-	messages, err := c.Service.GetMessagesByDialog(r.Context(), userID, uint(peerID), uint(lastMessageID))
+	messagesAmountData := r.URL.Query().Get(MessagesAmountQueryParam)
+	var messagesAmount uint64
+
+	if messagesAmountData == "" {
+		messagesAmount = 0
+	} else {
+		messagesAmount, err = strconv.ParseUint(messagesAmountData, 0, 0)
+		if err != nil {
+			json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
+			return
+		}
+	}
+
+	messages, err := c.Service.GetMessagesByDialog(r.Context(), userID, uint(peerID), uint(lastMessageID), uint(messagesAmount))
 	if err != nil {
 		json.ServeJSONError(r.Context(), w, err)
 		return
@@ -142,8 +158,7 @@ func (c *ChatServer) HandleGetMessagesByDialog(w http.ResponseWriter, r *http.Re
 		messages = make([]*domain.PersonalMessage, 0)
 	}
 
-	json.ServeJSONBody(r.Context(), w, messages)
-
+	json.ServeJSONBody(r.Context(), w, messages, http.StatusOK)
 }
 
 // ServeWS godoc

@@ -81,11 +81,13 @@ func (c *ChatPubSub) WriteAction(ctx context.Context, action *chat.Action) (err 
 		return
 	}
 
-	contextlogger.LogRedisAction(ctx, "PUBLISH", senderID, action)
+	if senderID != action.Receiver {
+		contextlogger.LogRedisAction(ctx, "PUBLISH", senderID, action)
 
-	_, err = conn.Do("PUBLISH", senderID, data)
-	if err != nil {
-		return
+		_, err = conn.Do("PUBLISH", senderID, data)
+		if err != nil {
+			return
+		}
 	}
 
 	return

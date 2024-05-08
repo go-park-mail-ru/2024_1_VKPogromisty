@@ -37,6 +37,10 @@ func (s *Sanitizer) SanitizePost(post *domain.Post) {
 	}
 
 	post.Content = s.Sanitize(post.Content)
+
+	for i := range post.Attachments {
+		post.Attachments[i] = s.Sanitize(post.Attachments[i])
+	}
 }
 
 func (s *Sanitizer) SanitizePostWithAuthor(post *domain.PostWithAuthor) {
@@ -64,4 +68,14 @@ func (s *Sanitizer) SanitizeDialog(dialog *domain.Dialog) {
 	s.SanitizeUser(dialog.User1)
 	s.SanitizeUser(dialog.User2)
 	s.SanitizePersonalMessage(dialog.LastMessage)
+}
+
+func (s *Sanitizer) SanitizePublicGroup(publicGroup *domain.PublicGroup) {
+	if publicGroup == nil {
+		return
+	}
+
+	publicGroup.Name = s.Sanitize(publicGroup.Name)
+	publicGroup.Description = s.Sanitize(publicGroup.Description)
+	publicGroup.Avatar = s.Sanitize(publicGroup.Avatar)
 }
