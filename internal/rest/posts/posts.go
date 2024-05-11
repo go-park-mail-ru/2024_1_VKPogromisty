@@ -97,7 +97,9 @@ func (h *PostsHandler) HandleGetPostByID(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	json.ServeJSONBody(r.Context(), w, postspb.ToPost(post.Post), http.StatusOK)
+	json.ServeJSONBody(r.Context(), w, map[string]*domain.Post{
+		"post": postspb.ToPost(post.Post),
+	}, http.StatusOK)
 }
 
 // HandleGetUserPosts godoc
@@ -407,7 +409,9 @@ func (h *PostsHandler) HandleUpdatePost(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	json.ServeJSONBody(r.Context(), w, postspb.ToPost(updatedPost.Post), http.StatusOK)
+	json.ServeJSONBody(r.Context(), w, map[string]*domain.Post{
+		"post": postspb.ToPost(updatedPost.Post),
+	}, http.StatusOK)
 }
 
 // HandleDeletePost godoc
