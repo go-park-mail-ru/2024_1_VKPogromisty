@@ -4,11 +4,22 @@ import (
 	"context"
 	"socio/domain"
 	"socio/errors"
+	"socio/pkg/contextlogger"
 
 	"github.com/jackc/pgx/v4"
 )
 
 const (
+	getCommentsByPostIDQuery = `
+	SELECT id,
+		post_id,
+		author_id,
+		content,
+		created_at,
+		updated_at
+	FROM public.comment
+	WHERE post_id = $1;
+	`
 	getCommentByIDQuery = `
 	SELECT id,
 		post_id,
@@ -67,6 +78,35 @@ const (
 	AND user_id = $2;
 	`
 )
+
+func (p *Posts) GetCommentsByPostID(ctx context.Context, postID uint) (comments []*domain.Comment, err error) {
+	contextlogger.LogSQL(ctx, getCommentsByPostIDQuery, postID)
+
+	rows, err := p.db.Query(context.Background(), getCommentsByPostIDQuery, postID)
+	if err != nil {
+		return
+	}
+
+	for rows.Next() {
+		comment := new(domain.Comment)
+
+		err = rows.Scan(
+			comment.ID,
+			comment.PostID,
+			comment.AuthorID,
+			comment.Content,
+			comment.CreatedAt.Time,
+			comment.UpdatedAt.Time,
+		)
+		if err != nil {
+			return
+		}
+
+		comments = append(comments, comment)
+	}
+
+	return
+}
 
 func (p *Posts) GetCommentByID(ctx context.Context, id uint) (comment *domain.Comment, err error) {
 	comment = new(domain.Comment)
