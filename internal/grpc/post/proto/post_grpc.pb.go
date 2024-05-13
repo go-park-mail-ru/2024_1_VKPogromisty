@@ -33,6 +33,12 @@ type PostClient interface {
 	GetGroupPostsBySubscriptionIDs(ctx context.Context, in *GetGroupPostsBySubscriptionIDsRequest, opts ...grpc.CallOption) (*GetGroupPostsBySubscriptionIDsResponse, error)
 	GetPostsByGroupSubIDsAndUserSubIDs(ctx context.Context, in *GetPostsByGroupSubIDsAndUserSubIDsRequest, opts ...grpc.CallOption) (*GetPostsByGroupSubIDsAndUserSubIDsResponse, error)
 	GetNewPosts(ctx context.Context, in *GetNewPostsRequest, opts ...grpc.CallOption) (*GetNewPostsResponse, error)
+	GetCommentsByPostID(ctx context.Context, in *GetCommentsByPostIDRequest, opts ...grpc.CallOption) (*GetCommentsByPostIDResponse, error)
+	CreateComment(ctx context.Context, in *CreateCommentRequest, opts ...grpc.CallOption) (*CreateCommentResponse, error)
+	UpdateComment(ctx context.Context, in *UpdateCommentRequest, opts ...grpc.CallOption) (*UpdateCommentResponse, error)
+	DeleteComment(ctx context.Context, in *DeleteCommentRequest, opts ...grpc.CallOption) (*DeleteCommentResponse, error)
+	LikeComment(ctx context.Context, in *LikeCommentRequest, opts ...grpc.CallOption) (*LikeCommentResponse, error)
+	UnlikeComment(ctx context.Context, in *UnlikeCommentRequest, opts ...grpc.CallOption) (*UnlikeCommentResponse, error)
 }
 
 type postClient struct {
@@ -203,6 +209,60 @@ func (c *postClient) GetNewPosts(ctx context.Context, in *GetNewPostsRequest, op
 	return out, nil
 }
 
+func (c *postClient) GetCommentsByPostID(ctx context.Context, in *GetCommentsByPostIDRequest, opts ...grpc.CallOption) (*GetCommentsByPostIDResponse, error) {
+	out := new(GetCommentsByPostIDResponse)
+	err := c.cc.Invoke(ctx, "/post.Post/GetCommentsByPostID", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *postClient) CreateComment(ctx context.Context, in *CreateCommentRequest, opts ...grpc.CallOption) (*CreateCommentResponse, error) {
+	out := new(CreateCommentResponse)
+	err := c.cc.Invoke(ctx, "/post.Post/CreateComment", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *postClient) UpdateComment(ctx context.Context, in *UpdateCommentRequest, opts ...grpc.CallOption) (*UpdateCommentResponse, error) {
+	out := new(UpdateCommentResponse)
+	err := c.cc.Invoke(ctx, "/post.Post/UpdateComment", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *postClient) DeleteComment(ctx context.Context, in *DeleteCommentRequest, opts ...grpc.CallOption) (*DeleteCommentResponse, error) {
+	out := new(DeleteCommentResponse)
+	err := c.cc.Invoke(ctx, "/post.Post/DeleteComment", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *postClient) LikeComment(ctx context.Context, in *LikeCommentRequest, opts ...grpc.CallOption) (*LikeCommentResponse, error) {
+	out := new(LikeCommentResponse)
+	err := c.cc.Invoke(ctx, "/post.Post/LikeComment", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *postClient) UnlikeComment(ctx context.Context, in *UnlikeCommentRequest, opts ...grpc.CallOption) (*UnlikeCommentResponse, error) {
+	out := new(UnlikeCommentResponse)
+	err := c.cc.Invoke(ctx, "/post.Post/UnlikeComment", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // PostServer is the server API for Post service.
 // All implementations must embed UnimplementedPostServer
 // for forward compatibility
@@ -222,6 +282,12 @@ type PostServer interface {
 	GetGroupPostsBySubscriptionIDs(context.Context, *GetGroupPostsBySubscriptionIDsRequest) (*GetGroupPostsBySubscriptionIDsResponse, error)
 	GetPostsByGroupSubIDsAndUserSubIDs(context.Context, *GetPostsByGroupSubIDsAndUserSubIDsRequest) (*GetPostsByGroupSubIDsAndUserSubIDsResponse, error)
 	GetNewPosts(context.Context, *GetNewPostsRequest) (*GetNewPostsResponse, error)
+	GetCommentsByPostID(context.Context, *GetCommentsByPostIDRequest) (*GetCommentsByPostIDResponse, error)
+	CreateComment(context.Context, *CreateCommentRequest) (*CreateCommentResponse, error)
+	UpdateComment(context.Context, *UpdateCommentRequest) (*UpdateCommentResponse, error)
+	DeleteComment(context.Context, *DeleteCommentRequest) (*DeleteCommentResponse, error)
+	LikeComment(context.Context, *LikeCommentRequest) (*LikeCommentResponse, error)
+	UnlikeComment(context.Context, *UnlikeCommentRequest) (*UnlikeCommentResponse, error)
 	mustEmbedUnimplementedPostServer()
 }
 
@@ -273,6 +339,24 @@ func (UnimplementedPostServer) GetPostsByGroupSubIDsAndUserSubIDs(context.Contex
 }
 func (UnimplementedPostServer) GetNewPosts(context.Context, *GetNewPostsRequest) (*GetNewPostsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetNewPosts not implemented")
+}
+func (UnimplementedPostServer) GetCommentsByPostID(context.Context, *GetCommentsByPostIDRequest) (*GetCommentsByPostIDResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCommentsByPostID not implemented")
+}
+func (UnimplementedPostServer) CreateComment(context.Context, *CreateCommentRequest) (*CreateCommentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateComment not implemented")
+}
+func (UnimplementedPostServer) UpdateComment(context.Context, *UpdateCommentRequest) (*UpdateCommentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateComment not implemented")
+}
+func (UnimplementedPostServer) DeleteComment(context.Context, *DeleteCommentRequest) (*DeleteCommentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteComment not implemented")
+}
+func (UnimplementedPostServer) LikeComment(context.Context, *LikeCommentRequest) (*LikeCommentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method LikeComment not implemented")
+}
+func (UnimplementedPostServer) UnlikeComment(context.Context, *UnlikeCommentRequest) (*UnlikeCommentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UnlikeComment not implemented")
 }
 func (UnimplementedPostServer) mustEmbedUnimplementedPostServer() {}
 
@@ -565,6 +649,114 @@ func _Post_GetNewPosts_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Post_GetCommentsByPostID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCommentsByPostIDRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PostServer).GetCommentsByPostID(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/post.Post/GetCommentsByPostID",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PostServer).GetCommentsByPostID(ctx, req.(*GetCommentsByPostIDRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Post_CreateComment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateCommentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PostServer).CreateComment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/post.Post/CreateComment",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PostServer).CreateComment(ctx, req.(*CreateCommentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Post_UpdateComment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateCommentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PostServer).UpdateComment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/post.Post/UpdateComment",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PostServer).UpdateComment(ctx, req.(*UpdateCommentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Post_DeleteComment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteCommentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PostServer).DeleteComment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/post.Post/DeleteComment",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PostServer).DeleteComment(ctx, req.(*DeleteCommentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Post_LikeComment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LikeCommentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PostServer).LikeComment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/post.Post/LikeComment",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PostServer).LikeComment(ctx, req.(*LikeCommentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Post_UnlikeComment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UnlikeCommentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PostServer).UnlikeComment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/post.Post/UnlikeComment",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PostServer).UnlikeComment(ctx, req.(*UnlikeCommentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Post_ServiceDesc is the grpc.ServiceDesc for Post service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -627,6 +819,30 @@ var Post_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetNewPosts",
 			Handler:    _Post_GetNewPosts_Handler,
+		},
+		{
+			MethodName: "GetCommentsByPostID",
+			Handler:    _Post_GetCommentsByPostID_Handler,
+		},
+		{
+			MethodName: "CreateComment",
+			Handler:    _Post_CreateComment_Handler,
+		},
+		{
+			MethodName: "UpdateComment",
+			Handler:    _Post_UpdateComment_Handler,
+		},
+		{
+			MethodName: "DeleteComment",
+			Handler:    _Post_DeleteComment_Handler,
+		},
+		{
+			MethodName: "LikeComment",
+			Handler:    _Post_LikeComment_Handler,
+		},
+		{
+			MethodName: "UnlikeComment",
+			Handler:    _Post_UnlikeComment_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

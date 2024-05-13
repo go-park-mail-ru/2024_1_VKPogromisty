@@ -79,3 +79,17 @@ func (s *Sanitizer) SanitizePublicGroup(publicGroup *domain.PublicGroup) {
 	publicGroup.Description = s.Sanitize(publicGroup.Description)
 	publicGroup.Avatar = s.Sanitize(publicGroup.Avatar)
 }
+
+func (s *Sanitizer) SanitizeComment(comment *domain.Comment) {
+	if comment == nil {
+		return
+	}
+
+	comment.Content = s.Sanitize(comment.Content)
+}
+
+func (s *Sanitizer) SanitizeComments(comments []*domain.Comment) {
+	for _, comment := range comments {
+		s.SanitizeComment(comment)
+	}
+}

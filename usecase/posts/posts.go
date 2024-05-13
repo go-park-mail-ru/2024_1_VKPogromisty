@@ -66,6 +66,14 @@ type PostsStorage interface {
 	GetGroupPostsBySubscriptionIDs(ctx context.Context, subIDs []uint, lastPostID, postsAmount uint) (posts []*domain.Post, err error)
 	GetPostsByGroupSubIDsAndUserSubIDs(ctx context.Context, groupSubIDs, userSubIDs []uint, lastPostID, postsAmount uint) (posts []*domain.Post, err error)
 	GetNewPosts(ctx context.Context, lastPostID, postsAmount uint) (posts []*domain.Post, err error)
+	GetCommentsByPostID(ctx context.Context, postID uint) (comments []*domain.Comment, err error)
+	GetCommentByID(ctx context.Context, id uint) (comment *domain.Comment, err error)
+	StoreComment(ctx context.Context, comment *domain.Comment) (newComment *domain.Comment, err error)
+	UpdateComment(ctx context.Context, comment *domain.Comment) (updatedComment *domain.Comment, err error)
+	DeleteComment(ctx context.Context, id uint) (err error)
+	GetCommentLikeByCommentIDAndUserID(ctx context.Context, data *domain.CommentLike) (commentLike *domain.CommentLike, err error)
+	StoreCommentLike(ctx context.Context, commentLike *domain.CommentLike) (newCommentLike *domain.CommentLike, err error)
+	DeleteCommentLike(ctx context.Context, commentLike *domain.CommentLike) (err error)
 }
 
 type AttachmentStorage interface {

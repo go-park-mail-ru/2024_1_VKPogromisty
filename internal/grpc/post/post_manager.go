@@ -9,6 +9,7 @@ import (
 	"socio/domain"
 	"socio/errors"
 	postspb "socio/internal/grpc/post/proto"
+	"socio/pkg/utils"
 
 	"socio/usecase/posts"
 
@@ -304,7 +305,7 @@ func (p *PostManager) GetGroupPostsBySubscriptionIDs(ctx context.Context, in *po
 	lastPostID := in.GetLastPostId()
 	postsAmount := in.GetPostsAmount()
 
-	subIDsUint := postspb.Uint64ToUintSlice(subIDs)
+	subIDsUint := utils.Uint64ToUintSlice(subIDs)
 
 	posts, err := p.PostsService.GetGroupPostsBySubscriptionIDs(ctx, subIDsUint, uint(lastPostID), uint(postsAmount))
 	if err != nil {
@@ -326,8 +327,8 @@ func (p *PostManager) GetPostsByGroupSubIDsAndUserSubIDs(ctx context.Context, in
 	lastPostID := in.GetLastPostId()
 	postsAmount := in.GetPostsAmount()
 
-	groupSubIDsUint := postspb.Uint64ToUintSlice(groupSubIDs)
-	userSubIDsUint := postspb.Uint64ToUintSlice(userSubIDs)
+	groupSubIDsUint := utils.Uint64ToUintSlice(groupSubIDs)
+	userSubIDsUint := utils.Uint64ToUintSlice(userSubIDs)
 
 	posts, err := p.PostsService.GetPostsByGroupSubIDsAndUserSubIDs(ctx, groupSubIDsUint, userSubIDsUint, uint(lastPostID), uint(postsAmount))
 	if err != nil {
@@ -357,6 +358,128 @@ func (p *PostManager) GetNewPosts(ctx context.Context, in *postspb.GetNewPostsRe
 	res = &postspb.GetNewPostsResponse{
 		Posts: postspb.ToPostsResponse(posts),
 	}
+
+	return
+}
+
+func (p *PostManager) GetCommentsByPostID(ctx context.Context, in *postspb.GetCommentsByPostIDRequest) (res *postspb.GetCommentsByPostIDResponse, err error) {
+	postID := in.GetPostId()
+
+	comments, err := p.PostsService.GetCommentsByPostID(ctx, uint(postID))
+	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
+		return
+	}
+
+	res = &postspb.GetCommentsByPostIDResponse{
+		Comments: postspb.ToCommentsResponse(comments),
+	}
+
+	return
+}
+
+func (p *PostManager) CreateComment(ctx context.Context, in *postspb.CreateCommentRequest) (res *postspb.CreateCommentResponse, err error) {
+	postID := in.GetPostId()
+	authorID := in.GetAuthorId()
+	content := in.GetContent()
+
+	comment, err := p.PostsService.CreateComment(ctx, &domain.Comment{
+		PostID:   uint(postID),
+		AuthorID: uint(authorID),
+		Content:  content,
+	})
+	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
+		return
+	}
+
+	res = &postspb.CreateCommentResponse{
+		Comment: postspb.ToCommentResponse(comment),
+	}
+
+	return
+}
+
+func (p *PostManager) UpdateComment(ctx context.Context, in *postspb.UpdateCommentRequest) (res *postspb.UpdateCommentResponse, err error) {
+	commentID := in.GetCommentId()
+	content := in.GetContent()
+	userID := in.GetUserId()
+
+	comment, err := p.PostsService.UpdateComment(ctx, &domain.Comment{
+		ID:       uint(commentID),
+		AuthorID: uint(userID),
+		Content:  content,
+	})
+	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
+		return
+	}
+
+	res = &postspb.UpdateCommentResponse{
+		Comment: postspb.ToCommentResponse(comment),
+	}
+
+	return
+}
+
+func (p *PostManager) DeleteComment(ctx context.Context, in *postspb.DeleteCommentRequest) (res *postspb.DeleteCommentResponse, err error) {
+	commentID := in.GetCommentId()
+	userID := in.GetUserId()
+
+	err = p.PostsService.DeleteComment(ctx, &domain.Comment{
+		ID:       uint(commentID),
+		AuthorID: uint(userID),
+	})
+	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
+		return
+	}
+
+	res = &postspb.DeleteCommentResponse{}
+
+	return
+}
+
+func (p *PostManager) LikeComment(ctx context.Context, in *postspb.LikeCommentRequest) (res *postspb.LikeCommentResponse, err error) {
+	commentID := in.GetCommentId()
+	userID := in.GetUserId()
+
+	like, err := p.PostsService.LikeComment(ctx, &domain.CommentLike{
+		CommentID: uint(commentID),
+		UserID:    uint(userID),
+	})
+	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
+		return
+	}
+
+	res = &postspb.LikeCommentResponse{
+		Like: postspb.ToCommentLikeResponse(like),
+	}
+
+	return
+}
+
+func (p *PostManager) UnlikeComment(ctx context.Context, in *postspb.UnlikeCommentRequest) (res *postspb.UnlikeCommentResponse, err error) {
+	commentID := in.GetCommentId()
+	userID := in.GetUserId()
+
+	err = p.PostsService.UnlikeComment(ctx, &domain.CommentLike{
+		CommentID: uint(commentID),
+		UserID:    uint(userID),
+	})
+	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
+		return
+	}
+
+	res = &postspb.UnlikeCommentResponse{}
 
 	return
 }

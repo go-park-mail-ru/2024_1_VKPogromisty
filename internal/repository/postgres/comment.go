@@ -5,20 +5,30 @@ import (
 	"socio/domain"
 	"socio/errors"
 	"socio/pkg/contextlogger"
+	"socio/pkg/utils"
 
+	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 )
 
 const (
 	getCommentsByPostIDQuery = `
-	SELECT id,
-		post_id,
-		author_id,
-		content,
-		created_at,
-		updated_at
-	FROM public.comment
-	WHERE post_id = $1;
+	SELECT c.id,
+		c.post_id,
+		c.author_id,
+		c.content,
+		c.created_at,
+		c.updated_at,
+		array_agg(cl.user_id) AS liked_by
+	FROM public.comment AS c
+	LEFT JOIN public.comment_like cl ON cl.comment_id = c.id
+	WHERE post_id = $1
+    GROUP BY c.id, 
+        c.post_id, 
+        c.author_id, 
+        c.content, 
+        c.created_at, 
+        c.updated_at;
 	`
 	getCommentByIDQuery = `
 	SELECT id,
@@ -86,21 +96,27 @@ func (p *Posts) GetCommentsByPostID(ctx context.Context, postID uint) (comments 
 	if err != nil {
 		return
 	}
+	defer rows.Close()
+
+	var likedByIDS pgtype.Int8Array
 
 	for rows.Next() {
 		comment := new(domain.Comment)
 
 		err = rows.Scan(
-			comment.ID,
-			comment.PostID,
-			comment.AuthorID,
-			comment.Content,
-			comment.CreatedAt.Time,
-			comment.UpdatedAt.Time,
+			&comment.ID,
+			&comment.PostID,
+			&comment.AuthorID,
+			&comment.Content,
+			&comment.CreatedAt.Time,
+			&comment.UpdatedAt.Time,
+			&likedByIDS,
 		)
 		if err != nil {
 			return
 		}
+
+		comment.LikedByIDs = utils.Int8ArrayIntoUintSlice(likedByIDS)
 
 		comments = append(comments, comment)
 	}

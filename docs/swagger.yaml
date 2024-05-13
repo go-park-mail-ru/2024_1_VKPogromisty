@@ -1,5 +1,48 @@
 basePath: /api/v1
 definitions:
+  domain.Comment:
+    properties:
+      authorId:
+        type: integer
+      content:
+        type: string
+      createdAt:
+        example: "2021-01-01T00:00:00Z"
+        format: date-time
+        type: string
+      id:
+        type: integer
+      likedBy:
+        items:
+          type: integer
+        type: array
+      postId:
+        type: integer
+      updatedAt:
+        example: "2021-01-01T00:00:00Z"
+        format: date-time
+        type: string
+    type: object
+  domain.CommentLike:
+    properties:
+      commentId:
+        type: integer
+      createdAt:
+        example: "2021-01-01T00:00:00Z"
+        format: date-time
+        type: string
+      id:
+        type: integer
+      userId:
+        type: integer
+    type: object
+  domain.CommentWithAuthor:
+    properties:
+      author:
+        $ref: '#/definitions/domain.User'
+      comment:
+        $ref: '#/definitions/domain.Comment'
+    type: object
   domain.Dialog:
     properties:
       lastMessage:
@@ -1669,7 +1712,9 @@ paths:
             - $ref: '#/definitions/json.JSONResponse'
             - properties:
                 body:
-                  $ref: '#/definitions/domain.Post'
+                  additionalProperties:
+                    $ref: '#/definitions/domain.Post'
+                  type: object
               type: object
         "400":
           description: Bad Request
@@ -1722,7 +1767,14 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/domain.Post'
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  additionalProperties:
+                    $ref: '#/definitions/domain.Post'
+                  type: object
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -1740,6 +1792,62 @@ paths:
           schema:
             $ref: '#/definitions/errors.HTTPError'
       summary: get post by id
+      tags:
+      - posts
+  /posts/{postID}/comments:
+    get:
+      consumes:
+      - application/json
+      description: get comments by post id
+      operationId: posts/get_comments_by_post_id
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: ID of the post
+        in: path
+        name: postID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              items:
+                $ref: '#/definitions/domain.Comment'
+              type: array
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: get comments by post id
       tags:
       - posts
   /posts/all:
@@ -1797,6 +1905,281 @@ paths:
           schema:
             $ref: '#/definitions/errors.HTTPError'
       summary: get posts by group subscriptions and user subscriptions
+      tags:
+      - posts
+  /posts/comment:
+    delete:
+      consumes:
+      - application/json
+      description: delete comment
+      operationId: posts/delete_comment
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: ID of the comment
+        in: body
+        name: commentID
+        required: true
+        schema:
+          type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            $ref: '#/definitions/json.JSONResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: delete comment
+      tags:
+      - posts
+    post:
+      consumes:
+      - application/json
+      description: create comment
+      operationId: posts/create_comment
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: Content of the comment
+        in: body
+        name: content
+        required: true
+        schema:
+          type: string
+      - description: ID of the post
+        in: body
+        name: postID
+        required: true
+        schema:
+          type: integer
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.CommentWithAuthor'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: create comment
+      tags:
+      - posts
+    put:
+      consumes:
+      - application/json
+      description: update comment
+      operationId: posts/update_comment
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: ID of the comment
+        in: body
+        name: commentID
+        required: true
+        schema:
+          type: integer
+      - description: Content of the comment
+        in: body
+        name: content
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.CommentWithAuthor'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: update comment
+      tags:
+      - posts
+  /posts/comments/like:
+    post:
+      consumes:
+      - application/json
+      description: like comment
+      operationId: posts/like_comment
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: ID of the comment
+        in: body
+        name: commentID
+        required: true
+        schema:
+          type: integer
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.CommentLike'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: like comment
+      tags:
+      - posts
+  /posts/comments/unlike:
+    delete:
+      consumes:
+      - application/json
+      description: unlike comment
+      operationId: posts/unlike_comment
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: ID of the comment
+        in: body
+        name: commentID
+        required: true
+        schema:
+          type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            $ref: '#/definitions/json.JSONResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: unlike comment
       tags:
       - posts
   /posts/friends:

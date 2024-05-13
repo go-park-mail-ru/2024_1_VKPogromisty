@@ -36,6 +36,34 @@ func (m *MockPostsStorage) EXPECT() *MockPostsStorageMockRecorder {
 	return m.recorder
 }
 
+// DeleteComment mocks base method.
+func (m *MockPostsStorage) DeleteComment(ctx context.Context, id uint) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteComment", ctx, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteComment indicates an expected call of DeleteComment.
+func (mr *MockPostsStorageMockRecorder) DeleteComment(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteComment", reflect.TypeOf((*MockPostsStorage)(nil).DeleteComment), ctx, id)
+}
+
+// DeleteCommentLike mocks base method.
+func (m *MockPostsStorage) DeleteCommentLike(ctx context.Context, commentLike *domain.CommentLike) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteCommentLike", ctx, commentLike)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteCommentLike indicates an expected call of DeleteCommentLike.
+func (mr *MockPostsStorageMockRecorder) DeleteCommentLike(ctx, commentLike interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteCommentLike", reflect.TypeOf((*MockPostsStorage)(nil).DeleteCommentLike), ctx, commentLike)
+}
+
 // DeleteGroupPost mocks base method.
 func (m *MockPostsStorage) DeleteGroupPost(ctx context.Context, postID uint) error {
 	m.ctrl.T.Helper()
@@ -76,6 +104,51 @@ func (m *MockPostsStorage) DeletePostLike(ctx context.Context, likeData *domain.
 func (mr *MockPostsStorageMockRecorder) DeletePostLike(ctx, likeData interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeletePostLike", reflect.TypeOf((*MockPostsStorage)(nil).DeletePostLike), ctx, likeData)
+}
+
+// GetCommentByID mocks base method.
+func (m *MockPostsStorage) GetCommentByID(ctx context.Context, id uint) (*domain.Comment, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCommentByID", ctx, id)
+	ret0, _ := ret[0].(*domain.Comment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCommentByID indicates an expected call of GetCommentByID.
+func (mr *MockPostsStorageMockRecorder) GetCommentByID(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCommentByID", reflect.TypeOf((*MockPostsStorage)(nil).GetCommentByID), ctx, id)
+}
+
+// GetCommentLikeByCommentIDAndUserID mocks base method.
+func (m *MockPostsStorage) GetCommentLikeByCommentIDAndUserID(ctx context.Context, data *domain.CommentLike) (*domain.CommentLike, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCommentLikeByCommentIDAndUserID", ctx, data)
+	ret0, _ := ret[0].(*domain.CommentLike)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCommentLikeByCommentIDAndUserID indicates an expected call of GetCommentLikeByCommentIDAndUserID.
+func (mr *MockPostsStorageMockRecorder) GetCommentLikeByCommentIDAndUserID(ctx, data interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCommentLikeByCommentIDAndUserID", reflect.TypeOf((*MockPostsStorage)(nil).GetCommentLikeByCommentIDAndUserID), ctx, data)
+}
+
+// GetCommentsByPostID mocks base method.
+func (m *MockPostsStorage) GetCommentsByPostID(ctx context.Context, postID uint) ([]*domain.Comment, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCommentsByPostID", ctx, postID)
+	ret0, _ := ret[0].([]*domain.Comment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCommentsByPostID indicates an expected call of GetCommentsByPostID.
+func (mr *MockPostsStorageMockRecorder) GetCommentsByPostID(ctx, postID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCommentsByPostID", reflect.TypeOf((*MockPostsStorage)(nil).GetCommentsByPostID), ctx, postID)
 }
 
 // GetGroupPostsBySubscriptionIDs mocks base method.
@@ -198,6 +271,36 @@ func (mr *MockPostsStorageMockRecorder) GetUserPosts(ctx, userID, lastPostID, po
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserPosts", reflect.TypeOf((*MockPostsStorage)(nil).GetUserPosts), ctx, userID, lastPostID, postsAmount)
 }
 
+// StoreComment mocks base method.
+func (m *MockPostsStorage) StoreComment(ctx context.Context, comment *domain.Comment) (*domain.Comment, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StoreComment", ctx, comment)
+	ret0, _ := ret[0].(*domain.Comment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// StoreComment indicates an expected call of StoreComment.
+func (mr *MockPostsStorageMockRecorder) StoreComment(ctx, comment interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreComment", reflect.TypeOf((*MockPostsStorage)(nil).StoreComment), ctx, comment)
+}
+
+// StoreCommentLike mocks base method.
+func (m *MockPostsStorage) StoreCommentLike(ctx context.Context, commentLike *domain.CommentLike) (*domain.CommentLike, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StoreCommentLike", ctx, commentLike)
+	ret0, _ := ret[0].(*domain.CommentLike)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// StoreCommentLike indicates an expected call of StoreCommentLike.
+func (mr *MockPostsStorageMockRecorder) StoreCommentLike(ctx, commentLike interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreCommentLike", reflect.TypeOf((*MockPostsStorage)(nil).StoreCommentLike), ctx, commentLike)
+}
+
 // StoreGroupPost mocks base method.
 func (m *MockPostsStorage) StoreGroupPost(ctx context.Context, groupPost *domain.GroupPost) (*domain.GroupPost, error) {
 	m.ctrl.T.Helper()
@@ -241,6 +344,21 @@ func (m *MockPostsStorage) StorePostLike(ctx context.Context, likeData *domain.P
 func (mr *MockPostsStorageMockRecorder) StorePostLike(ctx, likeData interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StorePostLike", reflect.TypeOf((*MockPostsStorage)(nil).StorePostLike), ctx, likeData)
+}
+
+// UpdateComment mocks base method.
+func (m *MockPostsStorage) UpdateComment(ctx context.Context, comment *domain.Comment) (*domain.Comment, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateComment", ctx, comment)
+	ret0, _ := ret[0].(*domain.Comment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateComment indicates an expected call of UpdateComment.
+func (mr *MockPostsStorageMockRecorder) UpdateComment(ctx, comment interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateComment", reflect.TypeOf((*MockPostsStorage)(nil).UpdateComment), ctx, comment)
 }
 
 // UpdatePost mocks base method.

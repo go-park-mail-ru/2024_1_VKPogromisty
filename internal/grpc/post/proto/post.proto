@@ -23,6 +23,13 @@ service Post {
     rpc GetGroupPostsBySubscriptionIDs(GetGroupPostsBySubscriptionIDsRequest) returns (GetGroupPostsBySubscriptionIDsResponse) {}
     rpc GetPostsByGroupSubIDsAndUserSubIDs(GetPostsByGroupSubIDsAndUserSubIDsRequest) returns (GetPostsByGroupSubIDsAndUserSubIDsResponse) {}
     rpc GetNewPosts(GetNewPostsRequest) returns (GetNewPostsResponse) {}
+    rpc GetCommentsByPostID(GetCommentsByPostIDRequest) returns (GetCommentsByPostIDResponse) {}
+    
+    rpc CreateComment(CreateCommentRequest) returns (CreateCommentResponse) {}
+    rpc UpdateComment(UpdateCommentRequest) returns (UpdateCommentResponse) {}
+    rpc DeleteComment(DeleteCommentRequest) returns (DeleteCommentResponse) {}
+    rpc LikeComment(LikeCommentRequest) returns (LikeCommentResponse) {}
+    rpc UnlikeComment(UnlikeCommentRequest) returns (UnlikeCommentResponse) {}
 }
 
 message PostResponse {
@@ -189,3 +196,71 @@ message GetNewPostsRequest {
 message GetNewPostsResponse {
     repeated PostResponse posts = 1;
 }
+
+message CommentResponse {
+    uint64 id = 1;
+    string content = 2;
+    uint64 author_id = 3;
+    uint64 post_id = 4;
+    repeated uint64 liked_by_ids = 5;
+    google.protobuf.Timestamp created_at = 6;
+    google.protobuf.Timestamp updated_at = 7;
+}
+
+message GetCommentsByPostIDRequest {
+    uint64 post_id = 1;
+}
+
+message GetCommentsByPostIDResponse {
+    repeated CommentResponse comments = 1;
+}
+
+message CreateCommentRequest {
+    string content = 1;
+    uint64 author_id = 2;
+    uint64 post_id = 3;
+}
+
+message CreateCommentResponse {
+    CommentResponse comment = 1;
+}
+
+message UpdateCommentRequest {
+    uint64 user_id = 1;
+    uint64 comment_id = 2;
+    string content = 3;
+}
+
+message UpdateCommentResponse {
+    CommentResponse comment = 1;
+}
+
+message DeleteCommentRequest {
+    uint64 comment_id = 1;
+    uint64 user_id = 2;
+}
+
+message DeleteCommentResponse {}
+
+message CommentLikeResponse {
+    uint64 id = 1;
+    uint64 comment_id = 2;
+    uint64 user_id = 3;
+    google.protobuf.Timestamp created_at = 4;
+}
+
+message LikeCommentRequest {
+    uint64 comment_id = 1;
+    uint64 user_id = 2;
+}
+
+message LikeCommentResponse {
+    CommentLikeResponse like = 1;
+}
+
+message UnlikeCommentRequest {
+    uint64 comment_id = 1;
+    uint64 user_id = 2;
+}
+
+message UnlikeCommentResponse {}
