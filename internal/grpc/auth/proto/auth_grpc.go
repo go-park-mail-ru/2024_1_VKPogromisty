@@ -28,6 +28,19 @@ func ToUser(user *UserResponse) *domain.User {
 			Time: user.DateOfBirth.AsTime(),
 		}
 	}
+
+	if user.CreatedAt != nil {
+		newUser.CreatedAt = customtime.CustomTime{
+			Time: user.CreatedAt.AsTime(),
+		}
+	}
+
+	if user.UpdatedAt != nil {
+		newUser.UpdatedAt = customtime.CustomTime{
+			Time: user.UpdatedAt.AsTime(),
+		}
+	}
+
 	return newUser
 }
 

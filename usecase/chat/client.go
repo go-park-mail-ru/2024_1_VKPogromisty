@@ -102,6 +102,24 @@ func (c *Client) handleSendMessageAction(ctx context.Context, action *Action, me
 		ReceiverID: action.Receiver,
 	}
 
+	var err error
+
+	c.Sanitizer.SanitizePersonalMessage(msg)
+
+	if len(msg.Content) == 0 {
+		action.Payload, err = errors.MarshalError(errors.ErrInvalidData)
+		if err != nil {
+			return
+		}
+
+		err = c.PubSubRepository.WriteAction(ctx, action)
+		if err != nil {
+			return
+		}
+
+		return
+	}
+
 	newMessage, err := c.PersonalMessagesRepo.StoreMessage(ctx, msg)
 	if err != nil {
 		action.Payload, err = errors.MarshalError(err)

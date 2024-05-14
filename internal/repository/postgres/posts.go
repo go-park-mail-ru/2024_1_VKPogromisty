@@ -6,6 +6,7 @@ import (
 	"socio/errors"
 	"socio/pkg/contextlogger"
 	customtime "socio/pkg/time"
+	"socio/pkg/utils"
 	"socio/usecase/posts"
 
 	"github.com/jackc/pgtype"
@@ -314,26 +315,6 @@ func NewPosts(db DBPool, tp customtime.TimeProvider) *Posts {
 	}
 }
 
-func textArrayIntoStringSlice(arr pgtype.TextArray) (res []string) {
-	for _, v := range arr.Elements {
-		if v.Status == pgtype.Present {
-			res = append(res, v.String)
-		}
-	}
-
-	return
-}
-
-func int8ArrayIntoUintSlice(arr pgtype.Int8Array) (res []uint64) {
-	for _, v := range arr.Elements {
-		if v.Status == pgtype.Present {
-			res = append(res, uint64(v.Int))
-		}
-	}
-
-	return
-}
-
 func (p *Posts) GetPostByID(ctx context.Context, postID uint) (post *domain.Post, err error) {
 	post = new(domain.Post)
 
@@ -359,8 +340,8 @@ func (p *Posts) GetPostByID(ctx context.Context, postID uint) (post *domain.Post
 		return
 	}
 
-	post.Attachments = textArrayIntoStringSlice(attachments)
-	post.LikedByIDs = int8ArrayIntoUintSlice(likedByUsers)
+	post.Attachments = utils.TextArrayIntoStringSlice(attachments)
+	post.LikedByIDs = utils.Int8ArrayIntoUintSlice(likedByUsers)
 
 	return
 }
@@ -404,8 +385,8 @@ func (p *Posts) GetUserPosts(ctx context.Context, userID uint, lastPostID uint, 
 			return
 		}
 
-		post.Attachments = textArrayIntoStringSlice(attachments)
-		post.LikedByIDs = int8ArrayIntoUintSlice(likedByUsers)
+		post.Attachments = utils.TextArrayIntoStringSlice(attachments)
+		post.LikedByIDs = utils.Int8ArrayIntoUintSlice(likedByUsers)
 
 		posts = append(posts, post)
 	}
@@ -453,8 +434,8 @@ func (p *Posts) GetUserFriendsPosts(ctx context.Context, userID uint, lastPostID
 			return
 		}
 
-		post.Attachments = textArrayIntoStringSlice(attachments)
-		post.LikedByIDs = int8ArrayIntoUintSlice(likedByUsers)
+		post.Attachments = utils.TextArrayIntoStringSlice(attachments)
+		post.LikedByIDs = utils.Int8ArrayIntoUintSlice(likedByUsers)
 
 		posts = append(posts, post)
 	}
@@ -627,8 +608,8 @@ func (p *Posts) GetLikedPosts(ctx context.Context, userID uint, lastLikeID uint,
 		}
 
 		post.ID = like.PostID
-		post.Attachments = textArrayIntoStringSlice(attachments)
-		post.LikedByIDs = int8ArrayIntoUintSlice(likedByUsers)
+		post.Attachments = utils.TextArrayIntoStringSlice(attachments)
+		post.LikedByIDs = utils.Int8ArrayIntoUintSlice(likedByUsers)
 
 		likedPosts = append(likedPosts, posts.LikeWithPost{
 			Like: like,
@@ -711,8 +692,8 @@ func (p *Posts) GetPostsOfGroup(ctx context.Context, groupID, lastPostID, postsA
 			return
 		}
 
-		post.Attachments = textArrayIntoStringSlice(attachments)
-		post.LikedByIDs = int8ArrayIntoUintSlice(likedByUsers)
+		post.Attachments = utils.TextArrayIntoStringSlice(attachments)
+		post.LikedByIDs = utils.Int8ArrayIntoUintSlice(likedByUsers)
 
 		posts = append(posts, post)
 	}
@@ -766,8 +747,8 @@ func (p *Posts) GetGroupPostsBySubscriptionIDs(ctx context.Context, subIDs []uin
 			return
 		}
 
-		post.Attachments = textArrayIntoStringSlice(attachments)
-		post.LikedByIDs = int8ArrayIntoUintSlice(likedByUsers)
+		post.Attachments = utils.TextArrayIntoStringSlice(attachments)
+		post.LikedByIDs = utils.Int8ArrayIntoUintSlice(likedByUsers)
 
 		posts = append(posts, post)
 	}
@@ -826,8 +807,8 @@ func (p *Posts) GetPostsByGroupSubIDsAndUserSubIDs(ctx context.Context, groupSub
 			return
 		}
 
-		post.Attachments = textArrayIntoStringSlice(attachments)
-		post.LikedByIDs = int8ArrayIntoUintSlice(likedByUsers)
+		post.Attachments = utils.TextArrayIntoStringSlice(attachments)
+		post.LikedByIDs = utils.Int8ArrayIntoUintSlice(likedByUsers)
 
 		posts = append(posts, post)
 	}
@@ -875,8 +856,8 @@ func (p *Posts) GetNewPosts(ctx context.Context, lastPostID, postsAmount uint) (
 			return
 		}
 
-		post.Attachments = textArrayIntoStringSlice(attachments)
-		post.LikedByIDs = int8ArrayIntoUintSlice(likedByUsers)
+		post.Attachments = utils.TextArrayIntoStringSlice(attachments)
+		post.LikedByIDs = utils.Int8ArrayIntoUintSlice(likedByUsers)
 
 		posts = append(posts, post)
 	}

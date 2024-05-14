@@ -40,6 +40,28 @@ type ListUserPostsResponse struct {
 	Author *domain.User   `json:"author"`
 }
 
+type CreateCommentInput struct {
+	PostID  uint   `json:"postId"`
+	Content string `json:"content"`
+}
+
+type UpdateCommentInput struct {
+	CommentID uint   `json:"commentId"`
+	Content   string `json:"content"`
+}
+
+type DeleteCommentInput struct {
+	CommentID uint `json:"commentId"`
+}
+
+type LikeCommentInput struct {
+	CommentID uint `json:"commentId"`
+}
+
+type UnlikeCommentInput struct {
+	CommentID uint `json:"commentId"`
+}
+
 type PostsHandler struct {
 	PostsClient       postspb.PostClient
 	UserClient        uspb.UserClient
@@ -70,7 +92,7 @@ func NewPostsHandler(postsClient postspb.PostClient, userClient uspb.UserClient,
 //	@Param			postId	query	uint	true	"ID of the post"
 //
 //	@Produce		json
-//	@Success		200	{object}	domain.Post
+//	@Success		200	{object}	json.JSONResponse{body=map[string]domain.Post}
 //	@Failure		400	{object}	errors.HTTPError
 //	@Failure		401	{object}	errors.HTTPError
 //	@Failure		403	{object}	errors.HTTPError
@@ -97,7 +119,9 @@ func (h *PostsHandler) HandleGetPostByID(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	json.ServeJSONBody(r.Context(), w, postspb.ToPost(post.Post), http.StatusOK)
+	json.ServeJSONBody(r.Context(), w, map[string]*domain.Post{
+		"post": postspb.ToPost(post.Post),
+	}, http.StatusOK)
 }
 
 // HandleGetUserPosts godoc
@@ -372,7 +396,7 @@ func (h *PostsHandler) HandleCreatePost(w http.ResponseWriter, r *http.Request) 
 //	@Param			content	body	string	true	"Content of the post"
 //
 //	@Produce		json
-//	@Success		200	{object}	json.JSONResponse{body=domain.Post}	"application/json"	"Attachments is always null!!!"
+//	@Success		200	{object}	json.JSONResponse{body=map[string]domain.Post}	"application/json"	"Attachments is always null!!!"
 //	@Failure		400	{object}	errors.HTTPError
 //	@Failure		401	{object}	errors.HTTPError
 //	@Failure		403	{object}	errors.HTTPError
@@ -407,7 +431,9 @@ func (h *PostsHandler) HandleUpdatePost(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	json.ServeJSONBody(r.Context(), w, postspb.ToPost(updatedPost.Post), http.StatusOK)
+	json.ServeJSONBody(r.Context(), w, map[string]*domain.Post{
+		"post": postspb.ToPost(updatedPost.Post),
+	}, http.StatusOK)
 }
 
 // HandleDeletePost godoc
@@ -958,4 +984,330 @@ func (h *PostsHandler) HandleGetNewPosts(w http.ResponseWriter, r *http.Request)
 	}
 
 	json.ServeJSONBody(r.Context(), w, res, http.StatusOK)
+}
+
+// HandleGetPostByID godoc
+//
+//	@Summary		get comments by post id
+//	@Description	get comments by post id
+//	@Tags			posts
+//	@license.name	Apache 2.0
+//	@ID				posts/get_comments_by_post_id
+//	@Accept			json
+//
+//	@Param			Cookie	header	string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
+//	@Param			postID	path	uint	true	"ID of the post"
+//
+//	@Produce		json
+//	@Success		200	{object}	map[string][]domain.Comment
+//	@Failure		400	{object}	errors.HTTPError
+//	@Failure		401	{object}	errors.HTTPError
+//	@Failure		403	{object}	errors.HTTPError
+//	@Failure		404	{object}	errors.HTTPError
+//	@Failure		500	{object}	errors.HTTPError
+//	@Router			/posts/{postID}/comments [get]
+func (h *PostsHandler) HandleGetCommentsByPostID(w http.ResponseWriter, r *http.Request) {
+	postID, ok := mux.Vars(r)["postID"]
+	if !ok {
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
+		return
+	}
+
+	postIDData, err := strconv.Atoi(postID)
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
+		return
+	}
+
+	comments, err := h.PostsClient.GetCommentsByPostID(r.Context(), &postspb.GetCommentsByPostIDRequest{
+		PostId: uint64(postIDData),
+	})
+	if err != nil {
+		json.ServeGRPCStatus(r.Context(), w, err)
+		return
+	}
+
+	json.ServeJSONBody(r.Context(), w, map[string][]*domain.Comment{
+		"comments": postspb.ToComments(comments.GetComments()),
+	}, http.StatusOK)
+}
+
+// HandleCreateComment godoc
+//
+//	@Summary		create comment
+//	@Description	create comment
+//	@Tags			posts
+//	@license.name	Apache 2.0
+//	@ID				posts/create_comment
+//	@Accept			json
+//
+//	@Param			Cookie	header	string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
+//	@Param			content	body	string	true	"Content of the comment"
+//	@Param			postID	body	uint	true	"ID of the post"
+//
+//	@Produce		json
+//	@Success		201	{object}	domain.CommentWithAuthor
+//	@Failure		400	{object}	errors.HTTPError
+//	@Failure		401	{object}	errors.HTTPError
+//	@Failure		403	{object}	errors.HTTPError
+//	@Failure		404	{object}	errors.HTTPError
+//	@Failure		500	{object}	errors.HTTPError
+//	@Router			/posts/comment [post]
+func (h *PostsHandler) HandleCreateComment(w http.ResponseWriter, r *http.Request) {
+	userID, err := requestcontext.GetUserID(r.Context())
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, err)
+		return
+	}
+
+	var commentInput CreateCommentInput
+
+	decoder := defJSON.NewDecoder(r.Body)
+	err = decoder.Decode(&commentInput)
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, errors.ErrJSONUnmarshalling)
+		return
+	}
+
+	commentData, err := h.PostsClient.CreateComment(r.Context(), &postspb.CreateCommentRequest{
+		AuthorId: uint64(userID),
+		Content:  commentInput.Content,
+		PostId:   uint64(commentInput.PostID),
+	})
+	if err != nil {
+		json.ServeGRPCStatus(r.Context(), w, err)
+		return
+	}
+
+	comment := postspb.ToComment(commentData.Comment)
+
+	author, err := h.UserClient.GetByID(r.Context(), &uspb.GetByIDRequest{
+		UserId: uint64(comment.AuthorID),
+	})
+	if err != nil {
+		json.ServeGRPCStatus(r.Context(), w, err)
+		return
+	}
+
+	commentWithAuthor := &domain.CommentWithAuthor{
+		Comment: comment,
+		Author:  uspb.ToUser(author.User),
+	}
+
+	json.ServeJSONBody(r.Context(), w, commentWithAuthor, http.StatusCreated)
+}
+
+// HandleUpdateComment godoc
+//
+//	@Summary		update comment
+//	@Description	update comment
+//	@Tags			posts
+//	@license.name	Apache 2.0
+//	@ID				posts/update_comment
+//	@Accept			json
+//
+//	@Param			Cookie	header	string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
+//	@Param			commentID	body	uint	true	"ID of the comment"
+//	@Param			content	body	string	true	"Content of the comment"
+//
+//	@Produce		json
+//	@Success		200	{object}	domain.CommentWithAuthor
+//	@Failure		400	{object}	errors.HTTPError
+//	@Failure		401	{object}	errors.HTTPError
+//	@Failure		403	{object}	errors.HTTPError
+//	@Failure		404	{object}	errors.HTTPError
+//	@Failure		500	{object}	errors.HTTPError
+//	@Router			/posts/comment [put]
+func (h *PostsHandler) HandleUpdateComment(w http.ResponseWriter, r *http.Request) {
+	userID, err := requestcontext.GetUserID(r.Context())
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, err)
+		return
+	}
+
+	var commentInput UpdateCommentInput
+
+	decoder := defJSON.NewDecoder(r.Body)
+	err = decoder.Decode(&commentInput)
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, errors.ErrJSONUnmarshalling)
+		return
+	}
+
+	commentData, err := h.PostsClient.UpdateComment(r.Context(), &postspb.UpdateCommentRequest{
+		CommentId: uint64(commentInput.CommentID),
+		Content:   commentInput.Content,
+		UserId:    uint64(userID),
+	})
+	if err != nil {
+		json.ServeGRPCStatus(r.Context(), w, err)
+		return
+	}
+
+	comment := postspb.ToComment(commentData.Comment)
+
+	author, err := h.UserClient.GetByID(r.Context(), &uspb.GetByIDRequest{
+		UserId: uint64(comment.AuthorID),
+	})
+	if err != nil {
+		json.ServeGRPCStatus(r.Context(), w, err)
+		return
+	}
+
+	commentWithAuthor := &domain.CommentWithAuthor{
+		Comment: comment,
+		Author:  uspb.ToUser(author.User),
+	}
+
+	json.ServeJSONBody(r.Context(), w, commentWithAuthor, http.StatusOK)
+}
+
+// HandleDeleteComment godoc
+//
+//	@Summary		delete comment
+//	@Description	delete comment
+//	@Tags			posts
+//	@license.name	Apache 2.0
+//	@ID				posts/delete_comment
+//	@Accept			json
+//
+//	@Param			Cookie	header	string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
+//	@Param			commentID	body	uint	true	"ID of the comment"
+//
+//	@Produce		json
+//	@Success		204	{object}	json.JSONResponse
+//	@Failure		400	{object}	errors.HTTPError
+//	@Failure		401	{object}	errors.HTTPError
+//	@Failure		403	{object}	errors.HTTPError
+//	@Failure		404	{object}	errors.HTTPError
+//	@Failure		500	{object}	errors.HTTPError
+//	@Router			/posts/comment [delete]
+func (h *PostsHandler) HandleDeleteComment(w http.ResponseWriter, r *http.Request) {
+	userID, err := requestcontext.GetUserID(r.Context())
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, err)
+		return
+	}
+
+	var commentInput DeleteCommentInput
+
+	decoder := defJSON.NewDecoder(r.Body)
+	err = decoder.Decode(&commentInput)
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, errors.ErrJSONUnmarshalling)
+		return
+	}
+
+	_, err = h.PostsClient.DeleteComment(r.Context(), &postspb.DeleteCommentRequest{
+		CommentId: uint64(commentInput.CommentID),
+		UserId:    uint64(userID),
+	})
+	if err != nil {
+		json.ServeGRPCStatus(r.Context(), w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// HandleLikeComment godoc
+//
+//	@Summary		like comment
+//	@Description	like comment
+//	@Tags			posts
+//	@license.name	Apache 2.0
+//	@ID				posts/like_comment
+//	@Accept			json
+//
+//	@Param			Cookie	header	string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
+//	@Param			commentID	body	uint	true	"ID of the comment"
+//
+//	@Produce		json
+//	@Success		201	{object}	domain.CommentLike
+//	@Failure		400	{object}	errors.HTTPError
+//	@Failure		401	{object}	errors.HTTPError
+//	@Failure		403	{object}	errors.HTTPError
+//	@Failure		404	{object}	errors.HTTPError
+//	@Failure		500	{object}	errors.HTTPError
+//	@Router			/posts/comments/like [post]
+func (h *PostsHandler) HandleLikeComment(w http.ResponseWriter, r *http.Request) {
+	userID, err := requestcontext.GetUserID(r.Context())
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, err)
+		return
+	}
+
+	var input LikeCommentInput
+
+	decoder := defJSON.NewDecoder(r.Body)
+	err = decoder.Decode(&input)
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, errors.ErrJSONUnmarshalling)
+		return
+	}
+
+	res, err := h.PostsClient.LikeComment(r.Context(), &postspb.LikeCommentRequest{
+		CommentId: uint64(input.CommentID),
+		UserId:    uint64(userID),
+	})
+	if err != nil {
+		json.ServeGRPCStatus(r.Context(), w, err)
+		return
+	}
+
+	json.ServeJSONBody(r.Context(), w, postspb.ToCommentLike(res.Like), http.StatusCreated)
+}
+
+// HandleUnlikeComment godoc
+//
+//	@Summary		unlike comment
+//	@Description	unlike comment
+//	@Tags			posts
+//	@license.name	Apache 2.0
+//	@ID				posts/unlike_comment
+//	@Accept			json
+//
+//	@Param			Cookie	header	string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
+//	@Param			commentID	body	uint	true	"ID of the comment"
+//
+//	@Produce		json
+//	@Success		204	{object}	json.JSONResponse
+//	@Failure		400	{object}	errors.HTTPError
+//	@Failure		401	{object}	errors.HTTPError
+//	@Failure		403	{object}	errors.HTTPError
+//	@Failure		404	{object}	errors.HTTPError
+//	@Failure		500	{object}	errors.HTTPError
+//	@Router			/posts/comments/unlike [delete]
+func (h *PostsHandler) HandleUnlikeComment(w http.ResponseWriter, r *http.Request) {
+	userID, err := requestcontext.GetUserID(r.Context())
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, err)
+		return
+	}
+
+	var input UnlikeCommentInput
+
+	decoder := defJSON.NewDecoder(r.Body)
+	err = decoder.Decode(&input)
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, errors.ErrJSONUnmarshalling)
+		return
+	}
+
+	_, err = h.PostsClient.UnlikeComment(r.Context(), &postspb.UnlikeCommentRequest{
+		CommentId: uint64(input.CommentID),
+		UserId:    uint64(userID),
+	})
+	if err != nil {
+		json.ServeGRPCStatus(r.Context(), w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
