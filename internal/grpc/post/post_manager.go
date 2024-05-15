@@ -281,6 +281,23 @@ func (p *PostManager) CreateGroupPost(ctx context.Context, in *postspb.CreateGro
 	return
 }
 
+func (p *PostManager) GetGroupPostByPostID(ctx context.Context, in *postspb.GetGroupPostByPostIDRequest) (res *postspb.GetGroupPostByPostIDResponse, err error) {
+	postID := uint(in.GetPostId())
+
+	groupPost, err := p.PostsService.GetGroupPostByPostID(ctx, postID)
+	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
+		return
+	}
+
+	res = &postspb.GetGroupPostByPostIDResponse{
+		GroupPost: postspb.ToGroupPostResponse(groupPost),
+	}
+
+	return
+}
+
 func (p *PostManager) GetPostsOfGroup(ctx context.Context, in *postspb.GetPostsOfGroupRequest) (res *postspb.GetPostsOfGroupResponse, err error) {
 	groupID := in.GetGroupId()
 	lastPostID := in.GetLastPostId()

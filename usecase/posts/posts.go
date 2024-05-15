@@ -61,6 +61,7 @@ type PostsStorage interface {
 	StorePostLike(ctx context.Context, likeData *domain.PostLike) (like *domain.PostLike, err error)
 	DeletePostLike(ctx context.Context, likeData *domain.PostLike) (err error)
 	StoreGroupPost(ctx context.Context, groupPost *domain.GroupPost) (newGroupPost *domain.GroupPost, err error)
+	GetGroupPostByPostID(ctx context.Context, postID uint) (groupPost *domain.GroupPost, err error)
 	DeleteGroupPost(ctx context.Context, postID uint) (err error)
 	GetPostsOfGroup(ctx context.Context, groupID, lastPostID, postsAmount uint) (posts []*domain.Post, err error)
 	GetGroupPostsBySubscriptionIDs(ctx context.Context, subIDs []uint, lastPostID, postsAmount uint) (posts []*domain.Post, err error)
@@ -267,6 +268,20 @@ func (s *Service) UploadAttachment(fileName string, filePath string, contentType
 
 func (s *Service) CreateGroupPost(ctx context.Context, groupPost *domain.GroupPost) (newGroupPost *domain.GroupPost, err error) {
 	newGroupPost, err = s.PostsStorage.StoreGroupPost(ctx, groupPost)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (s *Service) GetGroupPostByPostID(ctx context.Context, postID uint) (groupPost *domain.GroupPost, err error) {
+	_, err = s.PostsStorage.GetPostByID(ctx, postID)
+	if err != nil {
+		return
+	}
+
+	groupPost, err = s.PostsStorage.GetGroupPostByPostID(ctx, postID)
 	if err != nil {
 		return
 	}

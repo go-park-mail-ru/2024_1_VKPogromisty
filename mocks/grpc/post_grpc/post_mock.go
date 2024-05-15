@@ -157,6 +157,26 @@ func (mr *MockPostClientMockRecorder) GetCommentsByPostID(ctx, in interface{}, o
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCommentsByPostID", reflect.TypeOf((*MockPostClient)(nil).GetCommentsByPostID), varargs...)
 }
 
+// GetGroupPostByPostID mocks base method.
+func (m *MockPostClient) GetGroupPostByPostID(ctx context.Context, in *post.GetGroupPostByPostIDRequest, opts ...grpc.CallOption) (*post.GetGroupPostByPostIDResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetGroupPostByPostID", varargs...)
+	ret0, _ := ret[0].(*post.GetGroupPostByPostIDResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetGroupPostByPostID indicates an expected call of GetGroupPostByPostID.
+func (mr *MockPostClientMockRecorder) GetGroupPostByPostID(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGroupPostByPostID", reflect.TypeOf((*MockPostClient)(nil).GetGroupPostByPostID), varargs...)
+}
+
 // GetGroupPostsBySubscriptionIDs mocks base method.
 func (m *MockPostClient) GetGroupPostsBySubscriptionIDs(ctx context.Context, in *post.GetGroupPostsBySubscriptionIDsRequest, opts ...grpc.CallOption) (*post.GetGroupPostsBySubscriptionIDsResponse, error) {
 	m.ctrl.T.Helper()
@@ -705,6 +725,21 @@ func (m *MockPostServer) GetCommentsByPostID(arg0 context.Context, arg1 *post.Ge
 func (mr *MockPostServerMockRecorder) GetCommentsByPostID(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCommentsByPostID", reflect.TypeOf((*MockPostServer)(nil).GetCommentsByPostID), arg0, arg1)
+}
+
+// GetGroupPostByPostID mocks base method.
+func (m *MockPostServer) GetGroupPostByPostID(arg0 context.Context, arg1 *post.GetGroupPostByPostIDRequest) (*post.GetGroupPostByPostIDResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetGroupPostByPostID", arg0, arg1)
+	ret0, _ := ret[0].(*post.GetGroupPostByPostIDResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetGroupPostByPostID indicates an expected call of GetGroupPostByPostID.
+func (mr *MockPostServerMockRecorder) GetGroupPostByPostID(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGroupPostByPostID", reflect.TypeOf((*MockPostServer)(nil).GetGroupPostByPostID), arg0, arg1)
 }
 
 // GetGroupPostsBySubscriptionIDs mocks base method.

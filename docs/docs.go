@@ -3240,10 +3240,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "body": {
-                                            "type": "object",
-                                            "additionalProperties": {
-                                                "$ref": "#/definitions/domain.Post"
-                                            }
+                                            "$ref": "#/definitions/domain.PostWithAuthorAndGroup"
                                         }
                                     }
                                 }
@@ -3318,12 +3315,9 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "array",
-                                "items": {
-                                    "$ref": "#/definitions/domain.Comment"
-                                }
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/domain.CommentWithAuthor"
                             }
                         }
                     },

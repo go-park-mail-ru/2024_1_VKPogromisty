@@ -1771,9 +1771,7 @@ paths:
             - $ref: '#/definitions/json.JSONResponse'
             - properties:
                 body:
-                  additionalProperties:
-                    $ref: '#/definitions/domain.Post'
-                  type: object
+                  $ref: '#/definitions/domain.PostWithAuthorAndGroup'
               type: object
         "400":
           description: Bad Request
@@ -1822,11 +1820,9 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties:
-              items:
-                $ref: '#/definitions/domain.Comment'
-              type: array
-            type: object
+            items:
+              $ref: '#/definitions/domain.CommentWithAuthor'
+            type: array
         "400":
           description: Bad Request
           schema:

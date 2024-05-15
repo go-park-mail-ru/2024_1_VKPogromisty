@@ -1404,6 +1404,179 @@ func (*CreateGroupPostResponse) Descriptor() ([]byte, []int) {
 	return file_post_proto_rawDescGZIP(), []int{24}
 }
 
+type GroupPostResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Id        uint64               `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	PostId    uint64               `protobuf:"varint,2,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"`
+	GroupId   uint64               `protobuf:"varint,3,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	CreatedAt *timestamp.Timestamp `protobuf:"bytes,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt *timestamp.Timestamp `protobuf:"bytes,5,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+}
+
+func (x *GroupPostResponse) Reset() {
+	*x = GroupPostResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_post_proto_msgTypes[25]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *GroupPostResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GroupPostResponse) ProtoMessage() {}
+
+func (x *GroupPostResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_post_proto_msgTypes[25]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GroupPostResponse.ProtoReflect.Descriptor instead.
+func (*GroupPostResponse) Descriptor() ([]byte, []int) {
+	return file_post_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *GroupPostResponse) GetId() uint64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *GroupPostResponse) GetPostId() uint64 {
+	if x != nil {
+		return x.PostId
+	}
+	return 0
+}
+
+func (x *GroupPostResponse) GetGroupId() uint64 {
+	if x != nil {
+		return x.GroupId
+	}
+	return 0
+}
+
+func (x *GroupPostResponse) GetCreatedAt() *timestamp.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *GroupPostResponse) GetUpdatedAt() *timestamp.Timestamp {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return nil
+}
+
+type GetGroupPostByPostIDRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	PostId uint64 `protobuf:"varint,1,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"`
+}
+
+func (x *GetGroupPostByPostIDRequest) Reset() {
+	*x = GetGroupPostByPostIDRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_post_proto_msgTypes[26]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *GetGroupPostByPostIDRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetGroupPostByPostIDRequest) ProtoMessage() {}
+
+func (x *GetGroupPostByPostIDRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_post_proto_msgTypes[26]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetGroupPostByPostIDRequest.ProtoReflect.Descriptor instead.
+func (*GetGroupPostByPostIDRequest) Descriptor() ([]byte, []int) {
+	return file_post_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *GetGroupPostByPostIDRequest) GetPostId() uint64 {
+	if x != nil {
+		return x.PostId
+	}
+	return 0
+}
+
+type GetGroupPostByPostIDResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	GroupPost *GroupPostResponse `protobuf:"bytes,1,opt,name=group_post,json=groupPost,proto3" json:"group_post,omitempty"`
+}
+
+func (x *GetGroupPostByPostIDResponse) Reset() {
+	*x = GetGroupPostByPostIDResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_post_proto_msgTypes[27]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *GetGroupPostByPostIDResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetGroupPostByPostIDResponse) ProtoMessage() {}
+
+func (x *GetGroupPostByPostIDResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_post_proto_msgTypes[27]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetGroupPostByPostIDResponse.ProtoReflect.Descriptor instead.
+func (*GetGroupPostByPostIDResponse) Descriptor() ([]byte, []int) {
+	return file_post_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *GetGroupPostByPostIDResponse) GetGroupPost() *GroupPostResponse {
+	if x != nil {
+		return x.GroupPost
+	}
+	return nil
+}
+
 type GetPostsOfGroupRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -1417,7 +1590,7 @@ type GetPostsOfGroupRequest struct {
 func (x *GetPostsOfGroupRequest) Reset() {
 	*x = GetPostsOfGroupRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_post_proto_msgTypes[25]
+		mi := &file_post_proto_msgTypes[28]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1430,7 +1603,7 @@ func (x *GetPostsOfGroupRequest) String() string {
 func (*GetPostsOfGroupRequest) ProtoMessage() {}
 
 func (x *GetPostsOfGroupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_post_proto_msgTypes[25]
+	mi := &file_post_proto_msgTypes[28]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1443,7 +1616,7 @@ func (x *GetPostsOfGroupRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPostsOfGroupRequest.ProtoReflect.Descriptor instead.
 func (*GetPostsOfGroupRequest) Descriptor() ([]byte, []int) {
-	return file_post_proto_rawDescGZIP(), []int{25}
+	return file_post_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *GetPostsOfGroupRequest) GetGroupId() uint64 {
@@ -1478,7 +1651,7 @@ type GetPostsOfGroupResponse struct {
 func (x *GetPostsOfGroupResponse) Reset() {
 	*x = GetPostsOfGroupResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_post_proto_msgTypes[26]
+		mi := &file_post_proto_msgTypes[29]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1491,7 +1664,7 @@ func (x *GetPostsOfGroupResponse) String() string {
 func (*GetPostsOfGroupResponse) ProtoMessage() {}
 
 func (x *GetPostsOfGroupResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_post_proto_msgTypes[26]
+	mi := &file_post_proto_msgTypes[29]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1504,7 +1677,7 @@ func (x *GetPostsOfGroupResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPostsOfGroupResponse.ProtoReflect.Descriptor instead.
 func (*GetPostsOfGroupResponse) Descriptor() ([]byte, []int) {
-	return file_post_proto_rawDescGZIP(), []int{26}
+	return file_post_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *GetPostsOfGroupResponse) GetPosts() []*PostResponse {
@@ -1527,7 +1700,7 @@ type GetGroupPostsBySubscriptionIDsRequest struct {
 func (x *GetGroupPostsBySubscriptionIDsRequest) Reset() {
 	*x = GetGroupPostsBySubscriptionIDsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_post_proto_msgTypes[27]
+		mi := &file_post_proto_msgTypes[30]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1540,7 +1713,7 @@ func (x *GetGroupPostsBySubscriptionIDsRequest) String() string {
 func (*GetGroupPostsBySubscriptionIDsRequest) ProtoMessage() {}
 
 func (x *GetGroupPostsBySubscriptionIDsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_post_proto_msgTypes[27]
+	mi := &file_post_proto_msgTypes[30]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1553,7 +1726,7 @@ func (x *GetGroupPostsBySubscriptionIDsRequest) ProtoReflect() protoreflect.Mess
 
 // Deprecated: Use GetGroupPostsBySubscriptionIDsRequest.ProtoReflect.Descriptor instead.
 func (*GetGroupPostsBySubscriptionIDsRequest) Descriptor() ([]byte, []int) {
-	return file_post_proto_rawDescGZIP(), []int{27}
+	return file_post_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *GetGroupPostsBySubscriptionIDsRequest) GetSubscriptionIds() []uint64 {
@@ -1588,7 +1761,7 @@ type GetGroupPostsBySubscriptionIDsResponse struct {
 func (x *GetGroupPostsBySubscriptionIDsResponse) Reset() {
 	*x = GetGroupPostsBySubscriptionIDsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_post_proto_msgTypes[28]
+		mi := &file_post_proto_msgTypes[31]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1601,7 +1774,7 @@ func (x *GetGroupPostsBySubscriptionIDsResponse) String() string {
 func (*GetGroupPostsBySubscriptionIDsResponse) ProtoMessage() {}
 
 func (x *GetGroupPostsBySubscriptionIDsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_post_proto_msgTypes[28]
+	mi := &file_post_proto_msgTypes[31]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1614,7 +1787,7 @@ func (x *GetGroupPostsBySubscriptionIDsResponse) ProtoReflect() protoreflect.Mes
 
 // Deprecated: Use GetGroupPostsBySubscriptionIDsResponse.ProtoReflect.Descriptor instead.
 func (*GetGroupPostsBySubscriptionIDsResponse) Descriptor() ([]byte, []int) {
-	return file_post_proto_rawDescGZIP(), []int{28}
+	return file_post_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *GetGroupPostsBySubscriptionIDsResponse) GetPosts() []*PostResponse {
@@ -1638,7 +1811,7 @@ type GetPostsByGroupSubIDsAndUserSubIDsRequest struct {
 func (x *GetPostsByGroupSubIDsAndUserSubIDsRequest) Reset() {
 	*x = GetPostsByGroupSubIDsAndUserSubIDsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_post_proto_msgTypes[29]
+		mi := &file_post_proto_msgTypes[32]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1651,7 +1824,7 @@ func (x *GetPostsByGroupSubIDsAndUserSubIDsRequest) String() string {
 func (*GetPostsByGroupSubIDsAndUserSubIDsRequest) ProtoMessage() {}
 
 func (x *GetPostsByGroupSubIDsAndUserSubIDsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_post_proto_msgTypes[29]
+	mi := &file_post_proto_msgTypes[32]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1664,7 +1837,7 @@ func (x *GetPostsByGroupSubIDsAndUserSubIDsRequest) ProtoReflect() protoreflect.
 
 // Deprecated: Use GetPostsByGroupSubIDsAndUserSubIDsRequest.ProtoReflect.Descriptor instead.
 func (*GetPostsByGroupSubIDsAndUserSubIDsRequest) Descriptor() ([]byte, []int) {
-	return file_post_proto_rawDescGZIP(), []int{29}
+	return file_post_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *GetPostsByGroupSubIDsAndUserSubIDsRequest) GetGroupSubscriptionIds() []uint64 {
@@ -1706,7 +1879,7 @@ type GetPostsByGroupSubIDsAndUserSubIDsResponse struct {
 func (x *GetPostsByGroupSubIDsAndUserSubIDsResponse) Reset() {
 	*x = GetPostsByGroupSubIDsAndUserSubIDsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_post_proto_msgTypes[30]
+		mi := &file_post_proto_msgTypes[33]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1719,7 +1892,7 @@ func (x *GetPostsByGroupSubIDsAndUserSubIDsResponse) String() string {
 func (*GetPostsByGroupSubIDsAndUserSubIDsResponse) ProtoMessage() {}
 
 func (x *GetPostsByGroupSubIDsAndUserSubIDsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_post_proto_msgTypes[30]
+	mi := &file_post_proto_msgTypes[33]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1732,7 +1905,7 @@ func (x *GetPostsByGroupSubIDsAndUserSubIDsResponse) ProtoReflect() protoreflect
 
 // Deprecated: Use GetPostsByGroupSubIDsAndUserSubIDsResponse.ProtoReflect.Descriptor instead.
 func (*GetPostsByGroupSubIDsAndUserSubIDsResponse) Descriptor() ([]byte, []int) {
-	return file_post_proto_rawDescGZIP(), []int{30}
+	return file_post_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *GetPostsByGroupSubIDsAndUserSubIDsResponse) GetPosts() []*PostResponse {
@@ -1754,7 +1927,7 @@ type GetNewPostsRequest struct {
 func (x *GetNewPostsRequest) Reset() {
 	*x = GetNewPostsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_post_proto_msgTypes[31]
+		mi := &file_post_proto_msgTypes[34]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1767,7 +1940,7 @@ func (x *GetNewPostsRequest) String() string {
 func (*GetNewPostsRequest) ProtoMessage() {}
 
 func (x *GetNewPostsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_post_proto_msgTypes[31]
+	mi := &file_post_proto_msgTypes[34]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1780,7 +1953,7 @@ func (x *GetNewPostsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetNewPostsRequest.ProtoReflect.Descriptor instead.
 func (*GetNewPostsRequest) Descriptor() ([]byte, []int) {
-	return file_post_proto_rawDescGZIP(), []int{31}
+	return file_post_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *GetNewPostsRequest) GetLastPostId() uint64 {
@@ -1808,7 +1981,7 @@ type GetNewPostsResponse struct {
 func (x *GetNewPostsResponse) Reset() {
 	*x = GetNewPostsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_post_proto_msgTypes[32]
+		mi := &file_post_proto_msgTypes[35]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1821,7 +1994,7 @@ func (x *GetNewPostsResponse) String() string {
 func (*GetNewPostsResponse) ProtoMessage() {}
 
 func (x *GetNewPostsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_post_proto_msgTypes[32]
+	mi := &file_post_proto_msgTypes[35]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1834,7 +2007,7 @@ func (x *GetNewPostsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetNewPostsResponse.ProtoReflect.Descriptor instead.
 func (*GetNewPostsResponse) Descriptor() ([]byte, []int) {
-	return file_post_proto_rawDescGZIP(), []int{32}
+	return file_post_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *GetNewPostsResponse) GetPosts() []*PostResponse {
@@ -1861,7 +2034,7 @@ type CommentResponse struct {
 func (x *CommentResponse) Reset() {
 	*x = CommentResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_post_proto_msgTypes[33]
+		mi := &file_post_proto_msgTypes[36]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1874,7 +2047,7 @@ func (x *CommentResponse) String() string {
 func (*CommentResponse) ProtoMessage() {}
 
 func (x *CommentResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_post_proto_msgTypes[33]
+	mi := &file_post_proto_msgTypes[36]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1887,7 +2060,7 @@ func (x *CommentResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommentResponse.ProtoReflect.Descriptor instead.
 func (*CommentResponse) Descriptor() ([]byte, []int) {
-	return file_post_proto_rawDescGZIP(), []int{33}
+	return file_post_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *CommentResponse) GetId() uint64 {
@@ -1950,7 +2123,7 @@ type GetCommentsByPostIDRequest struct {
 func (x *GetCommentsByPostIDRequest) Reset() {
 	*x = GetCommentsByPostIDRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_post_proto_msgTypes[34]
+		mi := &file_post_proto_msgTypes[37]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1963,7 +2136,7 @@ func (x *GetCommentsByPostIDRequest) String() string {
 func (*GetCommentsByPostIDRequest) ProtoMessage() {}
 
 func (x *GetCommentsByPostIDRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_post_proto_msgTypes[34]
+	mi := &file_post_proto_msgTypes[37]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1976,7 +2149,7 @@ func (x *GetCommentsByPostIDRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCommentsByPostIDRequest.ProtoReflect.Descriptor instead.
 func (*GetCommentsByPostIDRequest) Descriptor() ([]byte, []int) {
-	return file_post_proto_rawDescGZIP(), []int{34}
+	return file_post_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *GetCommentsByPostIDRequest) GetPostId() uint64 {
@@ -1997,7 +2170,7 @@ type GetCommentsByPostIDResponse struct {
 func (x *GetCommentsByPostIDResponse) Reset() {
 	*x = GetCommentsByPostIDResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_post_proto_msgTypes[35]
+		mi := &file_post_proto_msgTypes[38]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2010,7 +2183,7 @@ func (x *GetCommentsByPostIDResponse) String() string {
 func (*GetCommentsByPostIDResponse) ProtoMessage() {}
 
 func (x *GetCommentsByPostIDResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_post_proto_msgTypes[35]
+	mi := &file_post_proto_msgTypes[38]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2023,7 +2196,7 @@ func (x *GetCommentsByPostIDResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCommentsByPostIDResponse.ProtoReflect.Descriptor instead.
 func (*GetCommentsByPostIDResponse) Descriptor() ([]byte, []int) {
-	return file_post_proto_rawDescGZIP(), []int{35}
+	return file_post_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *GetCommentsByPostIDResponse) GetComments() []*CommentResponse {
@@ -2046,7 +2219,7 @@ type CreateCommentRequest struct {
 func (x *CreateCommentRequest) Reset() {
 	*x = CreateCommentRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_post_proto_msgTypes[36]
+		mi := &file_post_proto_msgTypes[39]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2059,7 +2232,7 @@ func (x *CreateCommentRequest) String() string {
 func (*CreateCommentRequest) ProtoMessage() {}
 
 func (x *CreateCommentRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_post_proto_msgTypes[36]
+	mi := &file_post_proto_msgTypes[39]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2072,7 +2245,7 @@ func (x *CreateCommentRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateCommentRequest.ProtoReflect.Descriptor instead.
 func (*CreateCommentRequest) Descriptor() ([]byte, []int) {
-	return file_post_proto_rawDescGZIP(), []int{36}
+	return file_post_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *CreateCommentRequest) GetContent() string {
@@ -2107,7 +2280,7 @@ type CreateCommentResponse struct {
 func (x *CreateCommentResponse) Reset() {
 	*x = CreateCommentResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_post_proto_msgTypes[37]
+		mi := &file_post_proto_msgTypes[40]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2120,7 +2293,7 @@ func (x *CreateCommentResponse) String() string {
 func (*CreateCommentResponse) ProtoMessage() {}
 
 func (x *CreateCommentResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_post_proto_msgTypes[37]
+	mi := &file_post_proto_msgTypes[40]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2133,7 +2306,7 @@ func (x *CreateCommentResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateCommentResponse.ProtoReflect.Descriptor instead.
 func (*CreateCommentResponse) Descriptor() ([]byte, []int) {
-	return file_post_proto_rawDescGZIP(), []int{37}
+	return file_post_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *CreateCommentResponse) GetComment() *CommentResponse {
@@ -2156,7 +2329,7 @@ type UpdateCommentRequest struct {
 func (x *UpdateCommentRequest) Reset() {
 	*x = UpdateCommentRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_post_proto_msgTypes[38]
+		mi := &file_post_proto_msgTypes[41]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2169,7 +2342,7 @@ func (x *UpdateCommentRequest) String() string {
 func (*UpdateCommentRequest) ProtoMessage() {}
 
 func (x *UpdateCommentRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_post_proto_msgTypes[38]
+	mi := &file_post_proto_msgTypes[41]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2182,7 +2355,7 @@ func (x *UpdateCommentRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateCommentRequest.ProtoReflect.Descriptor instead.
 func (*UpdateCommentRequest) Descriptor() ([]byte, []int) {
-	return file_post_proto_rawDescGZIP(), []int{38}
+	return file_post_proto_rawDescGZIP(), []int{41}
 }
 
 func (x *UpdateCommentRequest) GetUserId() uint64 {
@@ -2217,7 +2390,7 @@ type UpdateCommentResponse struct {
 func (x *UpdateCommentResponse) Reset() {
 	*x = UpdateCommentResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_post_proto_msgTypes[39]
+		mi := &file_post_proto_msgTypes[42]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2230,7 +2403,7 @@ func (x *UpdateCommentResponse) String() string {
 func (*UpdateCommentResponse) ProtoMessage() {}
 
 func (x *UpdateCommentResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_post_proto_msgTypes[39]
+	mi := &file_post_proto_msgTypes[42]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2243,7 +2416,7 @@ func (x *UpdateCommentResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateCommentResponse.ProtoReflect.Descriptor instead.
 func (*UpdateCommentResponse) Descriptor() ([]byte, []int) {
-	return file_post_proto_rawDescGZIP(), []int{39}
+	return file_post_proto_rawDescGZIP(), []int{42}
 }
 
 func (x *UpdateCommentResponse) GetComment() *CommentResponse {
@@ -2265,7 +2438,7 @@ type DeleteCommentRequest struct {
 func (x *DeleteCommentRequest) Reset() {
 	*x = DeleteCommentRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_post_proto_msgTypes[40]
+		mi := &file_post_proto_msgTypes[43]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2278,7 +2451,7 @@ func (x *DeleteCommentRequest) String() string {
 func (*DeleteCommentRequest) ProtoMessage() {}
 
 func (x *DeleteCommentRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_post_proto_msgTypes[40]
+	mi := &file_post_proto_msgTypes[43]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2291,7 +2464,7 @@ func (x *DeleteCommentRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteCommentRequest.ProtoReflect.Descriptor instead.
 func (*DeleteCommentRequest) Descriptor() ([]byte, []int) {
-	return file_post_proto_rawDescGZIP(), []int{40}
+	return file_post_proto_rawDescGZIP(), []int{43}
 }
 
 func (x *DeleteCommentRequest) GetCommentId() uint64 {
@@ -2317,7 +2490,7 @@ type DeleteCommentResponse struct {
 func (x *DeleteCommentResponse) Reset() {
 	*x = DeleteCommentResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_post_proto_msgTypes[41]
+		mi := &file_post_proto_msgTypes[44]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2330,7 +2503,7 @@ func (x *DeleteCommentResponse) String() string {
 func (*DeleteCommentResponse) ProtoMessage() {}
 
 func (x *DeleteCommentResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_post_proto_msgTypes[41]
+	mi := &file_post_proto_msgTypes[44]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2343,7 +2516,7 @@ func (x *DeleteCommentResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteCommentResponse.ProtoReflect.Descriptor instead.
 func (*DeleteCommentResponse) Descriptor() ([]byte, []int) {
-	return file_post_proto_rawDescGZIP(), []int{41}
+	return file_post_proto_rawDescGZIP(), []int{44}
 }
 
 type CommentLikeResponse struct {
@@ -2360,7 +2533,7 @@ type CommentLikeResponse struct {
 func (x *CommentLikeResponse) Reset() {
 	*x = CommentLikeResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_post_proto_msgTypes[42]
+		mi := &file_post_proto_msgTypes[45]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2373,7 +2546,7 @@ func (x *CommentLikeResponse) String() string {
 func (*CommentLikeResponse) ProtoMessage() {}
 
 func (x *CommentLikeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_post_proto_msgTypes[42]
+	mi := &file_post_proto_msgTypes[45]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2386,7 +2559,7 @@ func (x *CommentLikeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommentLikeResponse.ProtoReflect.Descriptor instead.
 func (*CommentLikeResponse) Descriptor() ([]byte, []int) {
-	return file_post_proto_rawDescGZIP(), []int{42}
+	return file_post_proto_rawDescGZIP(), []int{45}
 }
 
 func (x *CommentLikeResponse) GetId() uint64 {
@@ -2429,7 +2602,7 @@ type LikeCommentRequest struct {
 func (x *LikeCommentRequest) Reset() {
 	*x = LikeCommentRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_post_proto_msgTypes[43]
+		mi := &file_post_proto_msgTypes[46]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2442,7 +2615,7 @@ func (x *LikeCommentRequest) String() string {
 func (*LikeCommentRequest) ProtoMessage() {}
 
 func (x *LikeCommentRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_post_proto_msgTypes[43]
+	mi := &file_post_proto_msgTypes[46]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2455,7 +2628,7 @@ func (x *LikeCommentRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LikeCommentRequest.ProtoReflect.Descriptor instead.
 func (*LikeCommentRequest) Descriptor() ([]byte, []int) {
-	return file_post_proto_rawDescGZIP(), []int{43}
+	return file_post_proto_rawDescGZIP(), []int{46}
 }
 
 func (x *LikeCommentRequest) GetCommentId() uint64 {
@@ -2483,7 +2656,7 @@ type LikeCommentResponse struct {
 func (x *LikeCommentResponse) Reset() {
 	*x = LikeCommentResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_post_proto_msgTypes[44]
+		mi := &file_post_proto_msgTypes[47]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2496,7 +2669,7 @@ func (x *LikeCommentResponse) String() string {
 func (*LikeCommentResponse) ProtoMessage() {}
 
 func (x *LikeCommentResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_post_proto_msgTypes[44]
+	mi := &file_post_proto_msgTypes[47]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2509,7 +2682,7 @@ func (x *LikeCommentResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LikeCommentResponse.ProtoReflect.Descriptor instead.
 func (*LikeCommentResponse) Descriptor() ([]byte, []int) {
-	return file_post_proto_rawDescGZIP(), []int{44}
+	return file_post_proto_rawDescGZIP(), []int{47}
 }
 
 func (x *LikeCommentResponse) GetLike() *CommentLikeResponse {
@@ -2531,7 +2704,7 @@ type UnlikeCommentRequest struct {
 func (x *UnlikeCommentRequest) Reset() {
 	*x = UnlikeCommentRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_post_proto_msgTypes[45]
+		mi := &file_post_proto_msgTypes[48]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2544,7 +2717,7 @@ func (x *UnlikeCommentRequest) String() string {
 func (*UnlikeCommentRequest) ProtoMessage() {}
 
 func (x *UnlikeCommentRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_post_proto_msgTypes[45]
+	mi := &file_post_proto_msgTypes[48]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2557,7 +2730,7 @@ func (x *UnlikeCommentRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UnlikeCommentRequest.ProtoReflect.Descriptor instead.
 func (*UnlikeCommentRequest) Descriptor() ([]byte, []int) {
-	return file_post_proto_rawDescGZIP(), []int{45}
+	return file_post_proto_rawDescGZIP(), []int{48}
 }
 
 func (x *UnlikeCommentRequest) GetCommentId() uint64 {
@@ -2583,7 +2756,7 @@ type UnlikeCommentResponse struct {
 func (x *UnlikeCommentResponse) Reset() {
 	*x = UnlikeCommentResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_post_proto_msgTypes[46]
+		mi := &file_post_proto_msgTypes[49]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2596,7 +2769,7 @@ func (x *UnlikeCommentResponse) String() string {
 func (*UnlikeCommentResponse) ProtoMessage() {}
 
 func (x *UnlikeCommentResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_post_proto_msgTypes[46]
+	mi := &file_post_proto_msgTypes[49]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2609,7 +2782,7 @@ func (x *UnlikeCommentResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UnlikeCommentResponse.ProtoReflect.Descriptor instead.
 func (*UnlikeCommentResponse) Descriptor() ([]byte, []int) {
-	return file_post_proto_rawDescGZIP(), []int{46}
+	return file_post_proto_rawDescGZIP(), []int{49}
 }
 
 var File_post_proto protoreflect.FileDescriptor
@@ -2756,7 +2929,29 @@ var file_post_proto_rawDesc = []byte{
 	0x0a, 0x07, 0x70, 0x6f, 0x73, 0x74, 0x5f, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x52,
 	0x06, 0x70, 0x6f, 0x73, 0x74, 0x49, 0x64, 0x22, 0x19, 0x0a, 0x17, 0x43, 0x72, 0x65, 0x61, 0x74,
 	0x65, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x50, 0x6f, 0x73, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
-	0x73, 0x65, 0x22, 0x78, 0x0a, 0x16, 0x47, 0x65, 0x74, 0x50, 0x6f, 0x73, 0x74, 0x73, 0x4f, 0x66,
+	0x73, 0x65, 0x22, 0xcd, 0x01, 0x0a, 0x11, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x50, 0x6f, 0x73, 0x74,
+	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x04, 0x52, 0x02, 0x69, 0x64, 0x12, 0x17, 0x0a, 0x07, 0x70, 0x6f, 0x73, 0x74,
+	0x5f, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x52, 0x06, 0x70, 0x6f, 0x73, 0x74, 0x49,
+	0x64, 0x12, 0x19, 0x0a, 0x08, 0x67, 0x72, 0x6f, 0x75, 0x70, 0x5f, 0x69, 0x64, 0x18, 0x03, 0x20,
+	0x01, 0x28, 0x04, 0x52, 0x07, 0x67, 0x72, 0x6f, 0x75, 0x70, 0x49, 0x64, 0x12, 0x39, 0x0a, 0x0a,
+	0x63, 0x72, 0x65, 0x61, 0x74, 0x65, 0x64, 0x5f, 0x61, 0x74, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b,
+	0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62,
+	0x75, 0x66, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x52, 0x09, 0x63, 0x72,
+	0x65, 0x61, 0x74, 0x65, 0x64, 0x41, 0x74, 0x12, 0x39, 0x0a, 0x0a, 0x75, 0x70, 0x64, 0x61, 0x74,
+	0x65, 0x64, 0x5f, 0x61, 0x74, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f,
+	0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54, 0x69,
+	0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x52, 0x09, 0x75, 0x70, 0x64, 0x61, 0x74, 0x65, 0x64,
+	0x41, 0x74, 0x22, 0x36, 0x0a, 0x1b, 0x47, 0x65, 0x74, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x50, 0x6f,
+	0x73, 0x74, 0x42, 0x79, 0x50, 0x6f, 0x73, 0x74, 0x49, 0x44, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x74, 0x12, 0x17, 0x0a, 0x07, 0x70, 0x6f, 0x73, 0x74, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x04, 0x52, 0x06, 0x70, 0x6f, 0x73, 0x74, 0x49, 0x64, 0x22, 0x56, 0x0a, 0x1c, 0x47, 0x65,
+	0x74, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x50, 0x6f, 0x73, 0x74, 0x42, 0x79, 0x50, 0x6f, 0x73, 0x74,
+	0x49, 0x44, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x36, 0x0a, 0x0a, 0x67, 0x72,
+	0x6f, 0x75, 0x70, 0x5f, 0x70, 0x6f, 0x73, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x17,
+	0x2e, 0x70, 0x6f, 0x73, 0x74, 0x2e, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x50, 0x6f, 0x73, 0x74, 0x52,
+	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x52, 0x09, 0x67, 0x72, 0x6f, 0x75, 0x70, 0x50, 0x6f,
+	0x73, 0x74, 0x22, 0x78, 0x0a, 0x16, 0x47, 0x65, 0x74, 0x50, 0x6f, 0x73, 0x74, 0x73, 0x4f, 0x66,
 	0x47, 0x72, 0x6f, 0x75, 0x70, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x19, 0x0a, 0x08,
 	0x67, 0x72, 0x6f, 0x75, 0x70, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x52, 0x07,
 	0x67, 0x72, 0x6f, 0x75, 0x70, 0x49, 0x64, 0x12, 0x20, 0x0a, 0x0c, 0x6c, 0x61, 0x73, 0x74, 0x5f,
@@ -2891,7 +3086,7 @@ var file_post_proto_rawDesc = []byte{
 	0x09, 0x63, 0x6f, 0x6d, 0x6d, 0x65, 0x6e, 0x74, 0x49, 0x64, 0x12, 0x17, 0x0a, 0x07, 0x75, 0x73,
 	0x65, 0x72, 0x5f, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x52, 0x06, 0x75, 0x73, 0x65,
 	0x72, 0x49, 0x64, 0x22, 0x17, 0x0a, 0x15, 0x55, 0x6e, 0x6c, 0x69, 0x6b, 0x65, 0x43, 0x6f, 0x6d,
-	0x6d, 0x65, 0x6e, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x32, 0x8a, 0x0d, 0x0a,
+	0x6d, 0x65, 0x6e, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x32, 0xeb, 0x0d, 0x0a,
 	0x04, 0x50, 0x6f, 0x73, 0x74, 0x12, 0x44, 0x0a, 0x0b, 0x47, 0x65, 0x74, 0x50, 0x6f, 0x73, 0x74,
 	0x42, 0x79, 0x49, 0x44, 0x12, 0x18, 0x2e, 0x70, 0x6f, 0x73, 0x74, 0x2e, 0x47, 0x65, 0x74, 0x50,
 	0x6f, 0x73, 0x74, 0x42, 0x79, 0x49, 0x44, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x19,
@@ -2941,63 +3136,69 @@ var file_post_proto_rawDesc = []byte{
 	0x65, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x50, 0x6f, 0x73, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
 	0x74, 0x1a, 0x1d, 0x2e, 0x70, 0x6f, 0x73, 0x74, 0x2e, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x47,
 	0x72, 0x6f, 0x75, 0x70, 0x50, 0x6f, 0x73, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
-	0x22, 0x00, 0x12, 0x50, 0x0a, 0x0f, 0x47, 0x65, 0x74, 0x50, 0x6f, 0x73, 0x74, 0x73, 0x4f, 0x66,
-	0x47, 0x72, 0x6f, 0x75, 0x70, 0x12, 0x1c, 0x2e, 0x70, 0x6f, 0x73, 0x74, 0x2e, 0x47, 0x65, 0x74,
-	0x50, 0x6f, 0x73, 0x74, 0x73, 0x4f, 0x66, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x52, 0x65, 0x71, 0x75,
-	0x65, 0x73, 0x74, 0x1a, 0x1d, 0x2e, 0x70, 0x6f, 0x73, 0x74, 0x2e, 0x47, 0x65, 0x74, 0x50, 0x6f,
-	0x73, 0x74, 0x73, 0x4f, 0x66, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
-	0x73, 0x65, 0x22, 0x00, 0x12, 0x7d, 0x0a, 0x1e, 0x47, 0x65, 0x74, 0x47, 0x72, 0x6f, 0x75, 0x70,
-	0x50, 0x6f, 0x73, 0x74, 0x73, 0x42, 0x79, 0x53, 0x75, 0x62, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74,
-	0x69, 0x6f, 0x6e, 0x49, 0x44, 0x73, 0x12, 0x2b, 0x2e, 0x70, 0x6f, 0x73, 0x74, 0x2e, 0x47, 0x65,
-	0x74, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x50, 0x6f, 0x73, 0x74, 0x73, 0x42, 0x79, 0x53, 0x75, 0x62,
-	0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x49, 0x44, 0x73, 0x52, 0x65, 0x71, 0x75,
-	0x65, 0x73, 0x74, 0x1a, 0x2c, 0x2e, 0x70, 0x6f, 0x73, 0x74, 0x2e, 0x47, 0x65, 0x74, 0x47, 0x72,
-	0x6f, 0x75, 0x70, 0x50, 0x6f, 0x73, 0x74, 0x73, 0x42, 0x79, 0x53, 0x75, 0x62, 0x73, 0x63, 0x72,
-	0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x49, 0x44, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x22, 0x00, 0x12, 0x89, 0x01, 0x0a, 0x22, 0x47, 0x65, 0x74, 0x50, 0x6f, 0x73, 0x74, 0x73,
-	0x42, 0x79, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x53, 0x75, 0x62, 0x49, 0x44, 0x73, 0x41, 0x6e, 0x64,
-	0x55, 0x73, 0x65, 0x72, 0x53, 0x75, 0x62, 0x49, 0x44, 0x73, 0x12, 0x2f, 0x2e, 0x70, 0x6f, 0x73,
-	0x74, 0x2e, 0x47, 0x65, 0x74, 0x50, 0x6f, 0x73, 0x74, 0x73, 0x42, 0x79, 0x47, 0x72, 0x6f, 0x75,
-	0x70, 0x53, 0x75, 0x62, 0x49, 0x44, 0x73, 0x41, 0x6e, 0x64, 0x55, 0x73, 0x65, 0x72, 0x53, 0x75,
-	0x62, 0x49, 0x44, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x30, 0x2e, 0x70, 0x6f,
+	0x22, 0x00, 0x12, 0x5f, 0x0a, 0x14, 0x47, 0x65, 0x74, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x50, 0x6f,
+	0x73, 0x74, 0x42, 0x79, 0x50, 0x6f, 0x73, 0x74, 0x49, 0x44, 0x12, 0x21, 0x2e, 0x70, 0x6f, 0x73,
+	0x74, 0x2e, 0x47, 0x65, 0x74, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x50, 0x6f, 0x73, 0x74, 0x42, 0x79,
+	0x50, 0x6f, 0x73, 0x74, 0x49, 0x44, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x22, 0x2e,
+	0x70, 0x6f, 0x73, 0x74, 0x2e, 0x47, 0x65, 0x74, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x50, 0x6f, 0x73,
+	0x74, 0x42, 0x79, 0x50, 0x6f, 0x73, 0x74, 0x49, 0x44, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
+	0x65, 0x22, 0x00, 0x12, 0x50, 0x0a, 0x0f, 0x47, 0x65, 0x74, 0x50, 0x6f, 0x73, 0x74, 0x73, 0x4f,
+	0x66, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x12, 0x1c, 0x2e, 0x70, 0x6f, 0x73, 0x74, 0x2e, 0x47, 0x65,
+	0x74, 0x50, 0x6f, 0x73, 0x74, 0x73, 0x4f, 0x66, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x52, 0x65, 0x71,
+	0x75, 0x65, 0x73, 0x74, 0x1a, 0x1d, 0x2e, 0x70, 0x6f, 0x73, 0x74, 0x2e, 0x47, 0x65, 0x74, 0x50,
+	0x6f, 0x73, 0x74, 0x73, 0x4f, 0x66, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x52, 0x65, 0x73, 0x70, 0x6f,
+	0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x7d, 0x0a, 0x1e, 0x47, 0x65, 0x74, 0x47, 0x72, 0x6f, 0x75,
+	0x70, 0x50, 0x6f, 0x73, 0x74, 0x73, 0x42, 0x79, 0x53, 0x75, 0x62, 0x73, 0x63, 0x72, 0x69, 0x70,
+	0x74, 0x69, 0x6f, 0x6e, 0x49, 0x44, 0x73, 0x12, 0x2b, 0x2e, 0x70, 0x6f, 0x73, 0x74, 0x2e, 0x47,
+	0x65, 0x74, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x50, 0x6f, 0x73, 0x74, 0x73, 0x42, 0x79, 0x53, 0x75,
+	0x62, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x49, 0x44, 0x73, 0x52, 0x65, 0x71,
+	0x75, 0x65, 0x73, 0x74, 0x1a, 0x2c, 0x2e, 0x70, 0x6f, 0x73, 0x74, 0x2e, 0x47, 0x65, 0x74, 0x47,
+	0x72, 0x6f, 0x75, 0x70, 0x50, 0x6f, 0x73, 0x74, 0x73, 0x42, 0x79, 0x53, 0x75, 0x62, 0x73, 0x63,
+	0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x49, 0x44, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
+	0x73, 0x65, 0x22, 0x00, 0x12, 0x89, 0x01, 0x0a, 0x22, 0x47, 0x65, 0x74, 0x50, 0x6f, 0x73, 0x74,
+	0x73, 0x42, 0x79, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x53, 0x75, 0x62, 0x49, 0x44, 0x73, 0x41, 0x6e,
+	0x64, 0x55, 0x73, 0x65, 0x72, 0x53, 0x75, 0x62, 0x49, 0x44, 0x73, 0x12, 0x2f, 0x2e, 0x70, 0x6f,
 	0x73, 0x74, 0x2e, 0x47, 0x65, 0x74, 0x50, 0x6f, 0x73, 0x74, 0x73, 0x42, 0x79, 0x47, 0x72, 0x6f,
 	0x75, 0x70, 0x53, 0x75, 0x62, 0x49, 0x44, 0x73, 0x41, 0x6e, 0x64, 0x55, 0x73, 0x65, 0x72, 0x53,
-	0x75, 0x62, 0x49, 0x44, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12,
-	0x44, 0x0a, 0x0b, 0x47, 0x65, 0x74, 0x4e, 0x65, 0x77, 0x50, 0x6f, 0x73, 0x74, 0x73, 0x12, 0x18,
-	0x2e, 0x70, 0x6f, 0x73, 0x74, 0x2e, 0x47, 0x65, 0x74, 0x4e, 0x65, 0x77, 0x50, 0x6f, 0x73, 0x74,
-	0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x19, 0x2e, 0x70, 0x6f, 0x73, 0x74, 0x2e,
-	0x47, 0x65, 0x74, 0x4e, 0x65, 0x77, 0x50, 0x6f, 0x73, 0x74, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f,
-	0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x5c, 0x0a, 0x13, 0x47, 0x65, 0x74, 0x43, 0x6f, 0x6d, 0x6d,
-	0x65, 0x6e, 0x74, 0x73, 0x42, 0x79, 0x50, 0x6f, 0x73, 0x74, 0x49, 0x44, 0x12, 0x20, 0x2e, 0x70,
-	0x6f, 0x73, 0x74, 0x2e, 0x47, 0x65, 0x74, 0x43, 0x6f, 0x6d, 0x6d, 0x65, 0x6e, 0x74, 0x73, 0x42,
-	0x79, 0x50, 0x6f, 0x73, 0x74, 0x49, 0x44, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x21,
-	0x2e, 0x70, 0x6f, 0x73, 0x74, 0x2e, 0x47, 0x65, 0x74, 0x43, 0x6f, 0x6d, 0x6d, 0x65, 0x6e, 0x74,
-	0x73, 0x42, 0x79, 0x50, 0x6f, 0x73, 0x74, 0x49, 0x44, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x22, 0x00, 0x12, 0x4a, 0x0a, 0x0d, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x43, 0x6f, 0x6d,
-	0x6d, 0x65, 0x6e, 0x74, 0x12, 0x1a, 0x2e, 0x70, 0x6f, 0x73, 0x74, 0x2e, 0x43, 0x72, 0x65, 0x61,
-	0x74, 0x65, 0x43, 0x6f, 0x6d, 0x6d, 0x65, 0x6e, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
-	0x1a, 0x1b, 0x2e, 0x70, 0x6f, 0x73, 0x74, 0x2e, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x43, 0x6f,
-	0x6d, 0x6d, 0x65, 0x6e, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12,
-	0x4a, 0x0a, 0x0d, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x43, 0x6f, 0x6d, 0x6d, 0x65, 0x6e, 0x74,
-	0x12, 0x1a, 0x2e, 0x70, 0x6f, 0x73, 0x74, 0x2e, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x43, 0x6f,
-	0x6d, 0x6d, 0x65, 0x6e, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x1b, 0x2e, 0x70,
-	0x6f, 0x73, 0x74, 0x2e, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x43, 0x6f, 0x6d, 0x6d, 0x65, 0x6e,
-	0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x4a, 0x0a, 0x0d, 0x44,
-	0x65, 0x6c, 0x65, 0x74, 0x65, 0x43, 0x6f, 0x6d, 0x6d, 0x65, 0x6e, 0x74, 0x12, 0x1a, 0x2e, 0x70,
-	0x6f, 0x73, 0x74, 0x2e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x43, 0x6f, 0x6d, 0x6d, 0x65, 0x6e,
-	0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x1b, 0x2e, 0x70, 0x6f, 0x73, 0x74, 0x2e,
-	0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x43, 0x6f, 0x6d, 0x6d, 0x65, 0x6e, 0x74, 0x52, 0x65, 0x73,
-	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x44, 0x0a, 0x0b, 0x4c, 0x69, 0x6b, 0x65, 0x43,
-	0x6f, 0x6d, 0x6d, 0x65, 0x6e, 0x74, 0x12, 0x18, 0x2e, 0x70, 0x6f, 0x73, 0x74, 0x2e, 0x4c, 0x69,
-	0x6b, 0x65, 0x43, 0x6f, 0x6d, 0x6d, 0x65, 0x6e, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
-	0x1a, 0x19, 0x2e, 0x70, 0x6f, 0x73, 0x74, 0x2e, 0x4c, 0x69, 0x6b, 0x65, 0x43, 0x6f, 0x6d, 0x6d,
-	0x65, 0x6e, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x4a, 0x0a,
-	0x0d, 0x55, 0x6e, 0x6c, 0x69, 0x6b, 0x65, 0x43, 0x6f, 0x6d, 0x6d, 0x65, 0x6e, 0x74, 0x12, 0x1a,
-	0x2e, 0x70, 0x6f, 0x73, 0x74, 0x2e, 0x55, 0x6e, 0x6c, 0x69, 0x6b, 0x65, 0x43, 0x6f, 0x6d, 0x6d,
-	0x65, 0x6e, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x1b, 0x2e, 0x70, 0x6f, 0x73,
-	0x74, 0x2e, 0x55, 0x6e, 0x6c, 0x69, 0x6b, 0x65, 0x43, 0x6f, 0x6d, 0x6d, 0x65, 0x6e, 0x74, 0x52,
-	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x42, 0x09, 0x5a, 0x07, 0x2e, 0x2f, 0x3b,
-	0x70, 0x6f, 0x73, 0x74, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x75, 0x62, 0x49, 0x44, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x30, 0x2e, 0x70,
+	0x6f, 0x73, 0x74, 0x2e, 0x47, 0x65, 0x74, 0x50, 0x6f, 0x73, 0x74, 0x73, 0x42, 0x79, 0x47, 0x72,
+	0x6f, 0x75, 0x70, 0x53, 0x75, 0x62, 0x49, 0x44, 0x73, 0x41, 0x6e, 0x64, 0x55, 0x73, 0x65, 0x72,
+	0x53, 0x75, 0x62, 0x49, 0x44, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00,
+	0x12, 0x44, 0x0a, 0x0b, 0x47, 0x65, 0x74, 0x4e, 0x65, 0x77, 0x50, 0x6f, 0x73, 0x74, 0x73, 0x12,
+	0x18, 0x2e, 0x70, 0x6f, 0x73, 0x74, 0x2e, 0x47, 0x65, 0x74, 0x4e, 0x65, 0x77, 0x50, 0x6f, 0x73,
+	0x74, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x19, 0x2e, 0x70, 0x6f, 0x73, 0x74,
+	0x2e, 0x47, 0x65, 0x74, 0x4e, 0x65, 0x77, 0x50, 0x6f, 0x73, 0x74, 0x73, 0x52, 0x65, 0x73, 0x70,
+	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x5c, 0x0a, 0x13, 0x47, 0x65, 0x74, 0x43, 0x6f, 0x6d,
+	0x6d, 0x65, 0x6e, 0x74, 0x73, 0x42, 0x79, 0x50, 0x6f, 0x73, 0x74, 0x49, 0x44, 0x12, 0x20, 0x2e,
+	0x70, 0x6f, 0x73, 0x74, 0x2e, 0x47, 0x65, 0x74, 0x43, 0x6f, 0x6d, 0x6d, 0x65, 0x6e, 0x74, 0x73,
+	0x42, 0x79, 0x50, 0x6f, 0x73, 0x74, 0x49, 0x44, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
+	0x21, 0x2e, 0x70, 0x6f, 0x73, 0x74, 0x2e, 0x47, 0x65, 0x74, 0x43, 0x6f, 0x6d, 0x6d, 0x65, 0x6e,
+	0x74, 0x73, 0x42, 0x79, 0x50, 0x6f, 0x73, 0x74, 0x49, 0x44, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
+	0x73, 0x65, 0x22, 0x00, 0x12, 0x4a, 0x0a, 0x0d, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x43, 0x6f,
+	0x6d, 0x6d, 0x65, 0x6e, 0x74, 0x12, 0x1a, 0x2e, 0x70, 0x6f, 0x73, 0x74, 0x2e, 0x43, 0x72, 0x65,
+	0x61, 0x74, 0x65, 0x43, 0x6f, 0x6d, 0x6d, 0x65, 0x6e, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x74, 0x1a, 0x1b, 0x2e, 0x70, 0x6f, 0x73, 0x74, 0x2e, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x43,
+	0x6f, 0x6d, 0x6d, 0x65, 0x6e, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00,
+	0x12, 0x4a, 0x0a, 0x0d, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x43, 0x6f, 0x6d, 0x6d, 0x65, 0x6e,
+	0x74, 0x12, 0x1a, 0x2e, 0x70, 0x6f, 0x73, 0x74, 0x2e, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x43,
+	0x6f, 0x6d, 0x6d, 0x65, 0x6e, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x1b, 0x2e,
+	0x70, 0x6f, 0x73, 0x74, 0x2e, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x43, 0x6f, 0x6d, 0x6d, 0x65,
+	0x6e, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x4a, 0x0a, 0x0d,
+	0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x43, 0x6f, 0x6d, 0x6d, 0x65, 0x6e, 0x74, 0x12, 0x1a, 0x2e,
+	0x70, 0x6f, 0x73, 0x74, 0x2e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x43, 0x6f, 0x6d, 0x6d, 0x65,
+	0x6e, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x1b, 0x2e, 0x70, 0x6f, 0x73, 0x74,
+	0x2e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x43, 0x6f, 0x6d, 0x6d, 0x65, 0x6e, 0x74, 0x52, 0x65,
+	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x44, 0x0a, 0x0b, 0x4c, 0x69, 0x6b, 0x65,
+	0x43, 0x6f, 0x6d, 0x6d, 0x65, 0x6e, 0x74, 0x12, 0x18, 0x2e, 0x70, 0x6f, 0x73, 0x74, 0x2e, 0x4c,
+	0x69, 0x6b, 0x65, 0x43, 0x6f, 0x6d, 0x6d, 0x65, 0x6e, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x74, 0x1a, 0x19, 0x2e, 0x70, 0x6f, 0x73, 0x74, 0x2e, 0x4c, 0x69, 0x6b, 0x65, 0x43, 0x6f, 0x6d,
+	0x6d, 0x65, 0x6e, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x4a,
+	0x0a, 0x0d, 0x55, 0x6e, 0x6c, 0x69, 0x6b, 0x65, 0x43, 0x6f, 0x6d, 0x6d, 0x65, 0x6e, 0x74, 0x12,
+	0x1a, 0x2e, 0x70, 0x6f, 0x73, 0x74, 0x2e, 0x55, 0x6e, 0x6c, 0x69, 0x6b, 0x65, 0x43, 0x6f, 0x6d,
+	0x6d, 0x65, 0x6e, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x1b, 0x2e, 0x70, 0x6f,
+	0x73, 0x74, 0x2e, 0x55, 0x6e, 0x6c, 0x69, 0x6b, 0x65, 0x43, 0x6f, 0x6d, 0x6d, 0x65, 0x6e, 0x74,
+	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x42, 0x09, 0x5a, 0x07, 0x2e, 0x2f,
+	0x3b, 0x70, 0x6f, 0x73, 0x74, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -3012,7 +3213,7 @@ func file_post_proto_rawDescGZIP() []byte {
 	return file_post_proto_rawDescData
 }
 
-var file_post_proto_msgTypes = make([]protoimpl.MessageInfo, 47)
+var file_post_proto_msgTypes = make([]protoimpl.MessageInfo, 50)
 var file_post_proto_goTypes = []interface{}{
 	(*PostResponse)(nil),                               // 0: post.PostResponse
 	(*LikedPostResponse)(nil),                          // 1: post.LikedPostResponse
@@ -3039,36 +3240,39 @@ var file_post_proto_goTypes = []interface{}{
 	(*UploadResponse)(nil),                             // 22: post.UploadResponse
 	(*CreateGroupPostRequest)(nil),                     // 23: post.CreateGroupPostRequest
 	(*CreateGroupPostResponse)(nil),                    // 24: post.CreateGroupPostResponse
-	(*GetPostsOfGroupRequest)(nil),                     // 25: post.GetPostsOfGroupRequest
-	(*GetPostsOfGroupResponse)(nil),                    // 26: post.GetPostsOfGroupResponse
-	(*GetGroupPostsBySubscriptionIDsRequest)(nil),      // 27: post.GetGroupPostsBySubscriptionIDsRequest
-	(*GetGroupPostsBySubscriptionIDsResponse)(nil),     // 28: post.GetGroupPostsBySubscriptionIDsResponse
-	(*GetPostsByGroupSubIDsAndUserSubIDsRequest)(nil),  // 29: post.GetPostsByGroupSubIDsAndUserSubIDsRequest
-	(*GetPostsByGroupSubIDsAndUserSubIDsResponse)(nil), // 30: post.GetPostsByGroupSubIDsAndUserSubIDsResponse
-	(*GetNewPostsRequest)(nil),                         // 31: post.GetNewPostsRequest
-	(*GetNewPostsResponse)(nil),                        // 32: post.GetNewPostsResponse
-	(*CommentResponse)(nil),                            // 33: post.CommentResponse
-	(*GetCommentsByPostIDRequest)(nil),                 // 34: post.GetCommentsByPostIDRequest
-	(*GetCommentsByPostIDResponse)(nil),                // 35: post.GetCommentsByPostIDResponse
-	(*CreateCommentRequest)(nil),                       // 36: post.CreateCommentRequest
-	(*CreateCommentResponse)(nil),                      // 37: post.CreateCommentResponse
-	(*UpdateCommentRequest)(nil),                       // 38: post.UpdateCommentRequest
-	(*UpdateCommentResponse)(nil),                      // 39: post.UpdateCommentResponse
-	(*DeleteCommentRequest)(nil),                       // 40: post.DeleteCommentRequest
-	(*DeleteCommentResponse)(nil),                      // 41: post.DeleteCommentResponse
-	(*CommentLikeResponse)(nil),                        // 42: post.CommentLikeResponse
-	(*LikeCommentRequest)(nil),                         // 43: post.LikeCommentRequest
-	(*LikeCommentResponse)(nil),                        // 44: post.LikeCommentResponse
-	(*UnlikeCommentRequest)(nil),                       // 45: post.UnlikeCommentRequest
-	(*UnlikeCommentResponse)(nil),                      // 46: post.UnlikeCommentResponse
-	(*timestamp.Timestamp)(nil),                        // 47: google.protobuf.Timestamp
+	(*GroupPostResponse)(nil),                          // 25: post.GroupPostResponse
+	(*GetGroupPostByPostIDRequest)(nil),                // 26: post.GetGroupPostByPostIDRequest
+	(*GetGroupPostByPostIDResponse)(nil),               // 27: post.GetGroupPostByPostIDResponse
+	(*GetPostsOfGroupRequest)(nil),                     // 28: post.GetPostsOfGroupRequest
+	(*GetPostsOfGroupResponse)(nil),                    // 29: post.GetPostsOfGroupResponse
+	(*GetGroupPostsBySubscriptionIDsRequest)(nil),      // 30: post.GetGroupPostsBySubscriptionIDsRequest
+	(*GetGroupPostsBySubscriptionIDsResponse)(nil),     // 31: post.GetGroupPostsBySubscriptionIDsResponse
+	(*GetPostsByGroupSubIDsAndUserSubIDsRequest)(nil),  // 32: post.GetPostsByGroupSubIDsAndUserSubIDsRequest
+	(*GetPostsByGroupSubIDsAndUserSubIDsResponse)(nil), // 33: post.GetPostsByGroupSubIDsAndUserSubIDsResponse
+	(*GetNewPostsRequest)(nil),                         // 34: post.GetNewPostsRequest
+	(*GetNewPostsResponse)(nil),                        // 35: post.GetNewPostsResponse
+	(*CommentResponse)(nil),                            // 36: post.CommentResponse
+	(*GetCommentsByPostIDRequest)(nil),                 // 37: post.GetCommentsByPostIDRequest
+	(*GetCommentsByPostIDResponse)(nil),                // 38: post.GetCommentsByPostIDResponse
+	(*CreateCommentRequest)(nil),                       // 39: post.CreateCommentRequest
+	(*CreateCommentResponse)(nil),                      // 40: post.CreateCommentResponse
+	(*UpdateCommentRequest)(nil),                       // 41: post.UpdateCommentRequest
+	(*UpdateCommentResponse)(nil),                      // 42: post.UpdateCommentResponse
+	(*DeleteCommentRequest)(nil),                       // 43: post.DeleteCommentRequest
+	(*DeleteCommentResponse)(nil),                      // 44: post.DeleteCommentResponse
+	(*CommentLikeResponse)(nil),                        // 45: post.CommentLikeResponse
+	(*LikeCommentRequest)(nil),                         // 46: post.LikeCommentRequest
+	(*LikeCommentResponse)(nil),                        // 47: post.LikeCommentResponse
+	(*UnlikeCommentRequest)(nil),                       // 48: post.UnlikeCommentRequest
+	(*UnlikeCommentResponse)(nil),                      // 49: post.UnlikeCommentResponse
+	(*timestamp.Timestamp)(nil),                        // 50: google.protobuf.Timestamp
 }
 var file_post_proto_depIdxs = []int32{
-	47, // 0: post.PostResponse.created_at:type_name -> google.protobuf.Timestamp
-	47, // 1: post.PostResponse.updated_at:type_name -> google.protobuf.Timestamp
+	50, // 0: post.PostResponse.created_at:type_name -> google.protobuf.Timestamp
+	50, // 1: post.PostResponse.updated_at:type_name -> google.protobuf.Timestamp
 	0,  // 2: post.LikedPostResponse.post:type_name -> post.PostResponse
 	2,  // 3: post.LikedPostResponse.like:type_name -> post.PostLikeResponse
-	47, // 4: post.PostLikeResponse.created_at:type_name -> google.protobuf.Timestamp
+	50, // 4: post.PostLikeResponse.created_at:type_name -> google.protobuf.Timestamp
 	0,  // 5: post.GetPostByIDResponse.post:type_name -> post.PostResponse
 	0,  // 6: post.GetUserPostsResponse.posts:type_name -> post.PostResponse
 	0,  // 7: post.GetUserFriendsPostsResponse.posts:type_name -> post.PostResponse
@@ -3077,64 +3281,69 @@ var file_post_proto_depIdxs = []int32{
 	0,  // 10: post.DeletePostResponse.post:type_name -> post.PostResponse
 	1,  // 11: post.GetLikedPostsResponse.liked_posts:type_name -> post.LikedPostResponse
 	2,  // 12: post.LikePostResponse.like:type_name -> post.PostLikeResponse
-	0,  // 13: post.GetPostsOfGroupResponse.posts:type_name -> post.PostResponse
-	0,  // 14: post.GetGroupPostsBySubscriptionIDsResponse.posts:type_name -> post.PostResponse
-	0,  // 15: post.GetPostsByGroupSubIDsAndUserSubIDsResponse.posts:type_name -> post.PostResponse
-	0,  // 16: post.GetNewPostsResponse.posts:type_name -> post.PostResponse
-	47, // 17: post.CommentResponse.created_at:type_name -> google.protobuf.Timestamp
-	47, // 18: post.CommentResponse.updated_at:type_name -> google.protobuf.Timestamp
-	33, // 19: post.GetCommentsByPostIDResponse.comments:type_name -> post.CommentResponse
-	33, // 20: post.CreateCommentResponse.comment:type_name -> post.CommentResponse
-	33, // 21: post.UpdateCommentResponse.comment:type_name -> post.CommentResponse
-	47, // 22: post.CommentLikeResponse.created_at:type_name -> google.protobuf.Timestamp
-	42, // 23: post.LikeCommentResponse.like:type_name -> post.CommentLikeResponse
-	3,  // 24: post.Post.GetPostByID:input_type -> post.GetPostByIDRequest
-	5,  // 25: post.Post.GetUserPosts:input_type -> post.GetUserPostsRequest
-	7,  // 26: post.Post.GetUserFriendsPosts:input_type -> post.GetUserFriendsPostsRequest
-	9,  // 27: post.Post.CreatePost:input_type -> post.CreatePostRequest
-	11, // 28: post.Post.UpdatePost:input_type -> post.UpdatePostRequest
-	13, // 29: post.Post.DeletePost:input_type -> post.DeletePostRequest
-	15, // 30: post.Post.GetLikedPosts:input_type -> post.GetLikedPostsRequest
-	17, // 31: post.Post.LikePost:input_type -> post.LikePostRequest
-	19, // 32: post.Post.UnlikePost:input_type -> post.UnlikePostRequest
-	21, // 33: post.Post.Upload:input_type -> post.UploadRequest
-	23, // 34: post.Post.CreateGroupPost:input_type -> post.CreateGroupPostRequest
-	25, // 35: post.Post.GetPostsOfGroup:input_type -> post.GetPostsOfGroupRequest
-	27, // 36: post.Post.GetGroupPostsBySubscriptionIDs:input_type -> post.GetGroupPostsBySubscriptionIDsRequest
-	29, // 37: post.Post.GetPostsByGroupSubIDsAndUserSubIDs:input_type -> post.GetPostsByGroupSubIDsAndUserSubIDsRequest
-	31, // 38: post.Post.GetNewPosts:input_type -> post.GetNewPostsRequest
-	34, // 39: post.Post.GetCommentsByPostID:input_type -> post.GetCommentsByPostIDRequest
-	36, // 40: post.Post.CreateComment:input_type -> post.CreateCommentRequest
-	38, // 41: post.Post.UpdateComment:input_type -> post.UpdateCommentRequest
-	40, // 42: post.Post.DeleteComment:input_type -> post.DeleteCommentRequest
-	43, // 43: post.Post.LikeComment:input_type -> post.LikeCommentRequest
-	45, // 44: post.Post.UnlikeComment:input_type -> post.UnlikeCommentRequest
-	4,  // 45: post.Post.GetPostByID:output_type -> post.GetPostByIDResponse
-	6,  // 46: post.Post.GetUserPosts:output_type -> post.GetUserPostsResponse
-	8,  // 47: post.Post.GetUserFriendsPosts:output_type -> post.GetUserFriendsPostsResponse
-	10, // 48: post.Post.CreatePost:output_type -> post.CreatePostResponse
-	12, // 49: post.Post.UpdatePost:output_type -> post.UpdatePostResponse
-	14, // 50: post.Post.DeletePost:output_type -> post.DeletePostResponse
-	16, // 51: post.Post.GetLikedPosts:output_type -> post.GetLikedPostsResponse
-	18, // 52: post.Post.LikePost:output_type -> post.LikePostResponse
-	20, // 53: post.Post.UnlikePost:output_type -> post.UnlikePostResponse
-	22, // 54: post.Post.Upload:output_type -> post.UploadResponse
-	24, // 55: post.Post.CreateGroupPost:output_type -> post.CreateGroupPostResponse
-	26, // 56: post.Post.GetPostsOfGroup:output_type -> post.GetPostsOfGroupResponse
-	28, // 57: post.Post.GetGroupPostsBySubscriptionIDs:output_type -> post.GetGroupPostsBySubscriptionIDsResponse
-	30, // 58: post.Post.GetPostsByGroupSubIDsAndUserSubIDs:output_type -> post.GetPostsByGroupSubIDsAndUserSubIDsResponse
-	32, // 59: post.Post.GetNewPosts:output_type -> post.GetNewPostsResponse
-	35, // 60: post.Post.GetCommentsByPostID:output_type -> post.GetCommentsByPostIDResponse
-	37, // 61: post.Post.CreateComment:output_type -> post.CreateCommentResponse
-	39, // 62: post.Post.UpdateComment:output_type -> post.UpdateCommentResponse
-	41, // 63: post.Post.DeleteComment:output_type -> post.DeleteCommentResponse
-	44, // 64: post.Post.LikeComment:output_type -> post.LikeCommentResponse
-	46, // 65: post.Post.UnlikeComment:output_type -> post.UnlikeCommentResponse
-	45, // [45:66] is the sub-list for method output_type
-	24, // [24:45] is the sub-list for method input_type
-	24, // [24:24] is the sub-list for extension type_name
-	24, // [24:24] is the sub-list for extension extendee
-	0,  // [0:24] is the sub-list for field type_name
+	50, // 13: post.GroupPostResponse.created_at:type_name -> google.protobuf.Timestamp
+	50, // 14: post.GroupPostResponse.updated_at:type_name -> google.protobuf.Timestamp
+	25, // 15: post.GetGroupPostByPostIDResponse.group_post:type_name -> post.GroupPostResponse
+	0,  // 16: post.GetPostsOfGroupResponse.posts:type_name -> post.PostResponse
+	0,  // 17: post.GetGroupPostsBySubscriptionIDsResponse.posts:type_name -> post.PostResponse
+	0,  // 18: post.GetPostsByGroupSubIDsAndUserSubIDsResponse.posts:type_name -> post.PostResponse
+	0,  // 19: post.GetNewPostsResponse.posts:type_name -> post.PostResponse
+	50, // 20: post.CommentResponse.created_at:type_name -> google.protobuf.Timestamp
+	50, // 21: post.CommentResponse.updated_at:type_name -> google.protobuf.Timestamp
+	36, // 22: post.GetCommentsByPostIDResponse.comments:type_name -> post.CommentResponse
+	36, // 23: post.CreateCommentResponse.comment:type_name -> post.CommentResponse
+	36, // 24: post.UpdateCommentResponse.comment:type_name -> post.CommentResponse
+	50, // 25: post.CommentLikeResponse.created_at:type_name -> google.protobuf.Timestamp
+	45, // 26: post.LikeCommentResponse.like:type_name -> post.CommentLikeResponse
+	3,  // 27: post.Post.GetPostByID:input_type -> post.GetPostByIDRequest
+	5,  // 28: post.Post.GetUserPosts:input_type -> post.GetUserPostsRequest
+	7,  // 29: post.Post.GetUserFriendsPosts:input_type -> post.GetUserFriendsPostsRequest
+	9,  // 30: post.Post.CreatePost:input_type -> post.CreatePostRequest
+	11, // 31: post.Post.UpdatePost:input_type -> post.UpdatePostRequest
+	13, // 32: post.Post.DeletePost:input_type -> post.DeletePostRequest
+	15, // 33: post.Post.GetLikedPosts:input_type -> post.GetLikedPostsRequest
+	17, // 34: post.Post.LikePost:input_type -> post.LikePostRequest
+	19, // 35: post.Post.UnlikePost:input_type -> post.UnlikePostRequest
+	21, // 36: post.Post.Upload:input_type -> post.UploadRequest
+	23, // 37: post.Post.CreateGroupPost:input_type -> post.CreateGroupPostRequest
+	26, // 38: post.Post.GetGroupPostByPostID:input_type -> post.GetGroupPostByPostIDRequest
+	28, // 39: post.Post.GetPostsOfGroup:input_type -> post.GetPostsOfGroupRequest
+	30, // 40: post.Post.GetGroupPostsBySubscriptionIDs:input_type -> post.GetGroupPostsBySubscriptionIDsRequest
+	32, // 41: post.Post.GetPostsByGroupSubIDsAndUserSubIDs:input_type -> post.GetPostsByGroupSubIDsAndUserSubIDsRequest
+	34, // 42: post.Post.GetNewPosts:input_type -> post.GetNewPostsRequest
+	37, // 43: post.Post.GetCommentsByPostID:input_type -> post.GetCommentsByPostIDRequest
+	39, // 44: post.Post.CreateComment:input_type -> post.CreateCommentRequest
+	41, // 45: post.Post.UpdateComment:input_type -> post.UpdateCommentRequest
+	43, // 46: post.Post.DeleteComment:input_type -> post.DeleteCommentRequest
+	46, // 47: post.Post.LikeComment:input_type -> post.LikeCommentRequest
+	48, // 48: post.Post.UnlikeComment:input_type -> post.UnlikeCommentRequest
+	4,  // 49: post.Post.GetPostByID:output_type -> post.GetPostByIDResponse
+	6,  // 50: post.Post.GetUserPosts:output_type -> post.GetUserPostsResponse
+	8,  // 51: post.Post.GetUserFriendsPosts:output_type -> post.GetUserFriendsPostsResponse
+	10, // 52: post.Post.CreatePost:output_type -> post.CreatePostResponse
+	12, // 53: post.Post.UpdatePost:output_type -> post.UpdatePostResponse
+	14, // 54: post.Post.DeletePost:output_type -> post.DeletePostResponse
+	16, // 55: post.Post.GetLikedPosts:output_type -> post.GetLikedPostsResponse
+	18, // 56: post.Post.LikePost:output_type -> post.LikePostResponse
+	20, // 57: post.Post.UnlikePost:output_type -> post.UnlikePostResponse
+	22, // 58: post.Post.Upload:output_type -> post.UploadResponse
+	24, // 59: post.Post.CreateGroupPost:output_type -> post.CreateGroupPostResponse
+	27, // 60: post.Post.GetGroupPostByPostID:output_type -> post.GetGroupPostByPostIDResponse
+	29, // 61: post.Post.GetPostsOfGroup:output_type -> post.GetPostsOfGroupResponse
+	31, // 62: post.Post.GetGroupPostsBySubscriptionIDs:output_type -> post.GetGroupPostsBySubscriptionIDsResponse
+	33, // 63: post.Post.GetPostsByGroupSubIDsAndUserSubIDs:output_type -> post.GetPostsByGroupSubIDsAndUserSubIDsResponse
+	35, // 64: post.Post.GetNewPosts:output_type -> post.GetNewPostsResponse
+	38, // 65: post.Post.GetCommentsByPostID:output_type -> post.GetCommentsByPostIDResponse
+	40, // 66: post.Post.CreateComment:output_type -> post.CreateCommentResponse
+	42, // 67: post.Post.UpdateComment:output_type -> post.UpdateCommentResponse
+	44, // 68: post.Post.DeleteComment:output_type -> post.DeleteCommentResponse
+	47, // 69: post.Post.LikeComment:output_type -> post.LikeCommentResponse
+	49, // 70: post.Post.UnlikeComment:output_type -> post.UnlikeCommentResponse
+	49, // [49:71] is the sub-list for method output_type
+	27, // [27:49] is the sub-list for method input_type
+	27, // [27:27] is the sub-list for extension type_name
+	27, // [27:27] is the sub-list for extension extendee
+	0,  // [0:27] is the sub-list for field type_name
 }
 
 func init() { file_post_proto_init() }
@@ -3444,7 +3653,7 @@ func file_post_proto_init() {
 			}
 		}
 		file_post_proto_msgTypes[25].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetPostsOfGroupRequest); i {
+			switch v := v.(*GroupPostResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3456,7 +3665,7 @@ func file_post_proto_init() {
 			}
 		}
 		file_post_proto_msgTypes[26].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetPostsOfGroupResponse); i {
+			switch v := v.(*GetGroupPostByPostIDRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3468,7 +3677,7 @@ func file_post_proto_init() {
 			}
 		}
 		file_post_proto_msgTypes[27].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetGroupPostsBySubscriptionIDsRequest); i {
+			switch v := v.(*GetGroupPostByPostIDResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3480,7 +3689,7 @@ func file_post_proto_init() {
 			}
 		}
 		file_post_proto_msgTypes[28].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetGroupPostsBySubscriptionIDsResponse); i {
+			switch v := v.(*GetPostsOfGroupRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3492,7 +3701,7 @@ func file_post_proto_init() {
 			}
 		}
 		file_post_proto_msgTypes[29].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetPostsByGroupSubIDsAndUserSubIDsRequest); i {
+			switch v := v.(*GetPostsOfGroupResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3504,7 +3713,7 @@ func file_post_proto_init() {
 			}
 		}
 		file_post_proto_msgTypes[30].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetPostsByGroupSubIDsAndUserSubIDsResponse); i {
+			switch v := v.(*GetGroupPostsBySubscriptionIDsRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3516,7 +3725,7 @@ func file_post_proto_init() {
 			}
 		}
 		file_post_proto_msgTypes[31].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetNewPostsRequest); i {
+			switch v := v.(*GetGroupPostsBySubscriptionIDsResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3528,7 +3737,7 @@ func file_post_proto_init() {
 			}
 		}
 		file_post_proto_msgTypes[32].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetNewPostsResponse); i {
+			switch v := v.(*GetPostsByGroupSubIDsAndUserSubIDsRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3540,7 +3749,7 @@ func file_post_proto_init() {
 			}
 		}
 		file_post_proto_msgTypes[33].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CommentResponse); i {
+			switch v := v.(*GetPostsByGroupSubIDsAndUserSubIDsResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3552,7 +3761,7 @@ func file_post_proto_init() {
 			}
 		}
 		file_post_proto_msgTypes[34].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetCommentsByPostIDRequest); i {
+			switch v := v.(*GetNewPostsRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3564,7 +3773,7 @@ func file_post_proto_init() {
 			}
 		}
 		file_post_proto_msgTypes[35].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetCommentsByPostIDResponse); i {
+			switch v := v.(*GetNewPostsResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3576,7 +3785,7 @@ func file_post_proto_init() {
 			}
 		}
 		file_post_proto_msgTypes[36].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CreateCommentRequest); i {
+			switch v := v.(*CommentResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3588,7 +3797,7 @@ func file_post_proto_init() {
 			}
 		}
 		file_post_proto_msgTypes[37].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CreateCommentResponse); i {
+			switch v := v.(*GetCommentsByPostIDRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3600,7 +3809,7 @@ func file_post_proto_init() {
 			}
 		}
 		file_post_proto_msgTypes[38].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*UpdateCommentRequest); i {
+			switch v := v.(*GetCommentsByPostIDResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3612,7 +3821,7 @@ func file_post_proto_init() {
 			}
 		}
 		file_post_proto_msgTypes[39].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*UpdateCommentResponse); i {
+			switch v := v.(*CreateCommentRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3624,7 +3833,7 @@ func file_post_proto_init() {
 			}
 		}
 		file_post_proto_msgTypes[40].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DeleteCommentRequest); i {
+			switch v := v.(*CreateCommentResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3636,7 +3845,7 @@ func file_post_proto_init() {
 			}
 		}
 		file_post_proto_msgTypes[41].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DeleteCommentResponse); i {
+			switch v := v.(*UpdateCommentRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3648,7 +3857,7 @@ func file_post_proto_init() {
 			}
 		}
 		file_post_proto_msgTypes[42].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CommentLikeResponse); i {
+			switch v := v.(*UpdateCommentResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3660,7 +3869,7 @@ func file_post_proto_init() {
 			}
 		}
 		file_post_proto_msgTypes[43].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*LikeCommentRequest); i {
+			switch v := v.(*DeleteCommentRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3672,7 +3881,7 @@ func file_post_proto_init() {
 			}
 		}
 		file_post_proto_msgTypes[44].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*LikeCommentResponse); i {
+			switch v := v.(*DeleteCommentResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3684,7 +3893,7 @@ func file_post_proto_init() {
 			}
 		}
 		file_post_proto_msgTypes[45].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*UnlikeCommentRequest); i {
+			switch v := v.(*CommentLikeResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3696,6 +3905,42 @@ func file_post_proto_init() {
 			}
 		}
 		file_post_proto_msgTypes[46].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*LikeCommentRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_post_proto_msgTypes[47].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*LikeCommentResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_post_proto_msgTypes[48].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*UnlikeCommentRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_post_proto_msgTypes[49].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*UnlikeCommentResponse); i {
 			case 0:
 				return &v.state
@@ -3714,7 +3959,7 @@ func file_post_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_post_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   47,
+			NumMessages:   50,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

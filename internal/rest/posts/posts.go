@@ -92,13 +92,19 @@ func NewPostsHandler(postsClient postspb.PostClient, userClient uspb.UserClient,
 //	@Param			postId	query	uint	true	"ID of the post"
 //
 //	@Produce		json
-//	@Success		200	{object}	json.JSONResponse{body=map[string]domain.Post}
+//	@Success		200	{object}	json.JSONResponse{body=domain.PostWithAuthorAndGroup}
 //	@Failure		400	{object}	errors.HTTPError
 //	@Failure		401	{object}	errors.HTTPError
 //	@Failure		403	{object}	errors.HTTPError
 //	@Failure		500	{object}	errors.HTTPError
 //	@Router			/posts/{id} [get]
 func (h *PostsHandler) HandleGetPostByID(w http.ResponseWriter, r *http.Request) {
+	userID, err := requestcontext.GetUserID(r.Context())
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, errors.ErrUnauthorized)
+		return
+	}
+
 	postID, ok := mux.Vars(r)["postID"]
 	if !ok {
 		json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
@@ -111,7 +117,7 @@ func (h *PostsHandler) HandleGetPostByID(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	post, err := h.PostsClient.GetPostByID(r.Context(), &postspb.GetPostByIDRequest{
+	postData, err := h.PostsClient.GetPostByID(r.Context(), &postspb.GetPostByIDRequest{
 		PostId: uint64(postIDData),
 	})
 	if err != nil {
@@ -119,9 +125,51 @@ func (h *PostsHandler) HandleGetPostByID(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	json.ServeJSONBody(r.Context(), w, map[string]*domain.Post{
-		"post": postspb.ToPost(post.Post),
-	}, http.StatusOK)
+	post := postspb.ToPost(postData.GetPost())
+
+	authorData, err := h.UserClient.GetByID(r.Context(), &uspb.GetByIDRequest{
+		UserId: uint64(post.AuthorID),
+	})
+	if err != nil {
+		json.ServeGRPCStatus(r.Context(), w, err)
+		return
+	}
+
+	groupPostData, err := h.PostsClient.GetGroupPostByPostID(r.Context(), &postspb.GetGroupPostByPostIDRequest{
+		PostId: uint64(post.ID),
+	})
+	if err != nil {
+		_, code := errors.ParseGRPCError(err)
+		if code != http.StatusNotFound {
+			json.ServeGRPCStatus(r.Context(), w, err)
+			return
+		}
+	}
+
+	group := new(domain.PublicGroup)
+
+	if err == nil {
+		groupData, err := h.PublicGroupClient.GetByID(r.Context(), &pgpb.GetByIDRequest{
+			Id:     groupPostData.GroupPost.GroupId,
+			UserId: uint64(userID),
+		})
+		if err != nil {
+			json.ServeJSONError(r.Context(), w, err)
+			return
+		}
+
+		group = pgpb.ToPublicGroup(groupData.PublicGroup.PublicGroup)
+	} else {
+		group = nil
+	}
+
+	postWithData := &domain.PostWithAuthorAndGroup{
+		Post:   post,
+		Author: uspb.ToUser(authorData.GetUser()),
+		Group:  group,
+	}
+
+	json.ServeJSONBody(r.Context(), w, postWithData, http.StatusOK)
 }
 
 // HandleGetUserPosts godoc
@@ -1000,7 +1048,7 @@ func (h *PostsHandler) HandleGetNewPosts(w http.ResponseWriter, r *http.Request)
 //	@Param			postID	path	uint	true	"ID of the post"
 //
 //	@Produce		json
-//	@Success		200	{object}	map[string][]domain.Comment
+//	@Success		200	{object}	[]domain.CommentWithAuthor
 //	@Failure		400	{object}	errors.HTTPError
 //	@Failure		401	{object}	errors.HTTPError
 //	@Failure		403	{object}	errors.HTTPError
@@ -1028,9 +1076,24 @@ func (h *PostsHandler) HandleGetCommentsByPostID(w http.ResponseWriter, r *http.
 		return
 	}
 
-	json.ServeJSONBody(r.Context(), w, map[string][]*domain.Comment{
-		"comments": postspb.ToComments(comments.GetComments()),
-	}, http.StatusOK)
+	commentsWithAuthors := make([]*domain.CommentWithAuthor, 0, len(comments.Comments))
+
+	for _, comment := range postspb.ToComments(comments.GetComments()) {
+		commentAuthorData, err := h.UserClient.GetByID(r.Context(), &uspb.GetByIDRequest{
+			UserId: uint64(comment.AuthorID),
+		})
+		if err != nil {
+			json.ServeGRPCStatus(r.Context(), w, err)
+			return
+		}
+
+		commentsWithAuthors = append(commentsWithAuthors, &domain.CommentWithAuthor{
+			Comment: comment,
+			Author:  uspb.ToUser(commentAuthorData.GetUser()),
+		})
+	}
+
+	json.ServeJSONBody(r.Context(), w, commentsWithAuthors, http.StatusOK)
 }
 
 // HandleCreateComment godoc

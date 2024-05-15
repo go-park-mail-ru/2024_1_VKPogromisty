@@ -19,12 +19,12 @@ service Post {
     rpc UnlikePost(UnlikePostRequest) returns (UnlikePostResponse) {}
     rpc Upload(stream UploadRequest) returns (UploadResponse) {}
     rpc CreateGroupPost(CreateGroupPostRequest) returns (CreateGroupPostResponse) {}
+    rpc GetGroupPostByPostID(GetGroupPostByPostIDRequest) returns (GetGroupPostByPostIDResponse) {}
     rpc GetPostsOfGroup(GetPostsOfGroupRequest) returns (GetPostsOfGroupResponse) {}
     rpc GetGroupPostsBySubscriptionIDs(GetGroupPostsBySubscriptionIDsRequest) returns (GetGroupPostsBySubscriptionIDsResponse) {}
     rpc GetPostsByGroupSubIDsAndUserSubIDs(GetPostsByGroupSubIDsAndUserSubIDsRequest) returns (GetPostsByGroupSubIDsAndUserSubIDsResponse) {}
     rpc GetNewPosts(GetNewPostsRequest) returns (GetNewPostsResponse) {}
     rpc GetCommentsByPostID(GetCommentsByPostIDRequest) returns (GetCommentsByPostIDResponse) {}
-    
     rpc CreateComment(CreateCommentRequest) returns (CreateCommentResponse) {}
     rpc UpdateComment(UpdateCommentRequest) returns (UpdateCommentResponse) {}
     rpc DeleteComment(DeleteCommentRequest) returns (DeleteCommentResponse) {}
@@ -156,6 +156,22 @@ message CreateGroupPostRequest {
 }
 
 message CreateGroupPostResponse {}
+
+message GroupPostResponse {
+    uint64 id = 1;
+    uint64 post_id = 2;
+    uint64 group_id = 3;
+    google.protobuf.Timestamp created_at = 4;
+    google.protobuf.Timestamp updated_at = 5;
+}
+
+message GetGroupPostByPostIDRequest {
+    uint64 post_id = 1;
+}
+
+message GetGroupPostByPostIDResponse {
+    GroupPostResponse group_post = 1;
+}
 
 message GetPostsOfGroupRequest {
     uint64 group_id = 1;

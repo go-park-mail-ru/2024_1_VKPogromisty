@@ -183,6 +183,15 @@ const (
 		created_at,
 		updated_at;
 	`
+	GetGroupPostByPostIDQuery = `
+	SELECT id,
+		post_id,
+		public_group_id,
+		created_at,
+		updated_at
+	FROM public.public_group_post
+	WHERE post_id = $1;
+	`
 	DeleteGroupPostQuery = `
 	DELETE FROM public.public_group_post
 	WHERE post_id = $1;
@@ -508,6 +517,29 @@ func (p *Posts) StoreGroupPost(ctx context.Context, groupPost *domain.GroupPost)
 		&newGroupPost.UpdatedAt.Time,
 	)
 	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (p *Posts) GetGroupPostByPostID(ctx context.Context, postID uint) (groupPost *domain.GroupPost, err error) {
+	groupPost = new(domain.GroupPost)
+
+	contextlogger.LogSQL(ctx, GetGroupPostByPostIDQuery, postID)
+
+	err = p.db.QueryRow(context.Background(), GetGroupPostByPostIDQuery, postID).Scan(
+		&groupPost.ID,
+		&groupPost.PostID,
+		&groupPost.GroupID,
+		&groupPost.CreatedAt.Time,
+		&groupPost.UpdatedAt.Time,
+	)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			err = errors.ErrNotFound
+		}
+
 		return
 	}
 

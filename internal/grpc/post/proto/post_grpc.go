@@ -185,3 +185,35 @@ func ToCommentLike(res *CommentLikeResponse) *domain.CommentLike {
 		CreatedAt: customtime.CustomTime{Time: res.CreatedAt.AsTime()},
 	}
 }
+
+func ToGroupPostResponse(groupPost *domain.GroupPost) (res *GroupPostResponse) {
+	if groupPost == nil {
+		return nil
+	}
+
+	return &GroupPostResponse{
+		Id:        uint64(groupPost.ID),
+		PostId:    uint64(groupPost.PostID),
+		GroupId:   uint64(groupPost.GroupID),
+		CreatedAt: timestamppb.New(groupPost.CreatedAt.Time),
+		UpdatedAt: timestamppb.New(groupPost.UpdatedAt.Time),
+	}
+}
+
+func ToGroupPost(res *GroupPostResponse) (groupPost *domain.GroupPost) {
+	if res == nil {
+		return nil
+	}
+
+	return &domain.GroupPost{
+		ID:      uint(res.GetId()),
+		PostID:  uint(res.GetPostId()),
+		GroupID: uint(res.GetGroupId()),
+		CreatedAt: customtime.CustomTime{
+			Time: res.CreatedAt.AsTime(),
+		},
+		UpdatedAt: customtime.CustomTime{
+			Time: res.UpdatedAt.AsTime(),
+		},
+	}
+}
