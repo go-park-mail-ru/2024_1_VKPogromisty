@@ -10,12 +10,13 @@ import (
 )
 
 const (
-	sendChanSize                   = 256
-	SendMessageAction   ChatAction = "SEND_MESSAGE"
-	UpdateMessageAction ChatAction = "UPDATE_MESSAGE"
-	DeleteMessageAction ChatAction = "DELETE_MESSAGE"
-	SetOnlineAction     ChatAction = "SET_ONLINE"
-	SetOfflineAction    ChatAction = "SET_OFFLINE"
+	sendChanSize                        = 256
+	SendMessageAction        ChatAction = "SEND_MESSAGE"
+	UpdateMessageAction      ChatAction = "UPDATE_MESSAGE"
+	DeleteMessageAction      ChatAction = "DELETE_MESSAGE"
+	SendStickerMessageAction ChatAction = "SEND_STICKER_MESSAGE"
+	SetOnlineAction          ChatAction = "SET_ONLINE"
+	SetOfflineAction         ChatAction = "SET_OFFLINE"
 )
 
 type ChatAction string
@@ -34,6 +35,13 @@ type PersonalMessagesRepository interface {
 	StoreMessage(ctx context.Context, message *domain.PersonalMessage) (newMessage *domain.PersonalMessage, err error)
 	UpdateMessage(ctx context.Context, message *domain.PersonalMessage) (updatedMessage *domain.PersonalMessage, err error)
 	DeleteMessage(ctx context.Context, messageID uint) (err error)
+
+	GetStickerByID(ctx context.Context, stickerID uint) (sticker *domain.Sticker, err error)
+	GetStickersByAuthorID(ctx context.Context, authorID uint) (stickers []*domain.Sticker, err error)
+	GetAllStickers(ctx context.Context) (stickers []*domain.Sticker, err error)
+	StoreSticker(ctx context.Context, sticker *domain.Sticker) (newSticker *domain.Sticker, err error)
+	DeleteSticker(ctx context.Context, stickerID uint) (err error)
+	StoreStickerMessage(ctx context.Context, senderID, receiverID, stickerID uint) (newStickerMessage *domain.PersonalMessage, err error)
 }
 
 type PubSubRepository interface {
@@ -92,6 +100,11 @@ func (c *Client) HandleAction(ctx context.Context, action *Action) {
 		payload := new(DeleteMessagePayload)
 		json.NewDecoder(bytes.NewReader(action.Payload)).Decode(payload)
 		c.handleDeleteMessageAction(ctx, action, payload.MessageID)
+
+	case SendStickerMessageAction:
+		payload := new(SendStickerMessagePayload)
+		json.NewDecoder(bytes.NewReader(action.Payload)).Decode(payload)
+		c.handleSendStickerMessageAction(ctx, action, payload)
 	}
 }
 
@@ -193,6 +206,32 @@ func (c *Client) handleUpdateMessageAction(ctx context.Context, action *Action, 
 
 func (c *Client) handleDeleteMessageAction(ctx context.Context, action *Action, messageID uint) {
 	err := c.PersonalMessagesRepo.DeleteMessage(ctx, messageID)
+	if err != nil {
+		action.Payload, err = errors.MarshalError(err)
+		if err != nil {
+			return
+		}
+
+		c.PubSubRepository.WriteAction(ctx, action)
+		return
+	}
+
+	c.PubSubRepository.WriteAction(ctx, action)
+}
+
+func (c *Client) handleSendStickerMessageAction(ctx context.Context, action *Action, message *SendStickerMessagePayload) {
+	newStickerMessage, err := c.PersonalMessagesRepo.StoreStickerMessage(ctx, c.UserID, action.Receiver, message.StickerID)
+	if err != nil {
+		action.Payload, err = errors.MarshalError(err)
+		if err != nil {
+			return
+		}
+
+		c.PubSubRepository.WriteAction(ctx, action)
+		return
+	}
+
+	action.Payload, err = json.Marshal(newStickerMessage)
 	if err != nil {
 		action.Payload, err = errors.MarshalError(err)
 		if err != nil {

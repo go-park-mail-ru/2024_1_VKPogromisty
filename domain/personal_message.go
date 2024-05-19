@@ -7,6 +7,7 @@ type PersonalMessage struct {
 	SenderID   uint                  `json:"senderId"`
 	ReceiverID uint                  `json:"receiverId"`
 	Content    string                `json:"content"`
+	Sticker    *Sticker              `json:"sticker,omitempty"`
 	CreatedAt  customtime.CustomTime `json:"createdAt,omitempty" swaggertype:"string" example:"2021-01-01T00:00:00Z" format:"date-time"`
 	UpdatedAt  customtime.CustomTime `json:"updatedAt,omitempty" swaggertype:"string" example:"2021-01-01T00:00:00Z" format:"date-time"`
 }

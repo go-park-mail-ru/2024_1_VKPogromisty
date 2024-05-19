@@ -66,6 +66,8 @@ definitions:
         type: integer
       senderId:
         type: integer
+      sticker:
+        $ref: '#/definitions/domain.Sticker'
       updatedAt:
         example: "2021-01-01T00:00:00Z"
         format: date-time
@@ -160,6 +162,25 @@ definitions:
         type: integer
       subscriberId:
         type: integer
+      updatedAt:
+        example: "2021-01-01T00:00:00Z"
+        format: date-time
+        type: string
+    type: object
+  domain.Sticker:
+    properties:
+      authorId:
+        type: integer
+      createdAt:
+        example: "2021-01-01T00:00:00Z"
+        format: date-time
+        type: string
+      fileName:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
       updatedAt:
         example: "2021-01-01T00:00:00Z"
         format: date-time
@@ -615,6 +636,218 @@ paths:
           schema:
             $ref: '#/definitions/errors.HTTPError'
       summary: get messages by dialog
+      tags:
+      - chat
+  /chat/stickers/:
+    get:
+      consumes:
+      - application/json
+      description: get all stickers
+      operationId: chat/get_all_stickers
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/domain.Sticker'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: get all stickers
+      tags:
+      - chat
+    post:
+      consumes:
+      - multipart/form-data
+      description: create sticker
+      operationId: chat/create_sticker
+      parameters:
+      - description: Name of the sticker
+        in: formData
+        name: name
+        required: true
+        type: string
+      - description: Image of the sticker
+        in: formData
+        name: image
+        required: true
+        type: file
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  $ref: '#/definitions/domain.Sticker'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: create sticker
+      tags:
+      - chat
+  /chat/stickers/{authorID}:
+    get:
+      consumes:
+      - application/json
+      description: get stickers by author ID
+      operationId: chat/get_stickers
+      parameters:
+      - description: ID of the author
+        in: path
+        name: authorID
+        required: true
+        type: integer
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/domain.Sticker'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: get stickers by author ID
+      tags:
+      - chat
+  /chat/stickers/{stickerID}:
+    delete:
+      consumes:
+      - application/json
+      description: delete sticker
+      operationId: chat/delete_sticker
+      parameters:
+      - description: ID of the sticker
+        in: path
+        name: stickerID
+        required: true
+        type: integer
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: delete sticker
       tags:
       - chat
   /csrf/:

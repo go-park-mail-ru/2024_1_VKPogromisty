@@ -14,8 +14,10 @@ import (
 	"socio/usecase/chat"
 	"socio/usecase/csrf"
 	"strconv"
+	"strings"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 )
 
@@ -42,9 +44,9 @@ var upgrader = &websocket.Upgrader{
 	CheckOrigin:     middleware.CheckOrigin,
 }
 
-func NewChatServer(pubSubRepo chat.PubSubRepository, messagesRepo chat.PersonalMessagesRepository, sanitizer *sanitizer.Sanitizer) (chatServer *ChatServer) {
+func NewChatServer(pubSubRepo chat.PubSubRepository, messagesRepo chat.PersonalMessagesRepository, stickerStorage chat.StickerStorage, sanitizer *sanitizer.Sanitizer) (chatServer *ChatServer) {
 	return &ChatServer{
-		Service: chat.NewChatService(pubSubRepo, messagesRepo, sanitizer),
+		Service: chat.NewChatService(pubSubRepo, messagesRepo, stickerStorage, sanitizer),
 	}
 }
 
@@ -338,4 +340,177 @@ func (c *ChatServer) listenWrite(ctx context.Context, conn *websocket.Conn, clie
 			}
 		}
 	}
+}
+
+// GetStickersByAuthorID godoc
+//
+//	@Summary		get stickers by author ID
+//	@Description	get stickers by author ID
+//	@Tags			chat
+//	@license.name	Apache 2.0
+//	@ID				chat/get_stickers
+//	@Accept			json
+//
+//	@Param			authorID	path	uint	true	"ID of the author"
+//	@Param			Cookie		header	string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
+//
+//	@Produce		json
+//	@Success		200	{object}	json.JSONResponse{body=[]domain.Sticker}
+//	@Failure		400	{object}	errors.HTTPError
+//	@Failure		401	{object}	errors.HTTPError
+//	@Failure		403	{object}	errors.HTTPError
+//	@Failure		500	{object}	errors.HTTPError
+//	@Router			/chat/stickers/{authorID} [get]
+func (c *ChatServer) HandleGetStickersByAuthorID(w http.ResponseWriter, r *http.Request) {
+	authorIDData, ok := mux.Vars(r)["authorID"]
+	if !ok {
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
+		return
+	}
+
+	authorID, err := strconv.ParseUint(authorIDData, 0, 0)
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
+		return
+	}
+
+	stickers, err := c.Service.GetStickersByAuthorID(r.Context(), uint(authorID))
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, err)
+		return
+	}
+
+	json.ServeJSONBody(r.Context(), w, stickers, http.StatusOK)
+}
+
+// GetAllStickers godoc
+//
+//	@Summary		get all stickers
+//	@Description	get all stickers
+//	@Tags			chat
+//	@license.name	Apache 2.0
+//	@ID				chat/get_all_stickers
+//	@Accept			json
+//
+//	@Param			Cookie	header	string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
+//
+//	@Produce		json
+//	@Success		200	{object}	json.JSONResponse{body=[]domain.Sticker}
+//	@Failure		400	{object}	errors.HTTPError
+//	@Failure		401	{object}	errors.HTTPError
+//	@Failure		403	{object}	errors.HTTPError
+//	@Failure		500	{object}	errors.HTTPError
+//	@Router			/chat/stickers/ [get]
+func (c *ChatServer) HandleGetAllStickers(w http.ResponseWriter, r *http.Request) {
+	stickers, err := c.Service.GetAllStickers(r.Context())
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, err)
+		return
+	}
+
+	json.ServeJSONBody(r.Context(), w, stickers, http.StatusOK)
+}
+
+// CreateSticker godoc
+//
+//	@Summary		create sticker
+//	@Description	create sticker
+//	@Tags			chat
+//	@license.name	Apache 2.0
+//	@ID				chat/create_sticker
+//	@Accept			multipart/form-data
+//
+//	@Param			name	formData	string	true	"Name of the sticker"
+//	@Param			image	formData	file	true	"Image of the sticker"
+//	@Param			Cookie	header	string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
+//
+//	@Produce		json
+//	@Success		201	{object}	json.JSONResponse{body=domain.Sticker}
+//	@Failure		400	{object}	errors.HTTPError
+//	@Failure		401	{object}	errors.HTTPError
+//	@Failure		403	{object}	errors.HTTPError
+//	@Failure		500	{object}	errors.HTTPError
+//	@Router			/chat/stickers/ [post]
+func (c *ChatServer) HandleCreateSticker(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseMultipartForm(1000 << 20)
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidBody)
+		return
+	}
+
+	sticker := new(domain.Sticker)
+
+	sticker.AuthorID, err = requestcontext.GetUserID(r.Context())
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, err)
+		return
+	}
+
+	sticker.Name = strings.TrimSpace(r.PostFormValue("name"))
+
+	_, fh, err := r.FormFile("image")
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidBody)
+		return
+	}
+
+	sticker, err = c.Service.CreateSticker(r.Context(), sticker, fh)
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, err)
+		return
+	}
+
+	json.ServeJSONBody(r.Context(), w, sticker, http.StatusCreated)
+}
+
+// DeleteSticker godoc
+//
+//	@Summary		delete sticker
+//	@Description	delete sticker
+//	@Tags			chat
+//	@license.name	Apache 2.0
+//	@ID				chat/delete_sticker
+//	@Accept			json
+//
+//	@Param			stickerID	path	uint	true	"ID of the sticker"
+//	@Param			Cookie		header	string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
+//
+//	@Produce		json
+//	@Success		204
+//	@Failure		400	{object}	errors.HTTPError
+//	@Failure		401	{object}	errors.HTTPError
+//	@Failure		403	{object}	errors.HTTPError
+//	@Failure		404	{object}	errors.HTTPError
+//	@Failure		500	{object}	errors.HTTPError
+//	@Router			/chat/stickers/{stickerID} [delete]
+func (c *ChatServer) HandleDeleteSticker(w http.ResponseWriter, r *http.Request) {
+	stickerIDData, ok := mux.Vars(r)["stickerID"]
+	if !ok {
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
+		return
+	}
+
+	stickerID, err := strconv.ParseUint(stickerIDData, 0, 0)
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
+		return
+	}
+
+	userID, err := requestcontext.GetUserID(r.Context())
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, err)
+		return
+	}
+
+	err = c.Service.DeleteSticker(r.Context(), uint(stickerID), userID)
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, err)
+		return
+	}
+
+	json.ServeJSONBody(r.Context(), w, nil, http.StatusNoContent)
 }

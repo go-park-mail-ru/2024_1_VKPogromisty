@@ -10,25 +10,26 @@ import (
 
 const (
 	getMessagesByDialogQuery = `
-	SELECT id,
-		sender_id,
-		receiver_id,
-		content,
-		created_at,
-		updated_at
-	FROM public.personal_message
+	SELECT pm.id,
+		pm.sender_id,
+		pm.receiver_id,
+		pm.content,
+		pm.created_at,
+		pm.updated_at,
+		COALESCE(pm.sticker_id, 0)
+	FROM public.personal_message AS pm
 	WHERE (
 			(
-				sender_id = $1
-				AND receiver_id = $2
+				pm.sender_id = $1
+				AND pm.receiver_id = $2
 			)
 			OR (
-				sender_id = $2
-				AND receiver_id = $1
+				pm.sender_id = $2
+				AND pm.receiver_id = $1
 			)
 		)
-		AND id < $3
-	ORDER BY created_at DESC
+		AND pm.id < $3
+	ORDER BY pm.created_at DESC
 	LIMIT $4;
 	`
 	getLastMessageIDQuery = `
@@ -67,7 +68,8 @@ const (
 		pm1.receiver_id,
 		pm1.content,
 		pm1.created_at,
-		pm1.updated_at
+		pm1.updated_at,
+		COALESCE(pm1.sticker_id, 0)
 	FROM public.user AS u1
 		JOIN public.personal_message AS pm1 ON u1.id = pm1.sender_id
 		JOIN public.user AS u2 ON pm1.receiver_id = u2.id
@@ -150,6 +152,7 @@ func (pm *PersonalMessages) GetMessagesByDialog(ctx context.Context, senderID, r
 
 	for rows.Next() {
 		msg := new(domain.PersonalMessage)
+		sticker := new(domain.Sticker)
 
 		err = rows.Scan(
 			&msg.ID,
@@ -158,9 +161,19 @@ func (pm *PersonalMessages) GetMessagesByDialog(ctx context.Context, senderID, r
 			&msg.Content,
 			&msg.CreatedAt.Time,
 			&msg.UpdatedAt.Time,
+			&sticker.ID,
 		)
 		if err != nil {
 			return
+		}
+
+		if sticker.ID != 0 {
+			sticker, err = pm.GetStickerByID(ctx, sticker.ID)
+			if err != nil {
+				return
+			}
+
+			msg.Sticker = sticker
 		}
 
 		messages = append(messages, msg)
@@ -185,6 +198,7 @@ func (pm *PersonalMessages) GetDialogsByUserID(ctx context.Context, userID uint)
 		user1 := new(domain.User)
 		user2 := new(domain.User)
 		lastMessage := new(domain.PersonalMessage)
+		sticker := new(domain.Sticker)
 
 		err = rows.Scan(
 			&user1.ID,
@@ -209,9 +223,19 @@ func (pm *PersonalMessages) GetDialogsByUserID(ctx context.Context, userID uint)
 			&lastMessage.Content,
 			&lastMessage.CreatedAt.Time,
 			&lastMessage.UpdatedAt.Time,
+			&sticker.ID,
 		)
 		if err != nil {
 			return
+		}
+
+		if sticker.ID != 0 {
+			sticker, err = pm.GetStickerByID(ctx, sticker.ID)
+			if err != nil {
+				return
+			}
+
+			lastMessage.Sticker = sticker
 		}
 
 		dialog.User1 = user1

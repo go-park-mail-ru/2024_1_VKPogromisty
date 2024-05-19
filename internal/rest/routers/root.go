@@ -8,6 +8,7 @@ import (
 	postpb "socio/internal/grpc/post/proto"
 	pgpb "socio/internal/grpc/public_group/proto"
 	uspb "socio/internal/grpc/user/proto"
+	minioRepo "socio/internal/repository/minio"
 	pgRepo "socio/internal/repository/postgres"
 	redisRepo "socio/internal/repository/redis"
 	"socio/internal/rest/middleware"
@@ -15,6 +16,7 @@ import (
 	"socio/pkg/logger"
 	customtime "socio/pkg/time"
 
+	"github.com/minio/minio-go"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/cors"
 	"google.golang.org/grpc"
@@ -55,6 +57,18 @@ func MountRootRouter(router *mux.Router) (err error) {
 	defer db.Close()
 
 	personalMessageStorage := pgRepo.NewPersonalMessages(db, customtime.RealTimeProvider{})
+
+	minioClient, err := minio.New(os.Getenv("MINIO_HOST"), os.Getenv("MINIO_ACCESS_KEY"), os.Getenv("MINIO_SECRET_KEY"), false)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	stickerStorage, err := minioRepo.NewStaticStorage(minioClient, minioRepo.StickersBucket)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	redisPool := redisRepo.NewPool(os.Getenv("REDIS_PROTOCOL"), os.Getenv("REDIS_HOST")+":"+os.Getenv("REDIS_PORT"), os.Getenv("REDIS_PASSWORD"))
 	defer redisPool.Close()
@@ -119,7 +133,7 @@ func MountRootRouter(router *mux.Router) (err error) {
 
 	MountAuthRouter(rootRouter, authClient, userClient)
 	MountCSRFRouter(rootRouter, authClient)
-	MountChatRouter(rootRouter, chatPubSubRepository, personalMessageStorage, authClient)
+	MountChatRouter(rootRouter, chatPubSubRepository, personalMessageStorage, authClient, stickerStorage)
 	MountProfileRouter(rootRouter, userClient, authClient)
 	MountPostsRouter(rootRouter, postClient, userClient, publicGroupClient, authClient)
 	MountSubscriptionsRouter(rootRouter, userClient, authClient)

@@ -13,9 +13,9 @@ import (
 	"github.com/microcosm-cc/bluemonday"
 )
 
-func MountChatRouter(rootRouter *mux.Router, pubSubRepo chat.PubSubRepository, messagesRepo chat.PersonalMessagesRepository, authManager authpb.AuthClient) {
+func MountChatRouter(rootRouter *mux.Router, pubSubRepo chat.PubSubRepository, messagesRepo chat.PersonalMessagesRepository, authManager authpb.AuthClient, stickerStorage chat.StickerStorage) {
 	sanitizer := sanitizer.NewSanitizer(bluemonday.UGCPolicy())
-	h := rest.NewChatServer(pubSubRepo, messagesRepo, sanitizer)
+	h := rest.NewChatServer(pubSubRepo, messagesRepo, stickerStorage, sanitizer)
 
 	csrfFreeRouter := rootRouter.PathPrefix("/chat/ws").Subrouter()
 	csrfFreeRouter.HandleFunc("/", h.ServeWS).Methods("GET", "OPTIONS")
@@ -27,4 +27,8 @@ func MountChatRouter(rootRouter *mux.Router, pubSubRepo chat.PubSubRepository, m
 
 	csrfRequiredRouter.HandleFunc("/dialogs", h.HandleGetDialogs).Methods("GET", "OPTIONS")
 	csrfRequiredRouter.HandleFunc("/messages", h.HandleGetMessagesByDialog).Methods("GET", "OPTIONS")
+	csrfRequiredRouter.HandleFunc("/stickers/", h.HandleGetAllStickers).Methods("GET", "OPTIONS")
+	csrfRequiredRouter.HandleFunc("/stickers/{authorID}", h.HandleGetStickersByAuthorID).Methods("GET", "OPTIONS")
+	csrfRequiredRouter.HandleFunc("/stickers/", h.HandleCreateSticker).Methods("POST", "OPTIONS")
+	csrfRequiredRouter.HandleFunc("/stickers/{stickerID}", h.HandleDeleteSticker).Methods("DELETE", "OPTIONS")
 }
