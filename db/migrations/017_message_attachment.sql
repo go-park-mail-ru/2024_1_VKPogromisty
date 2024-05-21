@@ -3,7 +3,6 @@ CREATE TABLE IF NOT EXISTS public.message_attachment (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     message_id BIGINT NOT NULL,
     file_name TEXT UNIQUE NOT NULL,
-    original_name TEXT DEFAULT ''::TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     FOREIGN KEY (message_id) REFERENCES public.personal_message (id) ON UPDATE CASCADE ON DELETE CASCADE
 );

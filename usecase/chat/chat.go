@@ -19,11 +19,13 @@ const (
 
 // Service will: register and unregister new clients by userID, establish pub/sub connection to redis
 type Service struct {
-	Clients          *sync.Map
-	PubSubRepository PubSubRepository
-	MessagesRepo     PersonalMessagesRepository
-	StickerStorage   StickerStorage
-	Sanitizer        *sanitizer.Sanitizer
+	Clients                         *sync.Map
+	PubSubRepository                PubSubRepository
+	MessagesRepo                    PersonalMessagesRepository
+	UnsentMessageAttachmentsStorage UnsentMessageAttachmentsStorage
+	MessageAttachmentStorage        MessageAttachmentStorage
+	StickerStorage                  StickerStorage
+	Sanitizer                       *sanitizer.Sanitizer
 }
 
 type SendMessagePayload struct {
@@ -48,13 +50,15 @@ type StickerStorage interface {
 	Delete(fileName string) (err error)
 }
 
-func NewChatService(pubSubRepo PubSubRepository, messagesRepo PersonalMessagesRepository, stickerStorage StickerStorage, sanitizer *sanitizer.Sanitizer) (chatService *Service) {
+func NewChatService(pubSubRepo PubSubRepository, unsentMessageAttachmentsStorage UnsentMessageAttachmentsStorage, messagesRepo PersonalMessagesRepository, stickerStorage StickerStorage, messageAttachmentStorage MessageAttachmentStorage, sanitizer *sanitizer.Sanitizer) (chatService *Service) {
 	return &Service{
-		Clients:          &sync.Map{},
-		PubSubRepository: pubSubRepo,
-		MessagesRepo:     messagesRepo,
-		StickerStorage:   stickerStorage,
-		Sanitizer:        sanitizer,
+		Clients:                         &sync.Map{},
+		PubSubRepository:                pubSubRepo,
+		UnsentMessageAttachmentsStorage: unsentMessageAttachmentsStorage,
+		MessagesRepo:                    messagesRepo,
+		StickerStorage:                  stickerStorage,
+		MessageAttachmentStorage:        messageAttachmentStorage,
+		Sanitizer:                       sanitizer,
 	}
 }
 

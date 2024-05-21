@@ -4,6 +4,9 @@ import (
 	"io"
 	"mime/multipart"
 	"os"
+	"path/filepath"
+
+	"github.com/google/uuid"
 )
 
 const DefaultAvatarFileName = "default_avatar.png"
@@ -28,4 +31,12 @@ func SaveFile(fh *multipart.FileHeader, dst string) error {
 
 func RemoveFile(path string) error {
 	return os.Remove(path)
+}
+
+func GetUniqueFileName(originalName string) string {
+	filenameWithExt := filepath.Base(originalName)
+	extension := filepath.Ext(filenameWithExt)
+	filename := filenameWithExt[0 : len(filenameWithExt)-len(extension)]
+
+	return filename + "_" + uuid.NewString() + extension
 }

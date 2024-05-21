@@ -19,3 +19,9 @@ type MessageAttachment struct {
 	OriginalName string                `json:"originalName"`
 	CreatedAt    customtime.CustomTime `json:"createdAt,omitempty" swaggertype:"string" example:"2021-01-01T00:00:00Z" format:"date-time"`
 }
+
+type UnsentMessageAttachment struct {
+	SenderID   uint   `json:"senderId"`
+	ReceiverID uint   `json:"receiverId"`
+	FileName   string `json:"fileName"`
+}
