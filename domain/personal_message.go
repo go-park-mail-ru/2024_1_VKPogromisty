@@ -11,3 +11,11 @@ type PersonalMessage struct {
 	CreatedAt  customtime.CustomTime `json:"createdAt,omitempty" swaggertype:"string" example:"2021-01-01T00:00:00Z" format:"date-time"`
 	UpdatedAt  customtime.CustomTime `json:"updatedAt,omitempty" swaggertype:"string" example:"2021-01-01T00:00:00Z" format:"date-time"`
 }
+
+type MessageAttachment struct {
+	ID           uint                  `json:"id"`
+	MessageID    uint                  `json:"messageId"`
+	FileName     string                `json:"fileName"`
+	OriginalName string                `json:"originalName"`
+	CreatedAt    customtime.CustomTime `json:"createdAt,omitempty" swaggertype:"string" example:"2021-01-01T00:00:00Z" format:"date-time"`
+}

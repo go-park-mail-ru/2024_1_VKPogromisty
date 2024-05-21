@@ -48,7 +48,7 @@ func main() {
 		return
 	}
 
-	attachmentStorage, err := minioRepo.NewStaticStorage(minioClient, minioRepo.AttachmentsBucket)
+	attachmentStorage, err := minioRepo.NewStaticStorage(minioClient, minioRepo.PostAttachmentsBucket)
 	if err != nil {
 		fmt.Println(err)
 		return
