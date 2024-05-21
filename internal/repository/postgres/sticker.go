@@ -185,18 +185,18 @@ func (pm *PersonalMessages) DeleteSticker(ctx context.Context, stickerID uint) (
 }
 
 func (pm *PersonalMessages) StoreStickerMessage(ctx context.Context, senderID, receiverID, stickerID uint) (newStickerMessage *domain.PersonalMessage, err error) {
-	message := new(domain.PersonalMessage)
+	newStickerMessage = new(domain.PersonalMessage)
 	sticker := new(domain.Sticker)
 
 	contextlogger.LogSQL(ctx, storeStickerMessageQuery, senderID, receiverID, stickerID)
 
 	err = pm.db.QueryRow(context.Background(), storeStickerMessageQuery, senderID, receiverID, stickerID).Scan(
-		&message.ID,
-		&message.SenderID,
-		&message.ReceiverID,
+		&newStickerMessage.ID,
+		&newStickerMessage.SenderID,
+		&newStickerMessage.ReceiverID,
 		&sticker.ID,
-		&message.CreatedAt.Time,
-		&message.UpdatedAt.Time,
+		&newStickerMessage.CreatedAt.Time,
+		&newStickerMessage.UpdatedAt.Time,
 	)
 	if err != nil {
 		return
@@ -207,7 +207,7 @@ func (pm *PersonalMessages) StoreStickerMessage(ctx context.Context, senderID, r
 		return
 	}
 
-	message.Sticker = sticker
+	newStickerMessage.Sticker = sticker
 
 	return
 }
