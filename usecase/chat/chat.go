@@ -72,6 +72,18 @@ func (s *Service) Unregister(userID uint) (err error) {
 	return
 }
 
+func (s *Service) GetClient(ctx context.Context, userID uint) (c *Client, err error) {
+	cData, ok := s.Clients.Load(userID)
+	if !ok {
+		err = errors.ErrNotFound
+		return
+	}
+
+	c = cData.(*Client)
+
+	return
+}
+
 func (s *Service) GetMessagesByDialog(ctx context.Context, userID, peerID, lastMessageID, messagesAmount uint) (messages []*domain.PersonalMessage, err error) {
 	if lastMessageID == 0 {
 		lastMessageID, err = s.MessagesRepo.GetLastMessageID(ctx, userID, peerID)

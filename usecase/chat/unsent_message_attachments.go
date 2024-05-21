@@ -20,6 +20,13 @@ type MessageAttachmentStorage interface {
 }
 
 func (c *Service) CreateUnsentMessageAttachments(ctx context.Context, attachs *domain.UnsentMessageAttachment, fhs []*multipart.FileHeader) (filenames []string, err error) {
+	client, err := c.GetClient(ctx, attachs.SenderID)
+	if err != nil {
+		return
+	}
+
+	client.UnsentAttachmentReceivers.Store(attachs.ReceiverID, struct{}{})
+
 	for _, fh := range fhs {
 		fileName := static.GetUniqueFileName(fh.Filename)
 

@@ -6,10 +6,13 @@ import (
 	"encoding/json"
 	"socio/domain"
 	"socio/errors"
+	"sync"
+	"time"
 )
 
 const (
 	sendChanSize                        = 256
+	tickerInterval                      = 1 * time.Minute
 	SendMessageAction        ChatAction = "SEND_MESSAGE"
 	UpdateMessageAction      ChatAction = "UPDATE_MESSAGE"
 	DeleteMessageAction      ChatAction = "DELETE_MESSAGE"
@@ -65,9 +68,10 @@ type SendStickerMessagePayload struct {
 }
 
 type Client struct {
-	UserID      uint
-	Send        chan *Action
-	ChatService *Service
+	UserID                    uint
+	Send                      chan *Action
+	ChatService               *Service
+	UnsentAttachmentReceivers *sync.Map
 }
 
 func NewClient(userID uint, chatService *Service) (client *Client, err error) {
@@ -76,17 +80,26 @@ func NewClient(userID uint, chatService *Service) (client *Client, err error) {
 	}
 
 	client = &Client{
-		UserID:      userID,
-		Send:        make(chan *Action, sendChanSize),
-		ChatService: chatService,
+		UserID:                    userID,
+		Send:                      make(chan *Action, sendChanSize),
+		ChatService:               chatService,
+		UnsentAttachmentReceivers: &sync.Map{},
 	}
 
 	return
 }
 
 func (c *Client) ReadPump(ctx context.Context) {
-	actionsCh := make(chan *Action)
-	defer close(actionsCh)
+	go func() {
+		defer c.ClearUnsentAttachments(ctx)
+
+		ticker := time.NewTicker(tickerInterval)
+		defer ticker.Stop()
+
+		for range ticker.C {
+			c.ClearUnsentAttachments(ctx)
+		}
+	}()
 
 	go c.ChatService.PubSubRepository.ReadActions(ctx, c.UserID, c.Send)
 }
@@ -357,4 +370,32 @@ func (c *Client) handleSendStickerMessageAction(ctx context.Context, action *Act
 	}
 
 	c.ChatService.PubSubRepository.WriteAction(ctx, action)
+}
+
+func (c *Client) ClearUnsentAttachments(ctx context.Context) {
+	c.UnsentAttachmentReceivers.Range(func(key, value interface{}) bool {
+		receiverID := key.(uint)
+
+		attachs, err := c.ChatService.UnsentMessageAttachmentsStorage.GetAll(ctx, &domain.UnsentMessageAttachment{
+			SenderID:   c.UserID,
+			ReceiverID: receiverID,
+		})
+		if err != nil {
+			return false
+		}
+
+		for _, fileName := range attachs {
+			err = c.ChatService.MessageAttachmentStorage.Delete(fileName)
+			if err != nil {
+				return false
+			}
+		}
+
+		err = c.ChatService.UnsentMessageAttachmentsStorage.DeleteAll(ctx, &domain.UnsentMessageAttachment{
+			SenderID:   c.UserID,
+			ReceiverID: receiverID,
+		})
+
+		return err == nil
+	})
 }
