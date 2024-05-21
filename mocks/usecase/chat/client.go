@@ -200,18 +200,18 @@ func (mr *MockPersonalMessagesRepositoryMockRecorder) StoreStickerMessage(ctx, s
 }
 
 // UpdateMessage mocks base method.
-func (m *MockPersonalMessagesRepository) UpdateMessage(ctx context.Context, message *domain.PersonalMessage) (*domain.PersonalMessage, error) {
+func (m *MockPersonalMessagesRepository) UpdateMessage(ctx context.Context, msg *domain.PersonalMessage, attachmentsToDelete []string) (*domain.PersonalMessage, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateMessage", ctx, message)
+	ret := m.ctrl.Call(m, "UpdateMessage", ctx, msg, attachmentsToDelete)
 	ret0, _ := ret[0].(*domain.PersonalMessage)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpdateMessage indicates an expected call of UpdateMessage.
-func (mr *MockPersonalMessagesRepositoryMockRecorder) UpdateMessage(ctx, message interface{}) *gomock.Call {
+func (mr *MockPersonalMessagesRepositoryMockRecorder) UpdateMessage(ctx, msg, attachmentsToDelete interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateMessage", reflect.TypeOf((*MockPersonalMessagesRepository)(nil).UpdateMessage), ctx, message)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateMessage", reflect.TypeOf((*MockPersonalMessagesRepository)(nil).UpdateMessage), ctx, msg, attachmentsToDelete)
 }
 
 // MockPubSubRepository is a mock of PubSubRepository interface.

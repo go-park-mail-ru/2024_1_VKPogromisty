@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"socio/domain"
+	"socio/pkg/contextlogger"
 	"strconv"
 	"strings"
 
@@ -46,7 +47,11 @@ func (u *UnsentMessageAttachments) Store(ctx context.Context, attach *domain.Uns
 	c := u.pool.Get()
 	defer c.Close()
 
-	_, err = c.Do("RPUSH", GetUnsentMessageAttachmentKey(attach), attach.FileName)
+	msgAttachKey := GetUnsentMessageAttachmentKey(attach)
+
+	contextlogger.LogRedisAction(ctx, "RPUSH", msgAttachKey, attach.FileName)
+
+	_, err = c.Do("RPUSH", msgAttachKey, attach.FileName)
 	if err != nil {
 		return
 	}
@@ -58,7 +63,11 @@ func (u *UnsentMessageAttachments) GetAll(ctx context.Context, attach *domain.Un
 	c := u.pool.Get()
 	defer c.Close()
 
-	fileNames, err = redis.Strings(c.Do("LRANGE", GetUnsentMessageAttachmentKey(attach), 0, -1))
+	msgAttachKey := GetUnsentMessageAttachmentKey(attach)
+
+	contextlogger.LogRedisAction(ctx, "LRANGE", msgAttachKey, []int{0, -1})
+
+	fileNames, err = redis.Strings(c.Do("LRANGE", msgAttachKey, 0, -1))
 	if err != nil {
 		return
 	}
@@ -70,7 +79,11 @@ func (u *UnsentMessageAttachments) DeleteAll(ctx context.Context, attach *domain
 	c := u.pool.Get()
 	defer c.Close()
 
-	_, err = c.Do("DEL", GetUnsentMessageAttachmentKey(attach))
+	msgAttachKey := GetUnsentMessageAttachmentKey(attach)
+
+	contextlogger.LogRedisAction(ctx, "DEL", msgAttachKey, nil)
+
+	_, err = c.Do("DEL", msgAttachKey)
 	if err != nil {
 		return
 	}
@@ -82,7 +95,11 @@ func (u *UnsentMessageAttachments) Delete(ctx context.Context, attach *domain.Un
 	c := u.pool.Get()
 	defer c.Close()
 
-	_, err = c.Do("LREM", GetUnsentMessageAttachmentKey(attach), 0, attach.FileName)
+	msgAttachKey := GetUnsentMessageAttachmentKey(attach)
+
+	contextlogger.LogRedisAction(ctx, "LREM", msgAttachKey, []interface{}{0, attach.FileName})
+
+	_, err = c.Do("LREM", msgAttachKey, 0, attach.FileName)
 	if err != nil {
 		return
 	}

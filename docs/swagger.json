@@ -251,7 +251,7 @@
         },
         "/chat/": {
             "get": {
-                "description": "Serve websocket connection. You can send actions to connection following simple structure:\n\n{\n\"type\": ActionType,\n\"receiver\": uint,\n\"csrfToken\": string,\n\"payload\": interface{}\n}\n\nActionType is a string with one of following values: \"SEND_MESSAGE\", \"UPDATE_MESSAGE\", \"DELETE_MESSAGE\", \"SEND_STICKER_MESSAGE\"\n\nIf \"type\" = \"SEND_MESSAGE\", then payload should be {\"content\": string}\nIf \"type\" = \"UPDATE_MESSAGE\", then payload should be {\"messageId\": uint, \"content\": string}\nIf \"type\" = \"DELETE_MESSAGE\", then payload should be {\"messageId\": uint}\nIf \"type\" = \"SEND_STICKER_MESSAGE\", then payload should be {\"stickerId\": uint}\n\nIn response clients, subscribed to corresponding channel, will get same structure back:\n{\n\"type\": ActionType,\n\"receiver\": uint,\n\"csrfToken\": string,\n\"payload\": interface{}\n}\n\n\"payload\" can be:\nPersonalMessage if \"type\" = \"SEND_MESSAGE\"\nPersonalMessage if \"type\" = \"UPDATE_MESSAGE\"\nAbsent if \"type\" = \"DELETE_MESSAGE\"\nPersonalMessage if \"type\" = \"SEND_STICKER_MESSAGE\"\n{\"error\": string} if error happened at any point of query processing\n",
+                "description": "Serve websocket connection. You can send actions to connection following simple structure:\n\n{\n\"type\": ActionType,\n\"receiver\": uint,\n\"csrfToken\": string,\n\"payload\": interface{}\n}\n\nActionType is a string with one of following values: \"SEND_MESSAGE\", \"UPDATE_MESSAGE\", \"DELETE_MESSAGE\", \"SEND_STICKER_MESSAGE\"\n\nIf \"type\" = \"SEND_MESSAGE\", then payload should be {\"content\": string}\nIf \"type\" = \"UPDATE_MESSAGE\", then payload should be {\"messageId\": uint, \"content\": string, attachmentsToDelete: []string}\nIf \"type\" = \"DELETE_MESSAGE\", then payload should be {\"messageId\": uint}\nIf \"type\" = \"SEND_STICKER_MESSAGE\", then payload should be {\"stickerId\": uint}\n\nIn response clients, subscribed to corresponding channel, will get same structure back:\n{\n\"type\": ActionType,\n\"receiver\": uint,\n\"csrfToken\": string,\n\"payload\": interface{}\n}\n\n\"payload\" can be:\nPersonalMessage if \"type\" = \"SEND_MESSAGE\"\nPersonalMessage if \"type\" = \"UPDATE_MESSAGE\"\nAbsent if \"type\" = \"DELETE_MESSAGE\"\nPersonalMessage if \"type\" = \"SEND_STICKER_MESSAGE\"\n{\"error\": string} if error happened at any point of query processing\n",
                 "consumes": [
                     "application/json"
                 ],
@@ -4822,6 +4822,12 @@
         "domain.PersonalMessage": {
             "type": "object",
             "properties": {
+                "attachments": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "content": {
                     "type": "string"
                 },

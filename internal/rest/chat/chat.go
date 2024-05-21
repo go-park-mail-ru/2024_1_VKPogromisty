@@ -178,7 +178,7 @@ func (c *ChatServer) HandleGetMessagesByDialog(w http.ResponseWriter, r *http.Re
 //		@Description	ActionType is a string with one of following values: "SEND_MESSAGE", "UPDATE_MESSAGE", "DELETE_MESSAGE", "SEND_STICKER_MESSAGE"
 //		@Description
 //		@Description	If "type" = "SEND_MESSAGE", then payload should be {"content": string}
-//		@Description	If "type" = "UPDATE_MESSAGE", then payload should be {"messageId": uint, "content": string}
+//		@Description	If "type" = "UPDATE_MESSAGE", then payload should be {"messageId": uint, "content": string, attachmentsToDelete: []string}
 //		@Description	If "type" = "DELETE_MESSAGE", then payload should be {"messageId": uint}
 //		@Description	If "type" = "SEND_STICKER_MESSAGE", then payload should be {"stickerId": uint}
 //		@Description

@@ -4,11 +4,9 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
-	"path/filepath"
 
 	pgpb "socio/internal/grpc/public_group/proto"
-
-	"github.com/google/uuid"
+	"socio/pkg/static"
 )
 
 func UploadPublicGroupAvatar(r *http.Request, publicGroupClient pgpb.PublicGroupClient, avatarFH *multipart.FileHeader) (string, error) {
@@ -16,7 +14,7 @@ func UploadPublicGroupAvatar(r *http.Request, publicGroupClient pgpb.PublicGroup
 		return "", nil
 	}
 
-	fileName := uuid.NewString() + filepath.Ext(avatarFH.Filename)
+	fileName := static.GetUniqueFileName(avatarFH.Filename)
 	contentType := avatarFH.Header.Get("Content-Type")
 
 	stream, err := publicGroupClient.Upload(r.Context())

@@ -28,23 +28,6 @@ type Service struct {
 	Sanitizer                       *sanitizer.Sanitizer
 }
 
-type SendMessagePayload struct {
-	Content string `json:"content"`
-}
-
-type UpdateMessagePayload struct {
-	MessageID uint   `json:"messageId"`
-	Content   string `json:"content"`
-}
-
-type DeleteMessagePayload struct {
-	MessageID uint `json:"messageId"`
-}
-
-type SendStickerMessagePayload struct {
-	StickerID uint `json:"stickerId"`
-}
-
 type StickerStorage interface {
 	Store(fileName string, filePath string, contentType string) (err error)
 	Delete(fileName string) (err error)
@@ -69,7 +52,7 @@ func (s *Service) Register(ctx context.Context, userID uint) (c *Client, err err
 		return
 	}
 
-	c, err = NewClient(userID, s.PubSubRepository, s.MessagesRepo, s.Sanitizer)
+	c, err = NewClient(userID, s)
 	if err != nil {
 		return
 	}
