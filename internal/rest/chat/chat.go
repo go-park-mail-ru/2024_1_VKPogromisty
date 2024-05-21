@@ -175,11 +175,12 @@ func (c *ChatServer) HandleGetMessagesByDialog(w http.ResponseWriter, r *http.Re
 //		@Description	"payload": interface{}
 //		@Description	}
 //		@Description
-//		@Description	ActionType is a string with one of following values: "SEND_MESSAGE", "UPDATE_MESSAGE", "DELETE_MESSAGE"
+//		@Description	ActionType is a string with one of following values: "SEND_MESSAGE", "UPDATE_MESSAGE", "DELETE_MESSAGE", "SEND_STICKER_MESSAGE"
 //		@Description
 //		@Description	If "type" = "SEND_MESSAGE", then payload should be {"content": string}
 //		@Description	If "type" = "UPDATE_MESSAGE", then payload should be {"messageId": uint, "content": string}
 //		@Description	If "type" = "DELETE_MESSAGE", then payload should be {"messageId": uint}
+//		@Description	If "type" = "SEND_STICKER_MESSAGE", then payload should be {"stickerId": uint}
 //		@Description
 //		@Description	In response clients, subscribed to corresponding channel, will get same structure back:
 //		@Description	{
@@ -193,6 +194,7 @@ func (c *ChatServer) HandleGetMessagesByDialog(w http.ResponseWriter, r *http.Re
 //		@Description	PersonalMessage if "type" = "SEND_MESSAGE"
 //		@Description	PersonalMessage if "type" = "UPDATE_MESSAGE"
 //		@Description	Absent if "type" = "DELETE_MESSAGE"
+//		@Description	PersonalMessage if "type" = "SEND_STICKER_MESSAGE"
 //		@Description	{"error": string} if error happened at any point of query processing
 //		@Description
 //

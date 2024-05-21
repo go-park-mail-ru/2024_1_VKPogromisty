@@ -482,11 +482,12 @@ paths:
         "payload": interface{}
         }
 
-        ActionType is a string with one of following values: "SEND_MESSAGE", "UPDATE_MESSAGE", "DELETE_MESSAGE"
+        ActionType is a string with one of following values: "SEND_MESSAGE", "UPDATE_MESSAGE", "DELETE_MESSAGE", "SEND_STICKER_MESSAGE"
 
         If "type" = "SEND_MESSAGE", then payload should be {"content": string}
         If "type" = "UPDATE_MESSAGE", then payload should be {"messageId": uint, "content": string}
         If "type" = "DELETE_MESSAGE", then payload should be {"messageId": uint}
+        If "type" = "SEND_STICKER_MESSAGE", then payload should be {"stickerId": uint}
 
         In response clients, subscribed to corresponding channel, will get same structure back:
         {
@@ -500,6 +501,7 @@ paths:
         PersonalMessage if "type" = "SEND_MESSAGE"
         PersonalMessage if "type" = "UPDATE_MESSAGE"
         Absent if "type" = "DELETE_MESSAGE"
+        PersonalMessage if "type" = "SEND_STICKER_MESSAGE"
         {"error": string} if error happened at any point of query processing
       operationId: chat/serve_ws
       parameters:
