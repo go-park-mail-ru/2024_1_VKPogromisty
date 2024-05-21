@@ -149,7 +149,7 @@ func TestGetMessagesByDialog(t *testing.T) {
 
 			tt.prepare(fields)
 
-			s := chat.NewChatService(nil, fields.PersonalMessagesRepo, fields.Sanitizer)
+			s := chat.NewChatService(nil, fields.PersonalMessagesRepo, nil, fields.Sanitizer)
 
 			messages, err := s.GetMessagesByDialog(context.Background(), tt.userID, tt.peerID, tt.lastMessageID, tt.messagesAmount)
 
@@ -240,7 +240,7 @@ func TestGetDialogsByUserID(t *testing.T) {
 
 			tt.prepare(fields)
 
-			s := chat.NewChatService(nil, fields.PersonalMessagesRepo, fields.Sanitizer)
+			s := chat.NewChatService(nil, fields.PersonalMessagesRepo, nil, fields.Sanitizer)
 
 			dialogs, err := s.GetDialogsByUserID(context.Background(), tt.userID)
 

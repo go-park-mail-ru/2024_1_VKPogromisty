@@ -93,3 +93,17 @@ func (s *Sanitizer) SanitizeComments(comments []*domain.Comment) {
 		s.SanitizeComment(comment)
 	}
 }
+
+func (s *Sanitizer) SanitizeSticker(sticker *domain.Sticker) {
+	if sticker == nil {
+		return
+	}
+
+	sticker.Name = s.Sanitize(sticker.Name)
+}
+
+func (s *Sanitizer) SanitizeStickers(stickers []*domain.Sticker) {
+	for _, sticker := range stickers {
+		s.SanitizeSticker(sticker)
+	}
+}

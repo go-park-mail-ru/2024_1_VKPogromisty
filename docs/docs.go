@@ -257,7 +257,7 @@ const docTemplate = `{
         },
         "/chat/": {
             "get": {
-                "description": "Serve websocket connection. You can send actions to connection following simple structure:\n\n{\n\"type\": ActionType,\n\"receiver\": uint,\n\"csrfToken\": string,\n\"payload\": interface{}\n}\n\nActionType is a string with one of following values: \"SEND_MESSAGE\", \"UPDATE_MESSAGE\", \"DELETE_MESSAGE\"\n\nIf \"type\" = \"SEND_MESSAGE\", then payload should be {\"content\": string}\nIf \"type\" = \"UPDATE_MESSAGE\", then payload should be {\"messageId\": uint, \"content\": string}\nIf \"type\" = \"DELETE_MESSAGE\", then payload should be {\"messageId\": uint}\n\nIn response clients, subscribed to corresponding channel, will get same structure back:\n{\n\"type\": ActionType,\n\"receiver\": uint,\n\"csrfToken\": string,\n\"payload\": interface{}\n}\n\n\"payload\" can be:\nPersonalMessage if \"type\" = \"SEND_MESSAGE\"\nPersonalMessage if \"type\" = \"UPDATE_MESSAGE\"\nAbsent if \"type\" = \"DELETE_MESSAGE\"\n{\"error\": string} if error happened at any point of query processing\n",
+                "description": "Serve websocket connection. You can send actions to connection following simple structure:\n\n{\n\"type\": ActionType,\n\"receiver\": uint,\n\"csrfToken\": string,\n\"payload\": interface{}\n}\n\nActionType is a string with one of following values: \"SEND_MESSAGE\", \"UPDATE_MESSAGE\", \"DELETE_MESSAGE\", \"SEND_STICKER_MESSAGE\"\n\nIf \"type\" = \"SEND_MESSAGE\", then payload should be {\"content\": string}\nIf \"type\" = \"UPDATE_MESSAGE\", then payload should be {\"messageId\": uint, \"content\": string}\nIf \"type\" = \"DELETE_MESSAGE\", then payload should be {\"messageId\": uint}\nIf \"type\" = \"SEND_STICKER_MESSAGE\", then payload should be {\"stickerId\": uint}\n\nIn response clients, subscribed to corresponding channel, will get same structure back:\n{\n\"type\": ActionType,\n\"receiver\": uint,\n\"csrfToken\": string,\n\"payload\": interface{}\n}\n\n\"payload\" can be:\nPersonalMessage if \"type\" = \"SEND_MESSAGE\"\nPersonalMessage if \"type\" = \"UPDATE_MESSAGE\"\nAbsent if \"type\" = \"DELETE_MESSAGE\"\nPersonalMessage if \"type\" = \"SEND_STICKER_MESSAGE\"\n{\"error\": string} if error happened at any point of query processing\n",
                 "consumes": [
                     "application/json"
                 ],
@@ -461,6 +461,333 @@ const docTemplate = `{
                     },
                     "403": {
                         "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/chat/stickers/": {
+            "get": {
+                "description": "get all stickers",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "get all stickers",
+                "operationId": "chat/get_all_stickers",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "session_id=some_session",
+                        "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "CSRF token",
+                        "name": "X-CSRF-Token",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/json.JSONResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/domain.Sticker"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "create sticker",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "create sticker",
+                "operationId": "chat/create_sticker",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Name of the sticker",
+                        "name": "name",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Image of the sticker",
+                        "name": "image",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "session_id=some_session",
+                        "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "CSRF token",
+                        "name": "X-CSRF-Token",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/json.JSONResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/domain.Sticker"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/chat/stickers/{authorID}": {
+            "get": {
+                "description": "get stickers by author ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "get stickers by author ID",
+                "operationId": "chat/get_stickers",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID of the author",
+                        "name": "authorID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "session_id=some_session",
+                        "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "CSRF token",
+                        "name": "X-CSRF-Token",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/json.JSONResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/domain.Sticker"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/chat/stickers/{stickerID}": {
+            "delete": {
+                "description": "delete sticker",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "delete sticker",
+                "operationId": "chat/delete_sticker",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID of the sticker",
+                        "name": "stickerID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "session_id=some_session",
+                        "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "CSRF token",
+                        "name": "X-CSRF-Token",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/errors.HTTPError"
                         }
@@ -4200,6 +4527,9 @@ const docTemplate = `{
                 "senderId": {
                     "type": "integer"
                 },
+                "sticker": {
+                    "$ref": "#/definitions/domain.Sticker"
+                },
                 "updatedAt": {
                     "type": "string",
                     "format": "date-time",
@@ -4336,6 +4666,33 @@ const docTemplate = `{
                 },
                 "subscriberId": {
                     "type": "integer"
+                },
+                "updatedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2021-01-01T00:00:00Z"
+                }
+            }
+        },
+        "domain.Sticker": {
+            "type": "object",
+            "properties": {
+                "authorId": {
+                    "type": "integer"
+                },
+                "createdAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2021-01-01T00:00:00Z"
+                },
+                "fileName": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
                 },
                 "updatedAt": {
                     "type": "string",

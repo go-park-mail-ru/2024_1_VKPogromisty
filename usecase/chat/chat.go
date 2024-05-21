@@ -2,10 +2,15 @@ package chat
 
 import (
 	"context"
+	"mime/multipart"
+	"path/filepath"
 	"socio/domain"
 	"socio/errors"
 	"socio/pkg/sanitizer"
+	"socio/pkg/static"
 	"sync"
+
+	"github.com/google/uuid"
 )
 
 const (
@@ -17,6 +22,7 @@ type Service struct {
 	Clients          *sync.Map
 	PubSubRepository PubSubRepository
 	MessagesRepo     PersonalMessagesRepository
+	StickerStorage   StickerStorage
 	Sanitizer        *sanitizer.Sanitizer
 }
 
@@ -33,11 +39,21 @@ type DeleteMessagePayload struct {
 	MessageID uint `json:"messageId"`
 }
 
-func NewChatService(pubSubRepo PubSubRepository, messagesRepo PersonalMessagesRepository, sanitizer *sanitizer.Sanitizer) (chatService *Service) {
+type SendStickerMessagePayload struct {
+	StickerID uint `json:"stickerId"`
+}
+
+type StickerStorage interface {
+	Store(fileName string, filePath string, contentType string) (err error)
+	Delete(fileName string) (err error)
+}
+
+func NewChatService(pubSubRepo PubSubRepository, messagesRepo PersonalMessagesRepository, stickerStorage StickerStorage, sanitizer *sanitizer.Sanitizer) (chatService *Service) {
 	return &Service{
 		Clients:          &sync.Map{},
 		PubSubRepository: pubSubRepo,
 		MessagesRepo:     messagesRepo,
+		StickerStorage:   stickerStorage,
 		Sanitizer:        sanitizer,
 	}
 }
@@ -102,6 +118,90 @@ func (s *Service) GetDialogsByUserID(ctx context.Context, userID uint) (dialogs 
 
 	for _, dialog := range dialogs {
 		s.Sanitizer.SanitizeDialog(dialog)
+	}
+
+	return
+}
+
+func (s *Service) GetStickersByAuthorID(ctx context.Context, authorID uint) (stickers []*domain.Sticker, err error) {
+	stickers, err = s.MessagesRepo.GetStickersByAuthorID(ctx, authorID)
+	if err != nil {
+		return
+	}
+
+	for _, sticker := range stickers {
+		s.Sanitizer.SanitizeSticker(sticker)
+	}
+
+	return
+}
+
+func (s *Service) GetAllStickers(ctx context.Context) (stickers []*domain.Sticker, err error) {
+	stickers, err = s.MessagesRepo.GetAllStickers(ctx)
+	if err != nil {
+		return
+	}
+
+	for _, sticker := range stickers {
+		s.Sanitizer.SanitizeSticker(sticker)
+	}
+
+	return
+}
+
+func (s *Service) CreateSticker(ctx context.Context, sticker *domain.Sticker, image *multipart.FileHeader) (newSticker *domain.Sticker, err error) {
+	if sticker.Name == "" || sticker.AuthorID == 0 || image == nil {
+		err = errors.ErrInvalidData
+		return
+	}
+
+	fileName := uuid.NewString() + filepath.Ext(image.Filename)
+
+	err = static.SaveFile(image, "./"+fileName)
+	if err != nil {
+		return
+	}
+
+	err = s.StickerStorage.Store(fileName, "./"+fileName, image.Header.Get("Content-Type"))
+	if err != nil {
+		return
+	}
+
+	sticker.FileName = fileName
+
+	err = static.RemoveFile("./" + fileName)
+	if err != nil {
+		return
+	}
+
+	newSticker, err = s.MessagesRepo.StoreSticker(ctx, sticker)
+	if err != nil {
+		return
+	}
+
+	s.Sanitizer.SanitizeSticker(newSticker)
+	return
+}
+
+func (s *Service) DeleteSticker(ctx context.Context, stickerID uint, userID uint) (err error) {
+	sticker, err := s.MessagesRepo.GetStickerByID(ctx, stickerID)
+	if err != nil {
+		return
+	}
+
+	if sticker.AuthorID != userID {
+		err = errors.ErrForbidden
+		return
+	}
+
+	err = s.StickerStorage.Delete(sticker.FileName)
+	if err != nil {
+		return
+	}
+
+	err = s.MessagesRepo.DeleteSticker(ctx, stickerID)
+	if err != nil {
+		return
 	}
 
 	return

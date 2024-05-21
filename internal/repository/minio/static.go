@@ -8,6 +8,7 @@ const (
 	UserAvatarsBucket  = "user-avatars"
 	AttachmentsBucket  = "post-attachments"
 	GroupAvatarsBucket = "group-avatars"
+	StickersBucket     = "stickers"
 )
 
 type StaticStorage struct {
