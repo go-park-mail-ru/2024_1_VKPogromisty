@@ -12,7 +12,7 @@ import (
 
 const (
 	sendChanSize                        = 256
-	tickerInterval                      = 1 * time.Minute
+	tickerInterval                      = 5 * time.Minute
 	SendMessageAction        ChatAction = "SEND_MESSAGE"
 	UpdateMessageAction      ChatAction = "UPDATE_MESSAGE"
 	DeleteMessageAction      ChatAction = "DELETE_MESSAGE"
