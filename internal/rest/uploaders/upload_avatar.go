@@ -4,11 +4,9 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
-	"path/filepath"
 
 	uspb "socio/internal/grpc/user/proto"
-
-	"github.com/google/uuid"
+	"socio/pkg/static"
 )
 
 const (
@@ -20,7 +18,7 @@ func UploadAvatar(r *http.Request, userClient uspb.UserClient, avatarFH *multipa
 		return "", nil
 	}
 
-	fileName := uuid.NewString() + filepath.Ext(avatarFH.Filename)
+	fileName := static.GetUniqueFileName(avatarFH.Filename)
 	contentType := avatarFH.Header.Get("Content-Type")
 
 	stream, err := userClient.Upload(r.Context())

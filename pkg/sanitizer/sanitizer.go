@@ -58,6 +58,10 @@ func (s *Sanitizer) SanitizePersonalMessage(message *domain.PersonalMessage) {
 	}
 
 	message.Content = s.Sanitize(message.Content)
+
+	for i := range message.Attachments {
+		message.Attachments[i] = s.Sanitize(message.Attachments[i])
+	}
 }
 
 func (s *Sanitizer) SanitizeDialog(dialog *domain.Dialog) {

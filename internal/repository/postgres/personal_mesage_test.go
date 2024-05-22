@@ -158,7 +158,7 @@ func TestUpdatePersonalMessage(t *testing.T) {
 
 	repo := repository.NewPersonalMessages(pool, timeProv)
 
-	message, err := repo.UpdateMessage(context.Background(), &domain.PersonalMessage{ID: 1, SenderID: 1, ReceiverID: 2, Content: "Hello"})
+	message, err := repo.UpdateMessage(context.Background(), &domain.PersonalMessage{ID: 1, SenderID: 1, ReceiverID: 2, Content: "Hello"}, nil)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 		return

@@ -19,28 +19,13 @@ const (
 
 // Service will: register and unregister new clients by userID, establish pub/sub connection to redis
 type Service struct {
-	Clients          *sync.Map
-	PubSubRepository PubSubRepository
-	MessagesRepo     PersonalMessagesRepository
-	StickerStorage   StickerStorage
-	Sanitizer        *sanitizer.Sanitizer
-}
-
-type SendMessagePayload struct {
-	Content string `json:"content"`
-}
-
-type UpdateMessagePayload struct {
-	MessageID uint   `json:"messageId"`
-	Content   string `json:"content"`
-}
-
-type DeleteMessagePayload struct {
-	MessageID uint `json:"messageId"`
-}
-
-type SendStickerMessagePayload struct {
-	StickerID uint `json:"stickerId"`
+	Clients                         *sync.Map
+	PubSubRepository                PubSubRepository
+	MessagesRepo                    PersonalMessagesRepository
+	UnsentMessageAttachmentsStorage UnsentMessageAttachmentsStorage
+	MessageAttachmentStorage        MessageAttachmentStorage
+	StickerStorage                  StickerStorage
+	Sanitizer                       *sanitizer.Sanitizer
 }
 
 type StickerStorage interface {
@@ -48,13 +33,15 @@ type StickerStorage interface {
 	Delete(fileName string) (err error)
 }
 
-func NewChatService(pubSubRepo PubSubRepository, messagesRepo PersonalMessagesRepository, stickerStorage StickerStorage, sanitizer *sanitizer.Sanitizer) (chatService *Service) {
+func NewChatService(pubSubRepo PubSubRepository, unsentMessageAttachmentsStorage UnsentMessageAttachmentsStorage, messagesRepo PersonalMessagesRepository, stickerStorage StickerStorage, messageAttachmentStorage MessageAttachmentStorage, sanitizer *sanitizer.Sanitizer) (chatService *Service) {
 	return &Service{
-		Clients:          &sync.Map{},
-		PubSubRepository: pubSubRepo,
-		MessagesRepo:     messagesRepo,
-		StickerStorage:   stickerStorage,
-		Sanitizer:        sanitizer,
+		Clients:                         &sync.Map{},
+		PubSubRepository:                pubSubRepo,
+		UnsentMessageAttachmentsStorage: unsentMessageAttachmentsStorage,
+		MessagesRepo:                    messagesRepo,
+		StickerStorage:                  stickerStorage,
+		MessageAttachmentStorage:        messageAttachmentStorage,
+		Sanitizer:                       sanitizer,
 	}
 }
 
@@ -65,7 +52,7 @@ func (s *Service) Register(ctx context.Context, userID uint) (c *Client, err err
 		return
 	}
 
-	c, err = NewClient(userID, s.PubSubRepository, s.MessagesRepo, s.Sanitizer)
+	c, err = NewClient(userID, s)
 	if err != nil {
 		return
 	}
@@ -81,6 +68,18 @@ func (s *Service) Unregister(userID uint) (err error) {
 	if !ok {
 		return errors.ErrNotFound
 	}
+
+	return
+}
+
+func (s *Service) GetClient(ctx context.Context, userID uint) (c *Client, err error) {
+	cData, ok := s.Clients.Load(userID)
+	if !ok {
+		err = errors.ErrNotFound
+		return
+	}
+
+	c = cData.(*Client)
 
 	return
 }

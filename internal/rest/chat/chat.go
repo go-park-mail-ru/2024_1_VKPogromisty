@@ -44,9 +44,9 @@ var upgrader = &websocket.Upgrader{
 	CheckOrigin:     middleware.CheckOrigin,
 }
 
-func NewChatServer(pubSubRepo chat.PubSubRepository, messagesRepo chat.PersonalMessagesRepository, stickerStorage chat.StickerStorage, sanitizer *sanitizer.Sanitizer) (chatServer *ChatServer) {
+func NewChatServer(pubSubRepo chat.PubSubRepository, unsentMessageAttachmentsStorage chat.UnsentMessageAttachmentsStorage, messagesRepo chat.PersonalMessagesRepository, stickerStorage chat.StickerStorage, messageAttachmentStorage chat.MessageAttachmentStorage, sanitizer *sanitizer.Sanitizer) (chatServer *ChatServer) {
 	return &ChatServer{
-		Service: chat.NewChatService(pubSubRepo, messagesRepo, stickerStorage, sanitizer),
+		Service: chat.NewChatService(pubSubRepo, unsentMessageAttachmentsStorage, messagesRepo, stickerStorage, messageAttachmentStorage, sanitizer),
 	}
 }
 
@@ -178,7 +178,7 @@ func (c *ChatServer) HandleGetMessagesByDialog(w http.ResponseWriter, r *http.Re
 //		@Description	ActionType is a string with one of following values: "SEND_MESSAGE", "UPDATE_MESSAGE", "DELETE_MESSAGE", "SEND_STICKER_MESSAGE"
 //		@Description
 //		@Description	If "type" = "SEND_MESSAGE", then payload should be {"content": string}
-//		@Description	If "type" = "UPDATE_MESSAGE", then payload should be {"messageId": uint, "content": string}
+//		@Description	If "type" = "UPDATE_MESSAGE", then payload should be {"messageId": uint, "content": string, attachmentsToDelete: []string}
 //		@Description	If "type" = "DELETE_MESSAGE", then payload should be {"messageId": uint}
 //		@Description	If "type" = "SEND_STICKER_MESSAGE", then payload should be {"stickerId": uint}
 //		@Description
@@ -509,6 +509,225 @@ func (c *ChatServer) HandleDeleteSticker(w http.ResponseWriter, r *http.Request)
 	}
 
 	err = c.Service.DeleteSticker(r.Context(), uint(stickerID), userID)
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, err)
+		return
+	}
+
+	json.ServeJSONBody(r.Context(), w, nil, http.StatusNoContent)
+}
+
+// HandleGetUnsentMessageAttachments godoc
+//
+//	@Summary		get unsent message attachments
+//	@Description	get unsent message attachments, returns array of filenames
+//	@Tags			chat
+//	@license.name	Apache 2.0
+//	@ID				chat/get_unsent_message_attachments
+//	@Accept			json
+//
+//	@Param			Cookie	header	string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
+//	@Param			receiverID	path	uint	true	"ID of the receiver"
+//
+//	@Produce		json
+//	@Success		200	{object}	json.JSONResponse{body=[]string}
+//	@Failure		400	{object}	errors.HTTPError
+//	@Failure		401	{object}	errors.HTTPError
+//	@Failure		403	{object}	errors.HTTPError
+//	@Failure		500	{object}	errors.HTTPError
+//	@Router			/chat/dialogs/{receiverID}/unsent-attachments/ [get]
+func (c *ChatServer) HandleGetUnsentMessageAttachments(w http.ResponseWriter, r *http.Request) {
+	senderID, err := requestcontext.GetUserID(r.Context())
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, err)
+		return
+	}
+
+	receiverIDData, ok := mux.Vars(r)["receiverID"]
+	if !ok {
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
+		return
+	}
+
+	receiverID, err := strconv.ParseUint(receiverIDData, 0, 0)
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
+		return
+	}
+
+	attachments, err := c.Service.GetUnsentMessageAttachments(r.Context(), &domain.UnsentMessageAttachment{
+		SenderID:   senderID,
+		ReceiverID: uint(receiverID),
+	})
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, err)
+		return
+	}
+
+	json.ServeJSONBody(r.Context(), w, attachments, http.StatusOK)
+}
+
+// HandleDeleteUnsentMessageAttachments godoc
+//
+//	@Summary		delete unsent message attachments
+//	@Description	delete unsent message attachments
+//	@Tags			chat
+//	@license.name	Apache 2.0
+//	@ID				chat/delete_unsent_message_attachments
+//	@Accept			json
+//
+//	@Param			Cookie	header	string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
+//	@Param			receiverID	path	uint	true	"ID of the receiver"
+//
+//	@Produce		json
+//	@Success		204
+//	@Failure		400	{object}	errors.HTTPError
+//	@Failure		401	{object}	errors.HTTPError
+//	@Failure		403	{object}	errors.HTTPError
+//	@Failure		500	{object}	errors.HTTPError
+//	@Router			/chat/dialogs/{receiverID}/unsent-attachments/ [delete]
+func (c *ChatServer) HandleDeleteUnsentMessageAttachments(w http.ResponseWriter, r *http.Request) {
+	senderID, err := requestcontext.GetUserID(r.Context())
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, err)
+		return
+	}
+
+	receiverIDData, ok := mux.Vars(r)["receiverID"]
+	if !ok {
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
+		return
+	}
+
+	receiverID, err := strconv.ParseUint(receiverIDData, 0, 0)
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
+		return
+	}
+
+	err = c.Service.DeleteUnsentMessageAttachments(r.Context(), &domain.UnsentMessageAttachment{
+		SenderID:   senderID,
+		ReceiverID: uint(receiverID),
+	})
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, err)
+		return
+	}
+
+	json.ServeJSONBody(r.Context(), w, nil, http.StatusNoContent)
+}
+
+// HandleCreateUnsentMessageAttachments godoc
+//
+//	@Summary		create unsent message attachments
+//	@Description	create unsent message attachments
+//	@Tags			chat
+//	@license.name	Apache 2.0
+//	@ID				chat/create_unsent_message_attachments
+//	@Accept			multipart/form-data
+//
+//	@Param			attachment	formData	file	true	"Attachment file"
+//	@Param			Cookie		header	string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
+//	@Param			receiverID	path	uint	true	"ID of the receiver"
+//
+//	@Produce		json
+//	@Success		201	{object}	json.JSONResponse{body=[]string}
+//	@Failure		400	{object}	errors.HTTPError
+//	@Failure		401	{object}	errors.HTTPError
+//	@Failure		403	{object}	errors.HTTPError
+//	@Failure		500	{object}	errors.HTTPError
+//	@Router			/chat/dialogs/{receiverID}/unsent-attachments/ [post]
+func (c *ChatServer) HandleCreateUnsentMessageAttachments(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseMultipartForm(1000 << 20)
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidBody)
+		return
+	}
+	senderID, err := requestcontext.GetUserID(r.Context())
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, err)
+		return
+	}
+
+	receiverIDData, ok := mux.Vars(r)["receiverID"]
+	if !ok {
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
+		return
+	}
+
+	receiverID, err := strconv.ParseUint(receiverIDData, 0, 0)
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
+		return
+	}
+
+	filenames, err := c.Service.CreateUnsentMessageAttachments(r.Context(), &domain.UnsentMessageAttachment{
+		SenderID:   senderID,
+		ReceiverID: uint(receiverID),
+	},
+		r.MultipartForm.File["attachment"])
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, err)
+		return
+	}
+
+	json.ServeJSONBody(r.Context(), w, filenames, http.StatusCreated)
+}
+
+// HandleDeleteUnsentMessageAttachment godoc
+//
+//	@Summary		delete unsent message attachment
+//	@Description	delete unsent message attachment
+//	@Tags			chat
+//	@license.name	Apache 2.0
+//	@ID				chat/delete_unsent_message_attachment
+//	@Accept			json
+//
+//	@Param			Cookie	header	string	true	"session_id=some_session"
+//	@Param			X-CSRF-Token	header	string	true	"CSRF token"
+//	@Param			receiverID	path	uint	true	"ID of the receiver"
+//	@Param			fileName	path	string	true	"Name of the file"
+//
+//	@Produce		json
+//	@Success		204
+//	@Failure		400	{object}	errors.HTTPError
+//	@Failure		401	{object}	errors.HTTPError
+//	@Failure		403	{object}	errors.HTTPError
+//	@Failure		500	{object}	errors.HTTPError
+//	@Router			/chat/dialogs/{receiverID}/unsent-attachments/{fileName} [delete]
+func (c *ChatServer) HandleDeleteUnsentMessageAttachment(w http.ResponseWriter, r *http.Request) {
+	senderID, err := requestcontext.GetUserID(r.Context())
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, err)
+		return
+	}
+
+	receiverIDData, ok := mux.Vars(r)["receiverID"]
+	if !ok {
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
+		return
+	}
+
+	receiverID, err := strconv.ParseUint(receiverIDData, 0, 0)
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
+		return
+	}
+
+	fileNameData, ok := mux.Vars(r)["fileName"]
+	if !ok {
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
+		return
+	}
+
+	err = c.Service.DeleteUnsentMessageAttachment(r.Context(), &domain.UnsentMessageAttachment{
+		SenderID:   senderID,
+		ReceiverID: uint(receiverID),
+		FileName:   fileNameData,
+	})
 	if err != nil {
 		json.ServeJSONError(r.Context(), w, err)
 		return

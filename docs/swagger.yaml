@@ -54,6 +54,10 @@ definitions:
     type: object
   domain.PersonalMessage:
     properties:
+      attachments:
+        items:
+          type: string
+        type: array
       content:
         type: string
       createdAt:
@@ -485,7 +489,7 @@ paths:
         ActionType is a string with one of following values: "SEND_MESSAGE", "UPDATE_MESSAGE", "DELETE_MESSAGE", "SEND_STICKER_MESSAGE"
 
         If "type" = "SEND_MESSAGE", then payload should be {"content": string}
-        If "type" = "UPDATE_MESSAGE", then payload should be {"messageId": uint, "content": string}
+        If "type" = "UPDATE_MESSAGE", then payload should be {"messageId": uint, "content": string, attachmentsToDelete: []string}
         If "type" = "DELETE_MESSAGE", then payload should be {"messageId": uint}
         If "type" = "SEND_STICKER_MESSAGE", then payload should be {"stickerId": uint}
 
@@ -578,6 +582,216 @@ paths:
           schema:
             $ref: '#/definitions/errors.HTTPError'
       summary: get user dialogs
+      tags:
+      - chat
+  /chat/dialogs/{receiverID}/unsent-attachments/:
+    delete:
+      consumes:
+      - application/json
+      description: delete unsent message attachments
+      operationId: chat/delete_unsent_message_attachments
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: ID of the receiver
+        in: path
+        name: receiverID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: delete unsent message attachments
+      tags:
+      - chat
+    get:
+      consumes:
+      - application/json
+      description: get unsent message attachments, returns array of filenames
+      operationId: chat/get_unsent_message_attachments
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: ID of the receiver
+        in: path
+        name: receiverID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  items:
+                    type: string
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: get unsent message attachments
+      tags:
+      - chat
+    post:
+      consumes:
+      - multipart/form-data
+      description: create unsent message attachments
+      operationId: chat/create_unsent_message_attachments
+      parameters:
+      - description: Attachment file
+        in: formData
+        name: attachment
+        required: true
+        type: file
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: ID of the receiver
+        in: path
+        name: receiverID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  items:
+                    type: string
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: create unsent message attachments
+      tags:
+      - chat
+  /chat/dialogs/{receiverID}/unsent-attachments/{fileName}:
+    delete:
+      consumes:
+      - application/json
+      description: delete unsent message attachment
+      operationId: chat/delete_unsent_message_attachment
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: ID of the receiver
+        in: path
+        name: receiverID
+        required: true
+        type: integer
+      - description: Name of the file
+        in: path
+        name: fileName
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: delete unsent message attachment
       tags:
       - chat
   /chat/messages/:

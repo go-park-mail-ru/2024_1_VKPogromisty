@@ -23,7 +23,7 @@ func TestMountChatRouter(t *testing.T) {
 	minioRepo := mock_chat.NewMockStickerStorage(ctrl)
 
 	router := mux.NewRouter()
-	routers.MountChatRouter(router, pubSubRepo, messagesRepo, authClient, minioRepo)
+	routers.MountChatRouter(router, pubSubRepo, nil, messagesRepo, authClient, minioRepo, nil)
 
 	// Test if the routes are correctly mounted
 	testCases := []struct {

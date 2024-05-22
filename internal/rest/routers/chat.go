@@ -13,9 +13,9 @@ import (
 	"github.com/microcosm-cc/bluemonday"
 )
 
-func MountChatRouter(rootRouter *mux.Router, pubSubRepo chat.PubSubRepository, messagesRepo chat.PersonalMessagesRepository, authManager authpb.AuthClient, stickerStorage chat.StickerStorage) {
+func MountChatRouter(rootRouter *mux.Router, pubSubRepo chat.PubSubRepository, unsentMessageAttachmentsStorage chat.UnsentMessageAttachmentsStorage, messagesRepo chat.PersonalMessagesRepository, authManager authpb.AuthClient, stickerStorage chat.StickerStorage, messageAttachmentStorage chat.MessageAttachmentStorage) {
 	sanitizer := sanitizer.NewSanitizer(bluemonday.UGCPolicy())
-	h := rest.NewChatServer(pubSubRepo, messagesRepo, stickerStorage, sanitizer)
+	h := rest.NewChatServer(pubSubRepo, unsentMessageAttachmentsStorage, messagesRepo, stickerStorage, messageAttachmentStorage, sanitizer)
 
 	csrfFreeRouter := rootRouter.PathPrefix("/chat/ws").Subrouter()
 	csrfFreeRouter.HandleFunc("/", h.ServeWS).Methods("GET", "OPTIONS")
@@ -26,9 +26,13 @@ func MountChatRouter(rootRouter *mux.Router, pubSubRepo chat.PubSubRepository, m
 	csrfRequiredRouter.Use(middleware.CreateCSRFMiddleware(csrf.NewCSRFService(customtime.RealTimeProvider{})))
 
 	csrfRequiredRouter.HandleFunc("/dialogs", h.HandleGetDialogs).Methods("GET", "OPTIONS")
+	csrfRequiredRouter.HandleFunc("/dialogs/{receiverID:[0-9]+}/unsent-attachments/", h.HandleGetUnsentMessageAttachments).Methods("GET", "OPTIONS")
+	csrfRequiredRouter.HandleFunc("/dialogs/{receiverID:[0-9]+}/unsent-attachments/", h.HandleCreateUnsentMessageAttachments).Methods("POST", "OPTIONS")
+	csrfRequiredRouter.HandleFunc("/dialogs/{receiverID:[0-9]+}/unsent-attachments/", h.HandleDeleteUnsentMessageAttachments).Methods("DELETE", "OPTIONS")
+	csrfRequiredRouter.HandleFunc("/dialogs/{receiverID:[0-9]+}/unsent-attachments/{fileName}", h.HandleDeleteUnsentMessageAttachment).Methods("DELETE", "OPTIONS")
 	csrfRequiredRouter.HandleFunc("/messages", h.HandleGetMessagesByDialog).Methods("GET", "OPTIONS")
 	csrfRequiredRouter.HandleFunc("/stickers/", h.HandleGetAllStickers).Methods("GET", "OPTIONS")
-	csrfRequiredRouter.HandleFunc("/stickers/{authorID}", h.HandleGetStickersByAuthorID).Methods("GET", "OPTIONS")
+	csrfRequiredRouter.HandleFunc("/stickers/{authorID:[0-9]+}", h.HandleGetStickersByAuthorID).Methods("GET", "OPTIONS")
 	csrfRequiredRouter.HandleFunc("/stickers/", h.HandleCreateSticker).Methods("POST", "OPTIONS")
-	csrfRequiredRouter.HandleFunc("/stickers/{stickerID}", h.HandleDeleteSticker).Methods("DELETE", "OPTIONS")
+	csrfRequiredRouter.HandleFunc("/stickers/{stickerID:[0-9]+}", h.HandleDeleteSticker).Methods("DELETE", "OPTIONS")
 }

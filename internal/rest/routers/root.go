@@ -70,10 +70,17 @@ func MountRootRouter(router *mux.Router) (err error) {
 		return
 	}
 
+	messageAttachmentStorage, err := minioRepo.NewStaticStorage(minioClient, minioRepo.MessageAttachmentsBucket)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
 	redisPool := redisRepo.NewPool(os.Getenv("REDIS_PROTOCOL"), os.Getenv("REDIS_HOST")+":"+os.Getenv("REDIS_PORT"), os.Getenv("REDIS_PASSWORD"))
 	defer redisPool.Close()
 
 	chatPubSubRepository := redisRepo.NewChatPubSub(redisPool)
+	unsentMessageAttachmentsStorage := redisRepo.NewUnsentMessageAttachments(redisPool)
 
 	userClientConn, err := grpc.Dial(
 		os.Getenv("GRPC_USER_SERVICE_HOST")+os.Getenv("GRPC_USER_SERVICE_PORT"),
@@ -133,7 +140,7 @@ func MountRootRouter(router *mux.Router) (err error) {
 
 	MountAuthRouter(rootRouter, authClient, userClient)
 	MountCSRFRouter(rootRouter, authClient)
-	MountChatRouter(rootRouter, chatPubSubRepository, personalMessageStorage, authClient, stickerStorage)
+	MountChatRouter(rootRouter, chatPubSubRepository, unsentMessageAttachmentsStorage, personalMessageStorage, authClient, stickerStorage, messageAttachmentStorage)
 	MountProfileRouter(rootRouter, userClient, authClient)
 	MountPostsRouter(rootRouter, postClient, userClient, publicGroupClient, authClient)
 	MountSubscriptionsRouter(rootRouter, userClient, authClient)

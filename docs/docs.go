@@ -257,7 +257,7 @@ const docTemplate = `{
         },
         "/chat/": {
             "get": {
-                "description": "Serve websocket connection. You can send actions to connection following simple structure:\n\n{\n\"type\": ActionType,\n\"receiver\": uint,\n\"csrfToken\": string,\n\"payload\": interface{}\n}\n\nActionType is a string with one of following values: \"SEND_MESSAGE\", \"UPDATE_MESSAGE\", \"DELETE_MESSAGE\", \"SEND_STICKER_MESSAGE\"\n\nIf \"type\" = \"SEND_MESSAGE\", then payload should be {\"content\": string}\nIf \"type\" = \"UPDATE_MESSAGE\", then payload should be {\"messageId\": uint, \"content\": string}\nIf \"type\" = \"DELETE_MESSAGE\", then payload should be {\"messageId\": uint}\nIf \"type\" = \"SEND_STICKER_MESSAGE\", then payload should be {\"stickerId\": uint}\n\nIn response clients, subscribed to corresponding channel, will get same structure back:\n{\n\"type\": ActionType,\n\"receiver\": uint,\n\"csrfToken\": string,\n\"payload\": interface{}\n}\n\n\"payload\" can be:\nPersonalMessage if \"type\" = \"SEND_MESSAGE\"\nPersonalMessage if \"type\" = \"UPDATE_MESSAGE\"\nAbsent if \"type\" = \"DELETE_MESSAGE\"\nPersonalMessage if \"type\" = \"SEND_STICKER_MESSAGE\"\n{\"error\": string} if error happened at any point of query processing\n",
+                "description": "Serve websocket connection. You can send actions to connection following simple structure:\n\n{\n\"type\": ActionType,\n\"receiver\": uint,\n\"csrfToken\": string,\n\"payload\": interface{}\n}\n\nActionType is a string with one of following values: \"SEND_MESSAGE\", \"UPDATE_MESSAGE\", \"DELETE_MESSAGE\", \"SEND_STICKER_MESSAGE\"\n\nIf \"type\" = \"SEND_MESSAGE\", then payload should be {\"content\": string}\nIf \"type\" = \"UPDATE_MESSAGE\", then payload should be {\"messageId\": uint, \"content\": string, attachmentsToDelete: []string}\nIf \"type\" = \"DELETE_MESSAGE\", then payload should be {\"messageId\": uint}\nIf \"type\" = \"SEND_STICKER_MESSAGE\", then payload should be {\"stickerId\": uint}\n\nIn response clients, subscribed to corresponding channel, will get same structure back:\n{\n\"type\": ActionType,\n\"receiver\": uint,\n\"csrfToken\": string,\n\"payload\": interface{}\n}\n\n\"payload\" can be:\nPersonalMessage if \"type\" = \"SEND_MESSAGE\"\nPersonalMessage if \"type\" = \"UPDATE_MESSAGE\"\nAbsent if \"type\" = \"DELETE_MESSAGE\"\nPersonalMessage if \"type\" = \"SEND_STICKER_MESSAGE\"\n{\"error\": string} if error happened at any point of query processing\n",
                 "consumes": [
                     "application/json"
                 ],
@@ -354,6 +354,324 @@ const docTemplate = `{
                                 }
                             ]
                         }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/chat/dialogs/{receiverID}/unsent-attachments/": {
+            "get": {
+                "description": "get unsent message attachments, returns array of filenames",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "get unsent message attachments",
+                "operationId": "chat/get_unsent_message_attachments",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "session_id=some_session",
+                        "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "CSRF token",
+                        "name": "X-CSRF-Token",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID of the receiver",
+                        "name": "receiverID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/json.JSONResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "create unsent message attachments",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "create unsent message attachments",
+                "operationId": "chat/create_unsent_message_attachments",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Attachment file",
+                        "name": "attachment",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "session_id=some_session",
+                        "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "CSRF token",
+                        "name": "X-CSRF-Token",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID of the receiver",
+                        "name": "receiverID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/json.JSONResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "delete unsent message attachments",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "delete unsent message attachments",
+                "operationId": "chat/delete_unsent_message_attachments",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "session_id=some_session",
+                        "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "CSRF token",
+                        "name": "X-CSRF-Token",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID of the receiver",
+                        "name": "receiverID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/chat/dialogs/{receiverID}/unsent-attachments/{fileName}": {
+            "delete": {
+                "description": "delete unsent message attachment",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "delete unsent message attachment",
+                "operationId": "chat/delete_unsent_message_attachment",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "session_id=some_session",
+                        "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "CSRF token",
+                        "name": "X-CSRF-Token",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID of the receiver",
+                        "name": "receiverID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Name of the file",
+                        "name": "fileName",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
                     },
                     "400": {
                         "description": "Bad Request",
@@ -4510,6 +4828,12 @@ const docTemplate = `{
         "domain.PersonalMessage": {
             "type": "object",
             "properties": {
+                "attachments": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "content": {
                     "type": "string"
                 },
