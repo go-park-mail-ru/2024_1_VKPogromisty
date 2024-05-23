@@ -488,7 +488,7 @@ paths:
 
         ActionType is a string with one of following values: "SEND_MESSAGE", "UPDATE_MESSAGE", "DELETE_MESSAGE", "SEND_STICKER_MESSAGE"
 
-        If "type" = "SEND_MESSAGE", then payload should be {"content": string}
+        If "type" = "SEND_MESSAGE", then payload should be {"content": string, "attachments": []string}
         If "type" = "UPDATE_MESSAGE", then payload should be {"messageId": uint, "content": string, attachmentsToDelete: []string}
         If "type" = "DELETE_MESSAGE", then payload should be {"messageId": uint}
         If "type" = "SEND_STICKER_MESSAGE", then payload should be {"stickerId": uint}
