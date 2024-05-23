@@ -2575,7 +2575,7 @@
             "put": {
                 "description": "update post by id",
                 "consumes": [
-                    "application/json"
+                    "multipart/form-data"
                 ],
                 "produces": [
                     "application/json"
@@ -2601,22 +2601,38 @@
                         "required": true
                     },
                     {
+                        "type": "integer",
                         "description": "ID of the post",
-                        "name": "post_id",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
+                        "name": "postId",
+                        "in": "formData",
+                        "required": true
                     },
                     {
+                        "type": "string",
                         "description": "Content of the post",
                         "name": "content",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
                             "type": "string"
-                        }
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Attachments to delete",
+                        "name": "attachmentsToDelete",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "file"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Attachments of the post",
+                        "name": "attachments",
+                        "in": "formData"
                     }
                 ],
                 "responses": {

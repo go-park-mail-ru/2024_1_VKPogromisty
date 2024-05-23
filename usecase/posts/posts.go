@@ -32,8 +32,10 @@ type ListUserFriendsPostsInput struct {
 }
 
 type PostUpdateInput struct {
-	PostID  uint   `json:"postId"`
-	Content string `json:"content"`
+	PostID              uint     `json:"postId"`
+	Content             string   `json:"content"`
+	AttachmentsToAdd    []string `json:"attachmentsToAdd"`
+	AttachmentsToDelete []string `json:"attachmentsToDelete"`
 }
 
 type DeletePostInput struct {
@@ -55,7 +57,7 @@ type PostsStorage interface {
 	GetUserPosts(ctx context.Context, userID uint, lastPostID uint, postsAmount uint) (posts []*domain.Post, err error)
 	GetUserFriendsPosts(ctx context.Context, userID uint, lastPostID uint, postsAmount uint) (posts []*domain.Post, err error)
 	StorePost(ctx context.Context, post *domain.Post) (newPost *domain.Post, err error)
-	UpdatePost(ctx context.Context, post *domain.Post) (updatedPost *domain.Post, err error)
+	UpdatePost(ctx context.Context, post *domain.Post, attachmentsToDelete []string) (updatedPost *domain.Post, err error)
 	DeletePost(ctx context.Context, postID uint) (err error)
 	GetLikedPosts(ctx context.Context, userID uint, lastLikeID uint, limit uint) (likedPosts []LikeWithPost, err error)
 	StorePostLike(ctx context.Context, likeData *domain.PostLike) (like *domain.PostLike, err error)
@@ -174,19 +176,30 @@ func (s *Service) UpdatePost(ctx context.Context, userID uint, input PostUpdateI
 		return
 	}
 
-	if len(input.Content) == 0 && len(oldPost.Attachments) == 0 {
+	if len(input.Content) == 0 && (len(oldPost.Attachments)+len(input.AttachmentsToAdd)-len(input.AttachmentsToDelete)) == 0 {
 		err = errors.ErrInvalidBody
 		return
 	}
 
 	oldPost.Content = input.Content
+	oldPost.Attachments = input.AttachmentsToAdd
 
-	post, err = s.PostsStorage.UpdatePost(ctx, oldPost)
+	_, err = s.PostsStorage.UpdatePost(ctx, oldPost, input.AttachmentsToDelete)
 	if err != nil {
 		return
 	}
 
-	s.Sanitizer.SanitizePost(post)
+	for _, attachment := range input.AttachmentsToDelete {
+		err = s.AttachmentStorage.Delete(attachment)
+		if err != nil {
+			return
+		}
+	}
+
+	post, err = s.PostsStorage.GetPostByID(ctx, input.PostID)
+	if err != nil {
+		return
+	}
 
 	return
 }

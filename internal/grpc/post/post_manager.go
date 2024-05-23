@@ -114,10 +114,14 @@ func (p *PostManager) UpdatePost(ctx context.Context, in *postspb.UpdatePostRequ
 	postID := in.GetPostId()
 	content := in.GetContent()
 	userID := in.GetUserId()
+	attachmentsToAdd := in.GetAttachmentsToAdd()
+	attachmentsToDelete := in.GetAttachmentsToDelete()
 
 	post, err := p.PostsService.UpdatePost(ctx, uint(userID), posts.PostUpdateInput{
-		PostID:  uint(postID),
-		Content: content,
+		PostID:              uint(postID),
+		Content:             content,
+		AttachmentsToAdd:    attachmentsToAdd,
+		AttachmentsToDelete: attachmentsToDelete,
 	})
 	if err != nil {
 		customErr := errors.NewCustomError(err)

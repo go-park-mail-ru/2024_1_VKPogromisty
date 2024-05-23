@@ -2125,7 +2125,7 @@ paths:
       - posts
     put:
       consumes:
-      - application/json
+      - multipart/form-data
       description: update post by id
       operationId: posts/update
       parameters:
@@ -2140,17 +2140,29 @@ paths:
         required: true
         type: string
       - description: ID of the post
-        in: body
-        name: post_id
+        in: formData
+        name: postId
         required: true
-        schema:
-          type: integer
+        type: integer
       - description: Content of the post
-        in: body
+        in: formData
         name: content
         required: true
-        schema:
+        type: string
+      - collectionFormat: csv
+        description: Attachments to delete
+        in: formData
+        items:
           type: string
+        name: attachmentsToDelete
+        type: array
+      - collectionFormat: csv
+        description: Attachments of the post
+        in: formData
+        items:
+          type: file
+        name: attachments
+        type: array
       produces:
       - application/json
       responses:

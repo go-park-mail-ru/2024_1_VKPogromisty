@@ -26,6 +26,9 @@ test:
 coverage:
 	go tool cover -func cover.out
 
+swaggen:
+	swag init -g cmd/app/main.go
+
 post-build:
 	docker build -t socio/post-service -f cmd/post/Dockerfile . --no-cache
 

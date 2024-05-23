@@ -273,6 +273,17 @@ func (c *Client) handleUpdateMessageAction(ctx context.Context, action *Action, 
 		return
 	}
 
+	newMessage, err := c.ChatService.MessagesRepo.UpdateMessage(ctx, msg, message.AttachmentsToDelete)
+	if err != nil {
+		action.Payload, err = errors.MarshalError(err)
+		if err != nil {
+			return
+		}
+
+		c.ChatService.PubSubRepository.WriteAction(ctx, action)
+		return
+	}
+
 	for _, attach := range message.AttachmentsToDelete {
 		err = c.ChatService.MessageAttachmentStorage.Delete(attach)
 		if err != nil {
@@ -284,17 +295,6 @@ func (c *Client) handleUpdateMessageAction(ctx context.Context, action *Action, 
 			c.ChatService.PubSubRepository.WriteAction(ctx, action)
 			return
 		}
-	}
-
-	newMessage, err := c.ChatService.MessagesRepo.UpdateMessage(ctx, msg, message.AttachmentsToDelete)
-	if err != nil {
-		action.Payload, err = errors.MarshalError(err)
-		if err != nil {
-			return
-		}
-
-		c.ChatService.PubSubRepository.WriteAction(ctx, action)
-		return
 	}
 
 	err = c.ChatService.UnsentMessageAttachmentsStorage.DeleteAll(ctx, &domain.UnsentMessageAttachment{

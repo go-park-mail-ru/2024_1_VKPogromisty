@@ -377,18 +377,18 @@ func (mr *MockPostsStorageMockRecorder) UpdateComment(ctx, comment interface{}) 
 }
 
 // UpdatePost mocks base method.
-func (m *MockPostsStorage) UpdatePost(ctx context.Context, post *domain.Post) (*domain.Post, error) {
+func (m *MockPostsStorage) UpdatePost(ctx context.Context, post *domain.Post, attachmentsToDelete []string) (*domain.Post, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdatePost", ctx, post)
+	ret := m.ctrl.Call(m, "UpdatePost", ctx, post, attachmentsToDelete)
 	ret0, _ := ret[0].(*domain.Post)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpdatePost indicates an expected call of UpdatePost.
-func (mr *MockPostsStorageMockRecorder) UpdatePost(ctx, post interface{}) *gomock.Call {
+func (mr *MockPostsStorageMockRecorder) UpdatePost(ctx, post, attachmentsToDelete interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePost", reflect.TypeOf((*MockPostsStorage)(nil).UpdatePost), ctx, post)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePost", reflect.TypeOf((*MockPostsStorage)(nil).UpdatePost), ctx, post, attachmentsToDelete)
 }
 
 // MockAttachmentStorage is a mock of AttachmentStorage interface.

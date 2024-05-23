@@ -436,12 +436,14 @@ func (h *PostsHandler) HandleCreatePost(w http.ResponseWriter, r *http.Request) 
 //	@Tags			posts
 //	@license.name	Apache 2.0
 //	@ID				posts/update
-//	@Accept			json
+//	@Accept			mpfd
 //
 //	@Param			Cookie	header	string	true	"session_id=some_session"
 //	@Param			X-CSRF-Token	header	string	true	"CSRF token"
-//	@Param			post_id	body	uint	true	"ID of the post"
-//	@Param			content	body	string	true	"Content of the post"
+//	@Param			postId	formData	uint	true	"ID of the post"
+//	@Param			content	formData	string	true	"Content of the post"
+//	@Param			attachmentsToDelete	formData	[]string	false	"Attachments to delete"
+//	@Param			attachments	formData	[]file	false	"Attachments of the post"
 //
 //	@Produce		json
 //	@Success		200	{object}	json.JSONResponse{body=map[string]domain.Post}	"application/json"	"Attachments is always null!!!"
@@ -452,16 +454,13 @@ func (h *PostsHandler) HandleCreatePost(w http.ResponseWriter, r *http.Request) 
 //	@Failure		500	{object}	errors.HTTPError
 //	@Router			/posts/ [put]
 func (h *PostsHandler) HandleUpdatePost(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
-
-	var input posts.PostUpdateInput
-
-	decoder := defJSON.NewDecoder(r.Body)
-	err := decoder.Decode(&input)
+	err := r.ParseMultipartForm(1000 << 20)
 	if err != nil {
-		json.ServeJSONError(r.Context(), w, errors.ErrJSONUnmarshalling)
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidBody)
 		return
 	}
+
+	var input posts.PostUpdateInput
 
 	userID, err := requestcontext.GetUserID(r.Context())
 	if err != nil {
@@ -469,10 +468,32 @@ func (h *PostsHandler) HandleUpdatePost(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	postIDData, err := strconv.ParseUint(r.PostFormValue("postId"), 0, 0)
+	if err != nil {
+		json.ServeJSONError(r.Context(), w, errors.ErrInvalidData)
+		return
+	}
+
+	input.PostID = uint(postIDData)
+	input.Content = strings.TrimSpace(r.PostFormValue("content"))
+	input.AttachmentsToDelete = r.PostForm["attachmentsToDelete"]
+
+	for _, f := range r.MultipartForm.File["attachments"] {
+		fileName, err := uploaders.UploadPostAttachment(r, h.PostsClient, f)
+		if err != nil {
+			json.ServeJSONError(r.Context(), w, err)
+			return
+		}
+
+		input.AttachmentsToAdd = append(input.AttachmentsToAdd, fileName)
+	}
+
 	updatedPost, err := h.PostsClient.UpdatePost(r.Context(), &postspb.UpdatePostRequest{
-		PostId:  uint64(input.PostID),
-		Content: input.Content,
-		UserId:  uint64(userID),
+		PostId:              uint64(input.PostID),
+		Content:             input.Content,
+		UserId:              uint64(userID),
+		AttachmentsToAdd:    input.AttachmentsToAdd,
+		AttachmentsToDelete: input.AttachmentsToDelete,
 	})
 	if err != nil {
 		json.ServeGRPCStatus(r.Context(), w, err)

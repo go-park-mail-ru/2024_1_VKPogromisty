@@ -97,6 +97,8 @@ message UpdatePostRequest {
     uint64 user_id = 1;
     uint64 post_id = 2;
     string content = 3;
+    repeated string attachments_to_add = 4;
+    repeated string attachments_to_delete = 5;
 }
 
 message UpdatePostResponse {

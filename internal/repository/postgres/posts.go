@@ -101,10 +101,14 @@ const (
 		created_at,
 		updated_at;
 	`
-	StoreAttachmentQuery = `
+	StorePostAttachmentQuery = `
 	INSERT INTO public.post_attachment (post_id, file_name)
 	VALUES ($1, $2)
 	RETURNING file_name;
+	`
+	DeletePostAttachmentQuery = `
+	DELETE FROM public.post_attachment
+	WHERE file_name = $1;
 	`
 	UpdatePostQuery = `
 	UPDATE public.post
@@ -486,9 +490,9 @@ func (p *Posts) StorePost(ctx context.Context, post *domain.Post) (newPost *doma
 	}
 
 	for _, attachment := range post.Attachments {
-		contextlogger.LogSQL(ctx, StoreAttachmentQuery, newPost.ID, attachment)
+		contextlogger.LogSQL(ctx, StorePostAttachmentQuery, newPost.ID, attachment)
 
-		err = tx.QueryRow(context.Background(), StoreAttachmentQuery, newPost.ID, attachment).Scan(&attachment)
+		err = tx.QueryRow(context.Background(), StorePostAttachmentQuery, newPost.ID, attachment).Scan(&attachment)
 		if err != nil {
 			return
 		}
@@ -546,8 +550,25 @@ func (p *Posts) GetGroupPostByPostID(ctx context.Context, postID uint) (groupPos
 	return
 }
 
-func (p *Posts) UpdatePost(ctx context.Context, post *domain.Post) (updatedPost *domain.Post, err error) {
+func (p *Posts) UpdatePost(ctx context.Context, post *domain.Post, attachmentsToDelete []string) (updatedPost *domain.Post, err error) {
 	updatedPost = new(domain.Post)
+
+	tx, err := p.db.BeginTx(context.Background(), pgx.TxOptions{})
+
+	if err != nil {
+		return
+	}
+
+	defer func() {
+		if err != nil {
+			return
+		}
+		if err = tx.Rollback(context.Background()); err != nil && err != pgx.ErrTxClosed {
+			return
+		}
+
+		err = nil
+	}()
 
 	contextlogger.LogSQL(ctx, UpdatePostQuery, post.Content, post.ID)
 
@@ -558,6 +579,31 @@ func (p *Posts) UpdatePost(ctx context.Context, post *domain.Post) (updatedPost 
 		&updatedPost.CreatedAt.Time,
 		&updatedPost.UpdatedAt.Time,
 	)
+	if err != nil {
+		return
+	}
+
+	for _, attachment := range post.Attachments {
+		contextlogger.LogSQL(ctx, StorePostAttachmentQuery, updatedPost.ID, attachment)
+
+		err = tx.QueryRow(context.Background(), StorePostAttachmentQuery, updatedPost.ID, attachment).Scan(&attachment)
+		if err != nil {
+			return
+		}
+
+		updatedPost.Attachments = append(updatedPost.Attachments, attachment)
+	}
+
+	for _, attachment := range attachmentsToDelete {
+		contextlogger.LogSQL(ctx, DeletePostAttachmentQuery, attachment)
+
+		_, err = tx.Exec(context.Background(), DeletePostAttachmentQuery, attachment)
+		if err != nil {
+			return
+		}
+	}
+
+	err = tx.Commit(context.Background())
 	if err != nil {
 		return
 	}
