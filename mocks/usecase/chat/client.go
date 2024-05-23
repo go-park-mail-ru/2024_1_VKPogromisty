@@ -109,6 +109,21 @@ func (mr *MockPersonalMessagesRepositoryMockRecorder) GetLastMessageID(ctx, send
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastMessageID", reflect.TypeOf((*MockPersonalMessagesRepository)(nil).GetLastMessageID), ctx, senderID, receiverID)
 }
 
+// GetMessageByID mocks base method.
+func (m *MockPersonalMessagesRepository) GetMessageByID(ctx context.Context, msgID uint) (*domain.PersonalMessage, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetMessageByID", ctx, msgID)
+	ret0, _ := ret[0].(*domain.PersonalMessage)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetMessageByID indicates an expected call of GetMessageByID.
+func (mr *MockPersonalMessagesRepositoryMockRecorder) GetMessageByID(ctx, msgID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMessageByID", reflect.TypeOf((*MockPersonalMessagesRepository)(nil).GetMessageByID), ctx, msgID)
+}
+
 // GetMessagesByDialog mocks base method.
 func (m *MockPersonalMessagesRepository) GetMessagesByDialog(ctx context.Context, senderID, receiverID, lastMessageID, messagesAmount uint) ([]*domain.PersonalMessage, error) {
 	m.ctrl.T.Helper()

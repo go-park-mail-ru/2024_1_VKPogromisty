@@ -13,6 +13,26 @@ import (
 )
 
 const (
+	getMessageByIdQuery = `
+	SELECT pm.id,
+		pm.sender_id,
+		pm.receiver_id,
+		pm.content,
+		pm.created_at,
+		pm.updated_at,
+		COALESCE(pm.sticker_id, 0),
+		array_agg(DISTINCT ma.file_name) AS attachments
+	FROM public.personal_message AS pm
+	LEFT JOIN public.message_attachment AS ma ON pm.id = ma.message_id
+	WHERE pm.id = $1
+	GROUP BY pm.id,
+		pm.sender_id,
+		pm.receiver_id,
+		pm.content,
+		pm.created_at,
+		pm.updated_at,
+		pm.sticker_id;
+	`
 	getMessagesByDialogQuery = `
 	SELECT pm.id,
 		pm.sender_id,
@@ -175,6 +195,45 @@ func NewPersonalMessages(db DBPool, tp customtime.TimeProvider) *PersonalMessage
 		db: db,
 		TP: tp,
 	}
+}
+
+func (pm *PersonalMessages) GetMessageByID(ctx context.Context, msgID uint) (msg *domain.PersonalMessage, err error) {
+	contextlogger.LogSQL(ctx, getMessageByIdQuery, msgID)
+
+	msg = new(domain.PersonalMessage)
+	sticker := new(domain.Sticker)
+	var attachments pgtype.TextArray
+
+	err = pm.db.QueryRow(context.Background(), getMessageByIdQuery, msgID).Scan(
+		&msg.ID,
+		&msg.SenderID,
+		&msg.ReceiverID,
+		&msg.Content,
+		&msg.CreatedAt.Time,
+		&msg.UpdatedAt.Time,
+		&sticker.ID,
+		&attachments,
+	)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			err = errors.ErrNotFound
+		}
+
+		return
+	}
+
+	msg.Attachments = utils.TextArrayIntoStringSlice(attachments)
+
+	if sticker.ID != 0 {
+		sticker, err = pm.GetStickerByID(ctx, sticker.ID)
+		if err != nil {
+			return
+		}
+
+		msg.Sticker = sticker
+	}
+
+	return
 }
 
 func (pm *PersonalMessages) GetLastMessageID(ctx context.Context, senderID, receiverID uint) (lastMessageID uint, err error) {

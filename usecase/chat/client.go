@@ -20,6 +20,7 @@ const (
 )
 
 type PersonalMessagesRepository interface {
+	GetMessageByID(ctx context.Context, msgID uint) (msg *domain.PersonalMessage, err error)
 	GetLastMessageID(ctx context.Context, senderID, receiverID uint) (lastMessageID uint, err error)
 	GetMessagesByDialog(ctx context.Context, senderID, receiverID, lastMessageID, messagesAmount uint) (messages []*domain.PersonalMessage, err error)
 	GetDialogsByUserID(ctx context.Context, userID uint) (dialogs []*domain.Dialog, err error)
@@ -315,6 +316,21 @@ func (c *Client) handleUpdateMessageAction(ctx context.Context, action *Action, 
 		return
 	}
 
+	newMessage, err = c.ChatService.MessagesRepo.GetMessageByID(ctx, newMessage.ID)
+	if err != nil {
+		action.Payload, err = errors.MarshalError(err)
+		if err != nil {
+			return
+		}
+
+		err = c.ChatService.PubSubRepository.WriteAction(ctx, action)
+		if err != nil {
+			return
+		}
+
+		return
+	}
+
 	c.ChatService.Sanitizer.SanitizePersonalMessage(newMessage)
 
 	action.Payload, err = json.Marshal(newMessage)
@@ -324,7 +340,11 @@ func (c *Client) handleUpdateMessageAction(ctx context.Context, action *Action, 
 			return
 		}
 
-		c.ChatService.PubSubRepository.WriteAction(ctx, action)
+		err = c.ChatService.PubSubRepository.WriteAction(ctx, action)
+		if err != nil {
+			return
+		}
+
 		return
 	}
 
