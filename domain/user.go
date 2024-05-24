@@ -2,6 +2,7 @@ package domain
 
 import customtime "socio/pkg/time"
 
+//easyjson:json
 type User struct {
 	ID          uint                  `json:"userId"`
 	FirstName   string                `json:"firstName"`

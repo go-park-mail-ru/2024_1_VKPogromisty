@@ -1,7 +1,6 @@
 package rest
 
 import (
-	defJSON "encoding/json"
 	"net/http"
 	"socio/domain"
 	"socio/errors"
@@ -17,6 +16,7 @@ import (
 	"socio/internal/rest/uploaders"
 
 	"github.com/gorilla/mux"
+	"github.com/mailru/easyjson"
 )
 
 const (
@@ -27,37 +27,45 @@ const (
 	BatchSize             = 1 << 23
 )
 
+//easyjson:json
 type LikePostInput struct {
 	PostID uint `json:"postId"`
 }
 
+//easyjson:json
 type UnlikePostInput struct {
 	PostID uint `json:"postId"`
 }
 
+//easyjson:json
 type ListUserPostsResponse struct {
 	Posts  []*domain.Post `json:"posts"`
 	Author *domain.User   `json:"author"`
 }
 
+//easyjson:json
 type CreateCommentInput struct {
 	PostID  uint   `json:"postId"`
 	Content string `json:"content"`
 }
 
+//easyjson:json
 type UpdateCommentInput struct {
 	CommentID uint   `json:"commentId"`
 	Content   string `json:"content"`
 }
 
+//easyjson:json
 type DeleteCommentInput struct {
 	CommentID uint `json:"commentId"`
 }
 
+//easyjson:json
 type LikeCommentInput struct {
 	CommentID uint `json:"commentId"`
 }
 
+//easyjson:json
 type UnlikeCommentInput struct {
 	CommentID uint `json:"commentId"`
 }
@@ -528,10 +536,9 @@ func (h *PostsHandler) HandleUpdatePost(w http.ResponseWriter, r *http.Request) 
 func (h *PostsHandler) HandleDeletePost(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	var input posts.DeletePostInput
+	input := new(posts.DeletePostInput)
 
-	decoder := defJSON.NewDecoder(r.Body)
-	err := decoder.Decode(&input)
+	err := easyjson.UnmarshalFromReader(r.Body, input)
 	if err != nil {
 		json.ServeJSONError(r.Context(), w, errors.ErrJSONUnmarshalling)
 		return
@@ -670,10 +677,9 @@ func (h *PostsHandler) HandleGetLikedPosts(w http.ResponseWriter, r *http.Reques
 func (h *PostsHandler) HandleLikePost(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	var input *LikePostInput
+	input := new(LikePostInput)
 
-	decoder := defJSON.NewDecoder(r.Body)
-	err := decoder.Decode(&input)
+	err := easyjson.UnmarshalFromReader(r.Body, input)
 	if err != nil {
 		json.ServeJSONError(r.Context(), w, errors.ErrJSONUnmarshalling)
 		return
@@ -721,9 +727,9 @@ func (h *PostsHandler) HandleLikePost(w http.ResponseWriter, r *http.Request) {
 func (h *PostsHandler) HandleUnlikePost(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	var input UnlikePostInput
-	decoder := defJSON.NewDecoder(r.Body)
-	err := decoder.Decode(&input)
+	input := new(UnlikePostInput)
+
+	err := easyjson.UnmarshalFromReader(r.Body, input)
 	if err != nil {
 		json.ServeJSONError(r.Context(), w, errors.ErrJSONUnmarshalling)
 		return
@@ -1146,10 +1152,9 @@ func (h *PostsHandler) HandleCreateComment(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	var commentInput CreateCommentInput
+	commentInput := new(CreateCommentInput)
 
-	decoder := defJSON.NewDecoder(r.Body)
-	err = decoder.Decode(&commentInput)
+	err = easyjson.UnmarshalFromReader(r.Body, commentInput)
 	if err != nil {
 		json.ServeJSONError(r.Context(), w, errors.ErrJSONUnmarshalling)
 		return
@@ -1212,10 +1217,9 @@ func (h *PostsHandler) HandleUpdateComment(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	var commentInput UpdateCommentInput
+	commentInput := new(UpdateCommentInput)
 
-	decoder := defJSON.NewDecoder(r.Body)
-	err = decoder.Decode(&commentInput)
+	err = easyjson.UnmarshalFromReader(r.Body, commentInput)
 	if err != nil {
 		json.ServeJSONError(r.Context(), w, errors.ErrJSONUnmarshalling)
 		return
@@ -1277,10 +1281,9 @@ func (h *PostsHandler) HandleDeleteComment(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	var commentInput DeleteCommentInput
+	commentInput := new(DeleteCommentInput)
 
-	decoder := defJSON.NewDecoder(r.Body)
-	err = decoder.Decode(&commentInput)
+	err = easyjson.UnmarshalFromReader(r.Body, commentInput)
 	if err != nil {
 		json.ServeJSONError(r.Context(), w, errors.ErrJSONUnmarshalling)
 		return
@@ -1326,10 +1329,9 @@ func (h *PostsHandler) HandleLikeComment(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	var input LikeCommentInput
+	input := new(LikeCommentInput)
 
-	decoder := defJSON.NewDecoder(r.Body)
-	err = decoder.Decode(&input)
+	err = easyjson.UnmarshalFromReader(r.Body, input)
 	if err != nil {
 		json.ServeJSONError(r.Context(), w, errors.ErrJSONUnmarshalling)
 		return
@@ -1375,10 +1377,9 @@ func (h *PostsHandler) HandleUnlikeComment(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	var input UnlikeCommentInput
+	input := new(UnlikeCommentInput)
 
-	decoder := defJSON.NewDecoder(r.Body)
-	err = decoder.Decode(&input)
+	err = easyjson.UnmarshalFromReader(r.Body, input)
 	if err != nil {
 		json.ServeJSONError(r.Context(), w, errors.ErrJSONUnmarshalling)
 		return

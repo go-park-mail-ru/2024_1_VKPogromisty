@@ -30,6 +30,7 @@ type AvatarStorage interface {
 	Delete(fileName string) (err error)
 }
 
+//easyjson:json
 type UserWithSubsInfo struct {
 	User           *domain.User
 	IsSubscriber   bool `json:"isSubscriber"`

@@ -14,23 +14,27 @@ const (
 	DefaultLikedPostsAmount = uint(20)
 )
 
+//easyjson:json
 type PostInput struct {
 	Content     string   `json:"content"`
 	AuthorID    uint     `json:"authorId"`
 	Attachments []string `json:"attachments"`
 }
 
+//easyjson:json
 type ListUserPostsInput struct {
 	UserID      uint `json:"userId"`
 	LastPostID  uint `json:"lastPostId"`
 	PostsAmount uint `json:"postsAmount"`
 }
 
+//easyjson:json
 type ListUserFriendsPostsInput struct {
 	LastPostID  uint `json:"lastPostId"`
 	PostsAmount uint `json:"postsAmount"`
 }
 
+//easyjson:json
 type PostUpdateInput struct {
 	PostID              uint     `json:"postId"`
 	Content             string   `json:"content"`
@@ -38,15 +42,18 @@ type PostUpdateInput struct {
 	AttachmentsToDelete []string `json:"attachmentsToDelete"`
 }
 
+//easyjson:json
 type DeletePostInput struct {
 	PostID uint `json:"postId"`
 }
 
+//easyjson:json
 type LikeWithPost struct {
 	Like *domain.PostLike `json:"like"`
 	Post *domain.Post     `json:"post"`
 }
 
+//easyjson:json
 type LikeWithPostAndUser struct {
 	LikeWithPost
 	User *domain.User `json:"likedBy"`
@@ -90,6 +97,7 @@ type Service struct {
 	Sanitizer         *sanitizer.Sanitizer
 }
 
+//easyjson:json
 type ListPostsResponse struct {
 	Posts []*domain.Post `json:"posts"`
 }
