@@ -24,14 +24,17 @@ type Service struct {
 	UserStorage          UserStorage
 }
 
+//easyjson:json
 type GetSubscriptionsResponse struct {
 	Subscriptions []*domain.User `json:"subscriptions"`
 }
 
+//easyjson:json
 type GetSubscribersResponse struct {
 	Subscribers []*domain.User `json:"subscribers"`
 }
 
+//easyjson:json
 type GetFriendsResponse struct {
 	Friends []*domain.User `json:"friends"`
 }

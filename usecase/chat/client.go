@@ -1,13 +1,14 @@
 package chat
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
+	json "encoding/json"
 	"socio/domain"
 	"socio/errors"
 	"sync"
 	"time"
+
+	"github.com/mailru/easyjson"
 )
 
 const (
@@ -42,6 +43,7 @@ type PubSubRepository interface {
 
 type ChatAction string
 
+//easyjson:json
 type Action struct {
 	Type      ChatAction      `json:"type"`
 	Receiver  uint            `json:"receiver"`
@@ -49,21 +51,25 @@ type Action struct {
 	Payload   json.RawMessage `json:"payload"`
 }
 
+//easyjson:json
 type SendMessagePayload struct {
 	Content     string   `json:"content"`
 	Attachments []string `json:"attachments"`
 }
 
+//easyjson:json
 type UpdateMessagePayload struct {
 	MessageID           uint     `json:"messageId"`
 	Content             string   `json:"content"`
 	AttachmentsToDelete []string `json:"attachmentsToDelete"`
 }
 
+//easyjson:json
 type DeleteMessagePayload struct {
 	MessageID uint `json:"messageId"`
 }
 
+//easyjson:json
 type SendStickerMessagePayload struct {
 	StickerID uint `json:"stickerId"`
 }
@@ -109,7 +115,7 @@ func (c *Client) HandleAction(ctx context.Context, action *Action) {
 	switch action.Type {
 	case SendMessageAction:
 		payload := new(SendMessagePayload)
-		err := json.NewDecoder(bytes.NewReader(action.Payload)).Decode(payload)
+		err := easyjson.Unmarshal(action.Payload, payload)
 		if err != nil {
 			return
 		}
@@ -117,7 +123,7 @@ func (c *Client) HandleAction(ctx context.Context, action *Action) {
 
 	case UpdateMessageAction:
 		payload := new(UpdateMessagePayload)
-		err := json.NewDecoder(bytes.NewReader(action.Payload)).Decode(payload)
+		err := easyjson.Unmarshal(action.Payload, payload)
 		if err != nil {
 			return
 		}
@@ -125,7 +131,7 @@ func (c *Client) HandleAction(ctx context.Context, action *Action) {
 
 	case DeleteMessageAction:
 		payload := new(DeleteMessagePayload)
-		err := json.NewDecoder(bytes.NewReader(action.Payload)).Decode(payload)
+		err := easyjson.Unmarshal(action.Payload, payload)
 		if err != nil {
 			return
 		}
@@ -133,7 +139,7 @@ func (c *Client) HandleAction(ctx context.Context, action *Action) {
 
 	case SendStickerMessageAction:
 		payload := new(SendStickerMessagePayload)
-		err := json.NewDecoder(bytes.NewReader(action.Payload)).Decode(payload)
+		err := easyjson.Unmarshal(action.Payload, payload)
 		if err != nil {
 			return
 		}
@@ -218,7 +224,7 @@ func (c *Client) handleSendMessageAction(ctx context.Context, action *Action, me
 
 	c.ChatService.Sanitizer.SanitizePersonalMessage(newMessage)
 
-	action.Payload, err = json.Marshal(newMessage)
+	action.Payload, err = easyjson.Marshal(newMessage)
 	if err != nil {
 		action.Payload, err = errors.MarshalError(err)
 		if err != nil {
@@ -333,7 +339,7 @@ func (c *Client) handleUpdateMessageAction(ctx context.Context, action *Action, 
 
 	c.ChatService.Sanitizer.SanitizePersonalMessage(newMessage)
 
-	action.Payload, err = json.Marshal(newMessage)
+	action.Payload, err = easyjson.Marshal(newMessage)
 	if err != nil {
 		action.Payload, err = errors.MarshalError(err)
 		if err != nil {
@@ -378,7 +384,7 @@ func (c *Client) handleSendStickerMessageAction(ctx context.Context, action *Act
 		return
 	}
 
-	action.Payload, err = json.Marshal(newStickerMessage)
+	action.Payload, err = easyjson.Marshal(newStickerMessage)
 	if err != nil {
 		action.Payload, err = errors.MarshalError(err)
 		if err != nil {

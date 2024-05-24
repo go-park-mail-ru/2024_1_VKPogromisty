@@ -19,9 +19,34 @@ mocks:
 	done
 	@echo "Mocks generated."
 
+EASYJSON_DIRS=./usecase ./domain ./errors ./internal/rest ./pkg/json
+
+.PHONY: clean_easyjson
+
+clean_easyjson:
+	@echo "Cleaning up easyjson files..."
+	@for dir in $(EASYJSON_DIRS); do \
+		for file in $$(find $$dir -type f -name '*_easyjson.go'); do \
+			rm $$file; \
+		done \
+	done
+	@echo "Cleanup completed."
+
+.PHONY: easyjson
+
+easyjson:
+	make clean_easyjson
+	@echo "Generating easyjson..."
+	@for dir in $(EASYJSON_DIRS); do \
+		for file in $$(find $$dir -type f -name '*.go' ! -name '*_test.go'); do \
+			easyjson $$file; \
+		done \
+	done
+	@echo "easyjson generation completed."
+
 test:
 	go test ./... -coverprofile cover.out.tmp
-	cat cover.out.tmp | grep -v "docs" | grep -v "mocks" | grep -v "proto" > cover.out
+	cat cover.out.tmp | grep -v "docs" | grep -v "mocks" | grep -v "proto" | grep -v "easyjson" > cover.out
 
 coverage:
 	go tool cover -func cover.out

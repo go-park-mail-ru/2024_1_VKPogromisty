@@ -2,7 +2,6 @@ package rest
 
 import (
 	"context"
-	defJSON "encoding/json"
 	"net/http"
 	"socio/domain"
 	"socio/errors"
@@ -19,6 +18,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
+	easyjson "github.com/mailru/easyjson"
 )
 
 const (
@@ -260,7 +260,7 @@ func (c *ChatServer) listenRead(ctx context.Context, conn *websocket.Conn, clien
 		}
 
 		action := new(chat.Action)
-		err = defJSON.Unmarshal(jsonMessage, action)
+		err = easyjson.Unmarshal(jsonMessage, action)
 		if err != nil {
 			return
 		}
@@ -314,7 +314,7 @@ func (c *ChatServer) listenWrite(ctx context.Context, conn *websocket.Conn, clie
 				return
 			}
 
-			messageData, err := defJSON.Marshal(message)
+			messageData, err := easyjson.Marshal(message)
 			if err != nil {
 				return
 			}
@@ -323,7 +323,7 @@ func (c *ChatServer) listenWrite(ctx context.Context, conn *websocket.Conn, clie
 
 			n := len(client.Send)
 			for i := 0; i < n; i++ {
-				messageData, err = defJSON.Marshal(<-client.Send)
+				messageData, err = easyjson.Marshal(<-client.Send)
 				if err != nil {
 					return
 				}

@@ -1,7 +1,6 @@
 package rest
 
 import (
-	defJSON "encoding/json"
 	"net/http"
 	"socio/domain"
 	"socio/errors"
@@ -13,6 +12,8 @@ import (
 	"socio/usecase/auth"
 	"socio/usecase/user"
 	"strings"
+
+	"github.com/mailru/easyjson"
 )
 
 type AuthHandler struct {
@@ -151,10 +152,8 @@ func (api *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 
 	defer r.Body.Close()
 
-	decoder := defJSON.NewDecoder(r.Body)
-
 	loginInput := new(auth.LoginInput)
-	err := decoder.Decode(loginInput)
+	err := easyjson.UnmarshalFromReader(r.Body, loginInput)
 	if err != nil {
 		json.ServeJSONError(r.Context(), w, errors.ErrJSONUnmarshalling)
 		return

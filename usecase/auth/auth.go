@@ -10,6 +10,7 @@ import (
 	"github.com/microcosm-cc/bluemonday"
 )
 
+//easyjson:json
 type LoginInput struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
@@ -26,10 +27,12 @@ type Service struct {
 	Sanitizer      *sanitizer.Sanitizer
 }
 
+//easyjson:json
 type LoginResponse struct {
 	User domain.User `json:"user"`
 }
 
+//easyjson:json
 type IsAuthorizedResponse struct {
 	IsAuthorized bool `json:"isAuthorized"`
 }
