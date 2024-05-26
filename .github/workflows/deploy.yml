@@ -6,6 +6,7 @@ on:
       - dev
       - main
   pull_request:
+    types: [closed]
     branches:
       - dev
       - main
@@ -13,6 +14,8 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true || (github.event_name == 'push' && github.ref == 'refs/heads/dev')
+
 
     steps:
     - name: Execute commands over ssh
