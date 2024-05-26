@@ -1264,7 +1264,7 @@ func (h *PostsHandler) HandleUpdateComment(w http.ResponseWriter, r *http.Reques
 //
 //	@Param			Cookie	header	string	true	"session_id=some_session"
 //	@Param			X-CSRF-Token	header	string	true	"CSRF token"
-//	@Param			commentID	body	uint	true	"ID of the comment"
+//	@Param			commentId	body	uint	true	"ID of the comment"
 //
 //	@Produce		json
 //	@Success		204	{object}	json.JSONResponse
