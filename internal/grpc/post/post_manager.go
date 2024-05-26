@@ -254,7 +254,12 @@ func (p *PostManager) Upload(stream postspb.Post_UploadServer) (err error) {
 		contentType = req.GetContentType()
 	}
 
-	p.PostsService.UploadAttachment(fileName, file.Name(), contentType)
+	err = p.PostsService.UploadAttachment(fileName, file.Name(), contentType)
+	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
+		return
+	}
 
 	if err = os.Remove(file.Name()); err != nil {
 		return

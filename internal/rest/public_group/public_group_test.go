@@ -943,7 +943,10 @@ func TestHandleCreateGroupPost(t *testing.T) {
 			// Set up the request
 			body := new(bytes.Buffer)
 			writer := multipart.NewWriter(body)
-			writer.WriteField("content", "Test content")
+			err := writer.WriteField("content", "Test content")
+			if err != nil {
+				t.Fatal(err)
+			}
 			writer.Close()
 			r := httptest.NewRequest("POST", "/groups/"+tt.groupID+"/posts", body)
 			r.Header.Set("Content-Type", writer.FormDataContentType())

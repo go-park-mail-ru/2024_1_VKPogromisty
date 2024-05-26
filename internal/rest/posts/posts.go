@@ -154,7 +154,7 @@ func (h *PostsHandler) HandleGetPostByID(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	group := new(domain.PublicGroup)
+	var group *domain.PublicGroup
 
 	if err == nil {
 		groupData, err := h.PublicGroupClient.GetByID(r.Context(), &pgpb.GetByIDRequest{

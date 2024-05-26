@@ -152,7 +152,13 @@ func MountRootRouter(router *mux.Router) (err error) {
 		return
 	}
 
-	defer prodLogger.Sync()
+	defer func() {
+		err = prodLogger.Sync()
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+	}()
 
 	logger := logger.NewLogger(prodLogger)
 
@@ -178,7 +184,11 @@ func MountRootRouter(router *mux.Router) (err error) {
 
 	appPort := os.Getenv(AppPortEnv)
 	fmt.Printf("started on port %s\n", appPort)
-	http.ListenAndServe(appPort, handler)
+	err = http.ListenAndServe(appPort, handler)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	return
 }
