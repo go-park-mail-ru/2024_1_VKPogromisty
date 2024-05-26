@@ -22,7 +22,7 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Get dependencies
-      run: go mod download
+      run: go get ./...
 
     - name: Run make test
       run: make test
