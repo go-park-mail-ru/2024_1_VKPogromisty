@@ -649,6 +649,7 @@ func TestLikePost(t *testing.T) {
 			name:     "Test OK",
 			likeData: &domain.PostLike{UserID: 1, PostID: 1},
 			mock: func(postsStorage *mock_posts.MockPostsStorage, attachmentStorage *mock_posts.MockAttachmentStorage, likeData *domain.PostLike) {
+				postsStorage.EXPECT().GetPostLikeByUserIDAndPostID(gomock.Any(), likeData.UserID, likeData.PostID).Return(nil, errors.ErrNotFound)
 				postsStorage.EXPECT().StorePostLike(gomock.Any(), likeData).Return(likeData, nil)
 			},
 			wantLike: &domain.PostLike{UserID: 1, PostID: 1},
@@ -658,7 +659,17 @@ func TestLikePost(t *testing.T) {
 			name:     "Test Error",
 			likeData: &domain.PostLike{UserID: 1, PostID: 1},
 			mock: func(postsStorage *mock_posts.MockPostsStorage, attachmentStorage *mock_posts.MockAttachmentStorage, likeData *domain.PostLike) {
+				postsStorage.EXPECT().GetPostLikeByUserIDAndPostID(gomock.Any(), likeData.UserID, likeData.PostID).Return(nil, errors.ErrNotFound)
 				postsStorage.EXPECT().StorePostLike(gomock.Any(), likeData).Return(nil, errors.ErrInternal)
+			},
+			wantLike: nil,
+			wantErr:  true,
+		},
+		{
+			name:     "Test Error",
+			likeData: &domain.PostLike{UserID: 1, PostID: 1},
+			mock: func(postsStorage *mock_posts.MockPostsStorage, attachmentStorage *mock_posts.MockAttachmentStorage, likeData *domain.PostLike) {
+				postsStorage.EXPECT().GetPostLikeByUserIDAndPostID(gomock.Any(), likeData.UserID, likeData.PostID).Return(nil, nil)
 			},
 			wantLike: nil,
 			wantErr:  true,

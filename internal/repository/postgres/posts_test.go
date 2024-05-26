@@ -1014,6 +1014,72 @@ func TestGetLikedPosts(t *testing.T) {
 	}
 }
 
+func TestGetPostLikeByUserIDAndPostID(t *testing.T) {
+	t.Parallel()
+
+	tp := customtime.MockTimeProvider{}
+
+	tests := []struct {
+		name     string
+		postID   uint
+		userID   uint
+		mock     func(pool *pgxpoolmock.MockPgxIface, postID uint)
+		expected *domain.PostLike
+		err      error
+	}{
+		{
+			name:   "Test OK",
+			postID: 1,
+			userID: 1,
+			mock: func(pool *pgxpoolmock.MockPgxIface, postID uint) {
+				pool.EXPECT().QueryRow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(
+					pgxpoolmock.NewRow(uint(1), uint(1), uint(1), tp.Now()),
+				)
+			},
+			expected: &domain.PostLike{
+				ID:        1,
+				PostID:    1,
+				UserID:    1,
+				CreatedAt: customtime.CustomTime{Time: tp.Now()},
+			},
+			err: nil,
+		},
+		{
+			name:   "Test err",
+			postID: 1,
+			userID: 1,
+			mock: func(pool *pgxpoolmock.MockPgxIface, postID uint) {
+				pool.EXPECT().QueryRow(gomock.Any(), gomock.Any(), gomock.Any()).Return(ErrRow{})
+			},
+			expected: nil,
+			err:      errors.ErrNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			pool := pgxpoolmock.NewMockPgxIface(ctrl)
+
+			repo := repository.NewPosts(pool, customtime.MockTimeProvider{})
+
+			tt.mock(pool, tt.postID)
+
+			like, err := repo.GetPostLikeByUserIDAndPostID(context.Background(), tt.userID, tt.postID)
+
+			if err != tt.err {
+				t.Errorf("unexpected error: %v", err)
+			}
+
+			if err == nil {
+				assert.Equal(t, tt.expected, like)
+			}
+		})
+	}
+}
+
 func TestStorePostLike(t *testing.T) {
 	t.Parallel()
 

@@ -226,6 +226,21 @@ func (mr *MockPostsStorageMockRecorder) GetPostByID(ctx, postID interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPostByID", reflect.TypeOf((*MockPostsStorage)(nil).GetPostByID), ctx, postID)
 }
 
+// GetPostLikeByUserIDAndPostID mocks base method.
+func (m *MockPostsStorage) GetPostLikeByUserIDAndPostID(ctx context.Context, userID, postID uint) (*domain.PostLike, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPostLikeByUserIDAndPostID", ctx, userID, postID)
+	ret0, _ := ret[0].(*domain.PostLike)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPostLikeByUserIDAndPostID indicates an expected call of GetPostLikeByUserIDAndPostID.
+func (mr *MockPostsStorageMockRecorder) GetPostLikeByUserIDAndPostID(ctx, userID, postID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPostLikeByUserIDAndPostID", reflect.TypeOf((*MockPostsStorage)(nil).GetPostLikeByUserIDAndPostID), ctx, userID, postID)
+}
+
 // GetPostsByGroupSubIDsAndUserSubIDs mocks base method.
 func (m *MockPostsStorage) GetPostsByGroupSubIDsAndUserSubIDs(ctx context.Context, groupSubIDs, userSubIDs []uint, lastPostID, postsAmount uint) ([]*domain.Post, error) {
 	m.ctrl.T.Helper()
