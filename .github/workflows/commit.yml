@@ -2,14 +2,14 @@ name: Go
 
 on:
   push:
-    branches: [ main, dev, VKP-74-ci ]
+    branches: [ main, dev ]
   pull_request:
     branches: [ main, dev ]
 
 jobs:
 
   build:
-    name: Build
+    name: Test
     runs-on: ubuntu-latest
     steps:
 
@@ -28,7 +28,7 @@ jobs:
       run: make test
 
   golangci:
-    name: lint
+    name: Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
