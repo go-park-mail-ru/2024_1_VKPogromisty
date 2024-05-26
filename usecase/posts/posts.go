@@ -66,6 +66,7 @@ type PostsStorage interface {
 	StorePost(ctx context.Context, post *domain.Post) (newPost *domain.Post, err error)
 	UpdatePost(ctx context.Context, post *domain.Post, attachmentsToDelete []string) (updatedPost *domain.Post, err error)
 	DeletePost(ctx context.Context, postID uint) (err error)
+	GetPostLikeByUserIDAndPostID(ctx context.Context, userID, postID uint) (like *domain.PostLike, err error)
 	GetLikedPosts(ctx context.Context, userID uint, lastLikeID uint, limit uint) (likedPosts []LikeWithPost, err error)
 	StorePostLike(ctx context.Context, likeData *domain.PostLike) (like *domain.PostLike, err error)
 	DeletePostLike(ctx context.Context, likeData *domain.PostLike) (err error)
@@ -261,6 +262,12 @@ func (s *Service) GetLikedPosts(ctx context.Context, userID uint, lastLikeID uin
 }
 
 func (s *Service) LikePost(ctx context.Context, likeData *domain.PostLike) (like *domain.PostLike, err error) {
+	_, err = s.PostsStorage.GetPostLikeByUserIDAndPostID(ctx, likeData.UserID, likeData.PostID)
+	if err == nil {
+		err = errors.ErrInvalidBody
+		return
+	}
+
 	like, err = s.PostsStorage.StorePostLike(ctx, likeData)
 	if err != nil {
 		return

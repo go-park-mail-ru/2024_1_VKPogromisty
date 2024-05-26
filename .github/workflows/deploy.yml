@@ -1,0 +1,33 @@
+name: Deploy to VM
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+  pull_request:
+    types: [closed]
+    branches:
+      - dev
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true || (github.event_name == 'push' && github.ref == 'refs/heads/dev')
+
+
+    steps:
+    - name: Execute commands over ssh
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        script: |
+          cd ./back
+          sudo git checkout dev
+          sudo git pull
+          sudo make docker-build
+          sudo docker-compose down
+          sudo docker-compose up -d

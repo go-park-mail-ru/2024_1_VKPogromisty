@@ -142,6 +142,15 @@ const (
 	WHERE post_id = $1
 		AND user_id = $2;
 	`
+	GetPostLikeByUserIDAndPostIDQuery = `
+	SELECT id,
+		post_id,
+		user_id,
+		created_at
+	FROM public.post_like
+	WHERE user_id = $1
+		AND post_id = $2;
+	`
 	GetLikedPosts = `
 	SELECT
 		pl.id as like_id, 
@@ -693,6 +702,28 @@ func (p *Posts) GetLikedPosts(ctx context.Context, userID uint, lastLikeID uint,
 			Like: like,
 			Post: post,
 		})
+	}
+
+	return
+}
+
+func (p *Posts) GetPostLikeByUserIDAndPostID(ctx context.Context, userID, postID uint) (like *domain.PostLike, err error) {
+	like = new(domain.PostLike)
+
+	contextlogger.LogSQL(ctx, GetPostLikeByUserIDAndPostIDQuery, userID, postID)
+
+	err = p.db.QueryRow(context.Background(), GetPostLikeByUserIDAndPostIDQuery, userID, postID).Scan(
+		&like.ID,
+		&like.PostID,
+		&like.UserID,
+		&like.CreatedAt.Time,
+	)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			err = errors.ErrNotFound
+		}
+
+		return
 	}
 
 	return

@@ -14,7 +14,6 @@ tern.conf
 socio-docker.session.sql
 fullchain.pem
 privkey.pem
-socio.conf
 /static
 /volumes
 mc

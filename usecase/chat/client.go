@@ -108,7 +108,12 @@ func (c *Client) ReadPump(ctx context.Context) {
 		}
 	}()
 
-	go c.ChatService.PubSubRepository.ReadActions(ctx, c.UserID, c.Send)
+	go func() {
+		err := c.ChatService.PubSubRepository.ReadActions(ctx, c.UserID, c.Send)
+		if err != nil {
+			return
+		}
+	}()
 }
 
 func (c *Client) HandleAction(ctx context.Context, action *Action) {
@@ -291,7 +296,11 @@ func (c *Client) handleUpdateMessageAction(ctx context.Context, action *Action, 
 			return
 		}
 
-		c.ChatService.PubSubRepository.WriteAction(ctx, action)
+		err = c.ChatService.PubSubRepository.WriteAction(ctx, action)
+		if err != nil {
+			return
+		}
+
 		return
 	}
 
@@ -302,7 +311,11 @@ func (c *Client) handleUpdateMessageAction(ctx context.Context, action *Action, 
 			return
 		}
 
-		c.ChatService.PubSubRepository.WriteAction(ctx, action)
+		err = c.ChatService.PubSubRepository.WriteAction(ctx, action)
+		if err != nil {
+			return
+		}
+
 		return
 	}
 
@@ -314,7 +327,11 @@ func (c *Client) handleUpdateMessageAction(ctx context.Context, action *Action, 
 				return
 			}
 
-			c.ChatService.PubSubRepository.WriteAction(ctx, action)
+			err = c.ChatService.PubSubRepository.WriteAction(ctx, action)
+			if err != nil {
+				return
+			}
+
 			return
 		}
 	}
@@ -369,7 +386,10 @@ func (c *Client) handleUpdateMessageAction(ctx context.Context, action *Action, 
 		return
 	}
 
-	c.ChatService.PubSubRepository.WriteAction(ctx, action)
+	err = c.ChatService.PubSubRepository.WriteAction(ctx, action)
+	if err != nil {
+		return
+	}
 }
 
 func (c *Client) handleDeleteMessageAction(ctx context.Context, action *Action, messageID uint) {
@@ -380,11 +400,18 @@ func (c *Client) handleDeleteMessageAction(ctx context.Context, action *Action, 
 			return
 		}
 
-		c.ChatService.PubSubRepository.WriteAction(ctx, action)
+		err = c.ChatService.PubSubRepository.WriteAction(ctx, action)
+		if err != nil {
+			return
+		}
+
 		return
 	}
 
-	c.ChatService.PubSubRepository.WriteAction(ctx, action)
+	err = c.ChatService.PubSubRepository.WriteAction(ctx, action)
+	if err != nil {
+		return
+	}
 }
 
 func (c *Client) handleSendStickerMessageAction(ctx context.Context, action *Action, message *SendStickerMessagePayload) {
@@ -395,7 +422,11 @@ func (c *Client) handleSendStickerMessageAction(ctx context.Context, action *Act
 			return
 		}
 
-		c.ChatService.PubSubRepository.WriteAction(ctx, action)
+		err = c.ChatService.PubSubRepository.WriteAction(ctx, action)
+		if err != nil {
+			return
+		}
+
 		return
 	}
 
@@ -406,11 +437,18 @@ func (c *Client) handleSendStickerMessageAction(ctx context.Context, action *Act
 			return
 		}
 
-		c.ChatService.PubSubRepository.WriteAction(ctx, action)
+		err = c.ChatService.PubSubRepository.WriteAction(ctx, action)
+		if err != nil {
+			return
+		}
+
 		return
 	}
 
-	c.ChatService.PubSubRepository.WriteAction(ctx, action)
+	err = c.ChatService.PubSubRepository.WriteAction(ctx, action)
+	if err != nil {
+		return
+	}
 }
 
 func (c *Client) ClearUnsentAttachments(ctx context.Context) {

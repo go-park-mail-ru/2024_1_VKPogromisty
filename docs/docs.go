@@ -3142,7 +3142,7 @@ const docTemplate = `{
                     },
                     {
                         "description": "ID of the comment",
-                        "name": "commentID",
+                        "name": "commentId",
                         "in": "body",
                         "required": true,
                         "schema": {

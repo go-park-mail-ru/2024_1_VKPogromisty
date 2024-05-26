@@ -259,9 +259,17 @@ func (c *ChatServer) listenRead(ctx context.Context, conn *websocket.Conn, clien
 	}()
 
 	conn.SetReadLimit(maxMessageSize)
-	conn.SetReadDeadline(time.Now().Add(pongWait))
+	err := conn.SetReadDeadline(time.Now().Add(pongWait))
+	if err != nil {
+		return
+	}
+
 	conn.SetPongHandler(func(string) error {
-		conn.SetReadDeadline(time.Now().Add(pongWait))
+		err := conn.SetReadDeadline(time.Now().Add(pongWait))
+		if err != nil {
+			return err
+		}
+
 		return nil
 	})
 
@@ -319,9 +327,17 @@ func (c *ChatServer) listenWrite(ctx context.Context, conn *websocket.Conn, clie
 	for {
 		select {
 		case message, ok := <-client.Send:
-			conn.SetWriteDeadline(time.Now().Add(writeWait))
+			err := conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err != nil {
+				return
+			}
+
 			if !ok {
-				conn.WriteMessage(websocket.CloseMessage, []byte{})
+				err := conn.WriteMessage(websocket.CloseMessage, []byte{})
+				if err != nil {
+					return
+				}
+
 				return
 			}
 
@@ -335,7 +351,10 @@ func (c *ChatServer) listenWrite(ctx context.Context, conn *websocket.Conn, clie
 				return
 			}
 
-			w.Write(messageData)
+			_, err = w.Write(messageData)
+			if err != nil {
+				return
+			}
 
 			n := len(client.Send)
 			for i := 0; i < n; i++ {
@@ -343,8 +362,15 @@ func (c *ChatServer) listenWrite(ctx context.Context, conn *websocket.Conn, clie
 				if err != nil {
 					return
 				}
-				w.Write([]byte{newline})
-				w.Write(messageData)
+				_, err := w.Write([]byte{newline})
+				if err != nil {
+					return
+				}
+
+				_, err = w.Write(messageData)
+				if err != nil {
+					return
+				}
 			}
 
 			if err := w.Close(); err != nil {
@@ -352,7 +378,11 @@ func (c *ChatServer) listenWrite(ctx context.Context, conn *websocket.Conn, clie
 			}
 
 		case <-ticker.C:
-			conn.SetWriteDeadline(time.Now().Add(writeWait))
+			err := conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err != nil {
+				return
+			}
+
 			if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
