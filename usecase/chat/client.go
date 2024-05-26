@@ -270,7 +270,22 @@ func (c *Client) handleUpdateMessageAction(ctx context.Context, action *Action, 
 		Attachments: attachments,
 	}
 
-	if len(message.Content) == 0 && len(attachments) == len(message.AttachmentsToDelete) {
+	oldMessage, err := c.ChatService.MessagesRepo.GetMessageByID(ctx, msg.ID)
+	if err != nil {
+		action.Payload, err = errors.MarshalError(err)
+		if err != nil {
+			return
+		}
+
+		err = c.ChatService.PubSubRepository.WriteAction(ctx, action)
+		if err != nil {
+			return
+		}
+
+		return
+	}
+
+	if len(message.Content) == 0 && (len(oldMessage.Attachments)+len(attachments)) <= len(message.AttachmentsToDelete) {
 		action.Payload, err = errors.MarshalError(errors.ErrInvalidData)
 		if err != nil {
 			return
