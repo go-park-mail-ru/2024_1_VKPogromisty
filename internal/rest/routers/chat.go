@@ -4,18 +4,15 @@ import (
 	authpb "socio/internal/grpc/auth/proto"
 	rest "socio/internal/rest/chat"
 	"socio/internal/rest/middleware"
-	"socio/pkg/sanitizer"
 	customtime "socio/pkg/time"
 	"socio/usecase/chat"
 	"socio/usecase/csrf"
 
 	"github.com/gorilla/mux"
-	"github.com/microcosm-cc/bluemonday"
 )
 
 func MountChatRouter(rootRouter *mux.Router, pubSubRepo chat.PubSubRepository, unsentMessageAttachmentsStorage chat.UnsentMessageAttachmentsStorage, messagesRepo chat.PersonalMessagesRepository, authManager authpb.AuthClient, stickerStorage chat.StickerStorage, messageAttachmentStorage chat.MessageAttachmentStorage) {
-	sanitizer := sanitizer.NewSanitizer(bluemonday.UGCPolicy())
-	h := rest.NewChatServer(pubSubRepo, unsentMessageAttachmentsStorage, messagesRepo, stickerStorage, messageAttachmentStorage, sanitizer)
+	h := rest.NewChatServer(chat.NewChatService(pubSubRepo, unsentMessageAttachmentsStorage, messagesRepo, stickerStorage, messageAttachmentStorage))
 
 	csrfFreeRouter := rootRouter.PathPrefix("/chat/ws").Subrouter()
 	csrfFreeRouter.HandleFunc("/", h.ServeWS).Methods("GET", "OPTIONS")

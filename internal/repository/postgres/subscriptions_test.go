@@ -12,303 +12,463 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
-)
-
-var (
-	userColumns = []string{"id", "first_name", "last_name", "email", "avatar", "date_of_birth", "created_at", "updated_at"}
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetSubscriptions(t *testing.T) {
-	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	pool := pgxpoolmock.NewMockPgxIface(ctrl)
+	mockDB := pgxpoolmock.NewMockPgxIface(ctrl)
 
-	timeProv := customtime.MockTimeProvider{}
+	tp := customtime.MockTimeProvider{}
 
-	rows := pgxpoolmock.NewRows(userColumns).AddRow(
-		uint(1),
-		"first_name",
-		"last_name",
-		"email",
-		"avatar",
-		timeProv.Now(),
-		timeProv.Now(),
-		timeProv.Now(),
-	).ToPgxRows()
-
-	pool.EXPECT().Query(gomock.Any(), gomock.Any(), gomock.Any()).Return(rows, nil)
-
-	repo := repository.NewSubscriptions(pool, customtime.MockTimeProvider{})
-
-	subscriptions, err := repo.GetSubscriptions(context.Background(), 1)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
+	tests := []struct {
+		name    string
+		userID  uint
+		want    []*domain.User
+		wantErr bool
+		setup   func()
+	}{
+		{
+			name:   "test case 1",
+			userID: 1,
+			want: []*domain.User{
+				{
+					ID:          1,
+					FirstName:   "User 1",
+					LastName:    "User 1",
+					Email:       "2@2.2",
+					Avatar:      "avatar",
+					DateOfBirth: customtime.CustomTime{Time: tp.Now()},
+					CreatedAt:   customtime.CustomTime{Time: tp.Now()},
+					UpdatedAt:   customtime.CustomTime{Time: tp.Now()},
+				},
+			},
+			wantErr: false,
+			setup: func() {
+				mockDB.EXPECT().Query(context.Background(), repository.GetSubscriptionsQuery, gomock.Any()).Return(
+					pgxpoolmock.NewRows([]string{
+						"id", "first_name", "last_name", "email", "avatar", "date_of_birth", "created_at", "updated_at",
+					}).AddRow(
+						uint(1), "User 1", "User 1", "2@2.2", "avatar", tp.Now(), tp.Now(), tp.Now(),
+					).ToPgxRows(), nil,
+				)
+			},
+		},
+		{
+			name:    "test case 2",
+			userID:  1,
+			want:    nil,
+			wantErr: true,
+			setup: func() {
+				mockDB.EXPECT().Query(context.Background(), repository.GetSubscriptionsQuery, gomock.Any()).Return(
+					pgxpoolmock.NewRows([]string{
+						"err",
+					}).AddRow(
+						ErrRow{},
+					).ToPgxRows(), nil,
+				)
+			},
+		},
+		{
+			name:    "test case 3",
+			userID:  1,
+			want:    nil,
+			wantErr: true,
+			setup: func() {
+				mockDB.EXPECT().Query(context.Background(), repository.GetSubscriptionsQuery, gomock.Any()).Return(nil, pgx.ErrNoRows)
+			},
+		},
 	}
 
-	if subscriptions[0].ID != 1 {
-		t.Errorf("unexpected subscription id: %d", subscriptions[0].ID)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setup()
+
+			s := repository.NewSubscriptions(mockDB, customtime.MockTimeProvider{})
+
+			got, err := s.GetSubscriptions(context.Background(), tt.userID)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			}
+		})
 	}
 }
 
 func TestGetFriends(t *testing.T) {
-	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	pool := pgxpoolmock.NewMockPgxIface(ctrl)
+	mockDB := pgxpoolmock.NewMockPgxIface(ctrl)
 
-	timeProv := customtime.MockTimeProvider{}
+	tp := customtime.MockTimeProvider{}
 
-	rows := pgxpoolmock.NewRows(userColumns).AddRow(
-		uint(1),
-		"first_name",
-		"last_name",
-		"email",
-		"avatar",
-		timeProv.Now(),
-		timeProv.Now(),
-		timeProv.Now(),
-	).ToPgxRows()
-
-	pool.EXPECT().Query(gomock.Any(), gomock.Any(), gomock.Any()).Return(rows, nil)
-
-	repo := repository.NewSubscriptions(pool, customtime.MockTimeProvider{})
-
-	friends, err := repo.GetFriends(context.Background(), 1)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
+	tests := []struct {
+		name    string
+		userID  uint
+		want    []*domain.User
+		wantErr bool
+		setup   func()
+	}{
+		{
+			name:   "test case 1 - friends retrieved successfully",
+			userID: 1,
+			want: []*domain.User{
+				{
+					ID:          1,
+					FirstName:   "User 1",
+					LastName:    "User 1",
+					Email:       "2@2.2",
+					Avatar:      "avatar",
+					DateOfBirth: customtime.CustomTime{Time: tp.Now()},
+					CreatedAt:   customtime.CustomTime{Time: tp.Now()},
+					UpdatedAt:   customtime.CustomTime{Time: tp.Now()},
+				},
+			},
+			wantErr: false,
+			setup: func() {
+				mockDB.EXPECT().Query(context.Background(), repository.GetFriendsQuery, gomock.Any()).Return(
+					pgxpoolmock.NewRows([]string{
+						"id", "first_name", "last_name", "email", "avatar", "date_of_birth", "created_at", "updated_at",
+					}).AddRow(
+						uint(1), "User 1", "User 1", "2@2.2", "avatar", tp.Now(), tp.Now(), tp.Now(),
+					).ToPgxRows(), nil,
+				)
+			},
+		},
+		{
+			name:    "test case 2",
+			userID:  1,
+			want:    nil,
+			wantErr: true,
+			setup: func() {
+				mockDB.EXPECT().Query(context.Background(), repository.GetFriendsQuery, gomock.Any()).Return(
+					pgxpoolmock.NewRows([]string{
+						"err",
+					}).AddRow(
+						ErrRow{},
+					).ToPgxRows(), nil,
+				)
+			},
+		},
+		{
+			name:    "test case 3",
+			userID:  1,
+			want:    nil,
+			wantErr: true,
+			setup: func() {
+				mockDB.EXPECT().Query(context.Background(), repository.GetFriendsQuery, gomock.Any()).Return(nil, pgx.ErrNoRows)
+			},
+		},
 	}
 
-	if friends[0].ID != 1 {
-		t.Errorf("unexpected friend id: %d", friends[0].ID)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setup()
+
+			s := repository.NewSubscriptions(mockDB, customtime.MockTimeProvider{})
+
+			got, err := s.GetFriends(context.Background(), tt.userID)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			}
+		})
 	}
 }
 
-func TestGetFriendsErrNoRows(t *testing.T) {
-	t.Parallel()
+func TestGetSubscribers(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	pool := pgxpoolmock.NewMockPgxIface(ctrl)
+	mockDB := pgxpoolmock.NewMockPgxIface(ctrl)
 
-	pool.EXPECT().Query(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, pgx.ErrNoRows)
+	tp := customtime.MockTimeProvider{}
 
-	repo := repository.NewSubscriptions(pool, customtime.MockTimeProvider{})
-
-	_, err := repo.GetFriends(context.Background(), 1)
-	if err != pgx.ErrNoRows {
-		t.Errorf("unexpected error: %v", err)
+	tests := []struct {
+		name    string
+		userID  uint
+		want    []*domain.User
+		wantErr bool
+		setup   func()
+	}{
+		{
+			name:   "test case 1 - subscribers retrieved successfully",
+			userID: 1,
+			want: []*domain.User{
+				{
+					ID:          1,
+					FirstName:   "User 1",
+					LastName:    "User 1",
+					Email:       "2@2.2",
+					Avatar:      "avatar",
+					DateOfBirth: customtime.CustomTime{Time: tp.Now()},
+					CreatedAt:   customtime.CustomTime{Time: tp.Now()},
+					UpdatedAt:   customtime.CustomTime{Time: tp.Now()},
+				},
+			},
+			wantErr: false,
+			setup: func() {
+				mockDB.EXPECT().Query(context.Background(), repository.GetSubscribersQuery, gomock.Any()).Return(
+					pgxpoolmock.NewRows([]string{
+						"id", "first_name", "last_name", "email", "avatar", "date_of_birth", "created_at", "updated_at",
+					}).AddRow(
+						uint(1), "User 1", "User 1", "2@2.2", "avatar", tp.Now(), tp.Now(), tp.Now(),
+					).ToPgxRows(), nil,
+				)
+			},
+		},
+		{
+			name:    "test case 2 - no subscribers found",
+			userID:  1,
+			want:    nil,
+			wantErr: true,
+			setup: func() {
+				mockDB.EXPECT().Query(context.Background(), repository.GetSubscribersQuery, gomock.Any()).Return(nil, pgx.ErrNoRows)
+			},
+		},
+		{
+			name:    "test case 3",
+			userID:  1,
+			want:    nil,
+			wantErr: true,
+			setup: func() {
+				mockDB.EXPECT().Query(context.Background(), repository.GetSubscribersQuery, gomock.Any()).Return(
+					pgxpoolmock.NewRows([]string{
+						"err",
+					}).AddRow(
+						ErrRow{},
+					).ToPgxRows(), nil,
+				)
+			},
+		},
 	}
 
-}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setup()
 
-func TestGetSubscriptionsNoRows(t *testing.T) {
-	t.Parallel()
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+			s := repository.NewSubscriptions(mockDB, tp)
 
-	pool := pgxpoolmock.NewMockPgxIface(ctrl)
-
-	rows := pgxpoolmock.NewRows(userColumns).ToPgxRows()
-
-	pool.EXPECT().Query(gomock.Any(), gomock.Any(), gomock.Any()).Return(rows, nil)
-
-	repo := repository.NewSubscriptions(pool, customtime.MockTimeProvider{})
-
-	subscriptions, err := repo.GetSubscriptions(context.Background(), 1)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-
-	if subscriptions != nil {
-		t.Errorf("unexpected subscriptions: %v", subscriptions)
-	}
-}
-
-func TestGetSubscriptionsErrNoRows(t *testing.T) {
-	t.Parallel()
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	pool := pgxpoolmock.NewMockPgxIface(ctrl)
-
-	pool.EXPECT().Query(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, pgx.ErrNoRows)
-
-	repo := repository.NewSubscriptions(pool, customtime.MockTimeProvider{})
-
-	_, err := repo.GetSubscriptions(context.Background(), 1)
-	if err != pgx.ErrNoRows {
-		t.Errorf("unexpected error: %v", err)
-	}
-}
-
-func TestGetSubscibers(t *testing.T) {
-	t.Parallel()
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	pool := pgxpoolmock.NewMockPgxIface(ctrl)
-
-	timeProv := customtime.MockTimeProvider{}
-
-	rows := pgxpoolmock.NewRows(userColumns).AddRow(
-		uint(1),
-		"first_name",
-		"last_name",
-		"email",
-		"avatar",
-		timeProv.Now(),
-		timeProv.Now(),
-		timeProv.Now(),
-	).ToPgxRows()
-
-	pool.EXPECT().Query(gomock.Any(), gomock.Any(), gomock.Any()).Return(rows, nil)
-
-	repo := repository.NewSubscriptions(pool, customtime.MockTimeProvider{})
-
-	subscriptions, err := repo.GetSubscribers(context.Background(), 1)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-
-	if subscriptions[0].ID != 1 {
-		t.Errorf("unexpected subscription id: %d", subscriptions[0].ID)
-	}
-}
-
-func TestGetSubscribersErrNoRows(t *testing.T) {
-	t.Parallel()
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	pool := pgxpoolmock.NewMockPgxIface(ctrl)
-
-	pool.EXPECT().Query(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, pgx.ErrNoRows)
-
-	repo := repository.NewSubscriptions(pool, customtime.MockTimeProvider{})
-
-	_, err := repo.GetSubscribers(context.Background(), 1)
-	if err != pgx.ErrNoRows {
-		t.Errorf("unexpected error: %v", err)
+			got, err := s.GetSubscribers(context.Background(), tt.userID)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			}
+		})
 	}
 }
 
 func TestStore(t *testing.T) {
-	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	pool := pgxpoolmock.NewMockPgxIface(ctrl)
+	mockDB := pgxpoolmock.NewMockPgxIface(ctrl)
 
-	timeProv := customtime.MockTimeProvider{}
+	tp := customtime.MockTimeProvider{}
 
-	row := pgxpoolmock.NewRow(
-		uint(1),
-		uint(1),
-		uint(2),
-		timeProv.Now(),
-		timeProv.Now(),
-	)
-
-	pool.EXPECT().QueryRow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(row)
-
-	repo := repository.NewSubscriptions(pool, customtime.MockTimeProvider{})
-
-	subscription, err := repo.Store(context.Background(), &domain.Subscription{
-		SubscriberID:   1,
-		SubscribedToID: 2,
-	})
-
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
+	tests := []struct {
+		name     string
+		sub      *domain.Subscription
+		want     *domain.Subscription
+		wantErr  bool
+		setup    func()
+		teardown func()
+	}{
+		{
+			name: "test case 1 - subscription stored successfully",
+			sub: &domain.Subscription{
+				SubscriberID:   1,
+				SubscribedToID: 2,
+			},
+			want: &domain.Subscription{
+				ID:             1,
+				SubscriberID:   1,
+				SubscribedToID: 2,
+				CreatedAt:      customtime.CustomTime{Time: tp.Now()},
+				UpdatedAt:      customtime.CustomTime{Time: tp.Now()},
+			},
+			wantErr: false,
+			setup: func() {
+				mockDB.EXPECT().QueryRow(context.Background(), repository.StoreSubscriptionQuery, gomock.Any(), gomock.Any()).Return(
+					pgxpoolmock.NewRow(uint(1), uint(1), uint(2), tp.Now(), tp.Now()),
+				)
+			},
+			teardown: func() {},
+		},
+		{
+			name: "test case 2 - subscription not stored",
+			sub: &domain.Subscription{
+				SubscriberID:   1,
+				SubscribedToID: 2,
+			},
+			want:    nil,
+			wantErr: true,
+			setup: func() {
+				mockDB.EXPECT().QueryRow(context.Background(), repository.StoreSubscriptionQuery, gomock.Any(), gomock.Any()).Return(ErrRow{})
+			},
+		},
 	}
 
-	if subscription.ID != 1 {
-		t.Errorf("unexpected subscription id: %d", subscription.ID)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setup()
 
-	if subscription.SubscriberID != 1 {
-		t.Errorf("unexpected subscriber id: %d", subscription.SubscriberID)
-	}
+			s := repository.NewSubscriptions(mockDB, customtime.MockTimeProvider{})
 
-	if subscription.SubscribedToID != 2 {
-		t.Errorf("unexpected subscribed to id: %d", subscription.SubscribedToID)
+			got, err := s.Store(context.Background(), tt.sub)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			}
+		})
 	}
 }
 
 func TestDelete(t *testing.T) {
-	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	pool := pgxpoolmock.NewMockPgxIface(ctrl)
+	mockDB := pgxpoolmock.NewMockPgxIface(ctrl)
 
-	tag := pgconn.CommandTag("DELETE 1")
-
-	pool.EXPECT().Exec(gomock.Any(), gomock.Any(), gomock.Any()).Return(tag, nil)
-
-	repo := repository.NewSubscriptions(pool, customtime.MockTimeProvider{})
-
-	err := repo.Delete(context.Background(), 1, 2)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
+	tests := []struct {
+		name           string
+		subscriberID   uint
+		subscribedToID uint
+		wantErr        bool
+		setup          func()
+	}{
+		{
+			name:           "test case 1 - subscription deleted successfully",
+			subscriberID:   1,
+			subscribedToID: 2,
+			wantErr:        false,
+			setup: func() {
+				mockDB.EXPECT().Exec(context.Background(), repository.DeleteSubscriptionQuery, gomock.Any(), gomock.Any()).Return(
+					pgconn.CommandTag("DELETE 1"), nil,
+				)
+			},
+		},
+		{
+			name:           "test case 2 - subscription not found",
+			subscriberID:   1,
+			subscribedToID: 2,
+			wantErr:        true,
+			setup: func() {
+				mockDB.EXPECT().Exec(context.Background(), repository.DeleteSubscriptionQuery, gomock.Any(), gomock.Any()).Return(
+					pgconn.CommandTag("DELETE 0"), nil,
+				)
+			},
+		},
+		{
+			name:           "test case 3",
+			subscriberID:   1,
+			subscribedToID: 2,
+			wantErr:        true,
+			setup: func() {
+				mockDB.EXPECT().Exec(context.Background(), repository.DeleteSubscriptionQuery, gomock.Any(), gomock.Any()).Return(
+					pgconn.CommandTag("DELETE 2"), nil,
+				)
+			},
+		},
+		{
+			name:           "test case 4",
+			subscriberID:   1,
+			subscribedToID: 2,
+			wantErr:        true,
+			setup: func() {
+				mockDB.EXPECT().Exec(context.Background(), repository.DeleteSubscriptionQuery, gomock.Any(), gomock.Any()).Return(
+					nil, errors.ErrInternal,
+				)
+			},
+		},
 	}
-}
 
-func TestDeleteErrNoRowsAffected(t *testing.T) {
-	t.Parallel()
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setup()
 
-	pool := pgxpoolmock.NewMockPgxIface(ctrl)
+			s := repository.NewSubscriptions(mockDB, customtime.MockTimeProvider{})
 
-	pool.EXPECT().Exec(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
-
-	repo := repository.NewSubscriptions(pool, customtime.MockTimeProvider{})
-
-	err := repo.Delete(context.Background(), 1, 2)
-	if err != errors.ErrInvalidBody {
-		t.Errorf("unexpected error value: %v", err)
+			err := s.Delete(context.Background(), tt.subscriberID, tt.subscribedToID)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
 	}
 }
 
 func TestGetBySubscriberAndSubscribedToID(t *testing.T) {
-	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	pool := pgxpoolmock.NewMockPgxIface(ctrl)
+	mockDB := pgxpoolmock.NewMockPgxIface(ctrl)
 
-	timeProv := customtime.MockTimeProvider{}
+	tp := customtime.MockTimeProvider{}
 
-	row := pgxpoolmock.NewRow(
-		uint(1),
-		uint(1),
-		uint(2),
-		timeProv.Now(),
-		timeProv.Now(),
-	)
-
-	pool.EXPECT().QueryRow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(row)
-
-	repo := repository.NewSubscriptions(pool, customtime.MockTimeProvider{})
-
-	subscription, err := repo.GetBySubscriberAndSubscribedToID(context.Background(), 1, 2)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
+	tests := []struct {
+		name           string
+		subscriberID   uint
+		subscribedToID uint
+		want           *domain.Subscription
+		wantErr        bool
+		setup          func()
+	}{
+		{
+			name:           "test case 1 - subscription found",
+			subscriberID:   1,
+			subscribedToID: 2,
+			want: &domain.Subscription{
+				ID:             1,
+				SubscriberID:   1,
+				SubscribedToID: 2,
+				CreatedAt:      customtime.CustomTime{Time: tp.Now()},
+				UpdatedAt:      customtime.CustomTime{Time: tp.Now()},
+			},
+			wantErr: false,
+			setup: func() {
+				mockDB.EXPECT().QueryRow(context.Background(), repository.GetSubscriptionBySubscriberAndSubscribedToIDQuery, gomock.Any(), gomock.Any()).Return(
+					pgxpoolmock.NewRow(uint(1), uint(1), uint(2), tp.Now(), tp.Now()),
+				)
+			},
+		},
+		{
+			name:           "test case 2 - subscription not found",
+			subscriberID:   1,
+			subscribedToID: 2,
+			want:           nil,
+			wantErr:        true,
+			setup: func() {
+				mockDB.EXPECT().QueryRow(context.Background(), repository.GetSubscriptionBySubscriberAndSubscribedToIDQuery, gomock.Any(), gomock.Any()).Return(ErrRow{})
+			},
+		},
 	}
 
-	if subscription.ID != 1 {
-		t.Errorf("unexpected subscription id: %d", subscription.ID)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setup()
 
-	if subscription.SubscriberID != 1 {
-		t.Errorf("unexpected subscriber id: %d", subscription.SubscriberID)
-	}
+			s := repository.NewSubscriptions(mockDB, tp)
 
-	if subscription.SubscribedToID != 2 {
-		t.Errorf("unexpected subscribed to id: %d", subscription.SubscribedToID)
+			got, err := s.GetBySubscriberAndSubscribedToID(context.Background(), tt.subscriberID, tt.subscribedToID)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			}
+		})
 	}
 }

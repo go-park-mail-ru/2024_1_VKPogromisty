@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	getStickerByIDQuery = `
+	GetStickerByIDQuery = `
 	SELECT id,
 		author_id,
 		name,
@@ -20,7 +20,7 @@ const (
 	FROM public.sticker
 	WHERE id = $1;
 	`
-	getStickersByAuthorIDQuery = `
+	GetStickersByAuthorIDQuery = `
 	SELECT id,
 		author_id,
 		name,
@@ -30,7 +30,7 @@ const (
 	FROM public.sticker
 	WHERE author_id = $1;
 	`
-	getAllStickersQuery = `
+	GetAllStickersQuery = `
 	SELECT id,
 		author_id,
 		name,
@@ -39,7 +39,7 @@ const (
 		updated_at
 	FROM public.sticker;
 	`
-	storeStickerQuery = `
+	StoreStickerQuery = `
 	INSERT INTO public.sticker (author_id, name, file_name)
 	VALUES ($1, $2, $3)
 	RETURNING id,
@@ -49,11 +49,11 @@ const (
 		created_at,
 		updated_at;
 	`
-	deleteStickerQuery = `
+	DeleteStickerQuery = `
 	DELETE FROM public.sticker
 	WHERE id = $1;
 	`
-	storeStickerMessageQuery = `
+	StoreStickerMessageQuery = `
 	INSERT INTO public.personal_message (sender_id, receiver_id, sticker_id)
 	VALUES ($1, $2, $3)
 	RETURNING id,
@@ -68,9 +68,9 @@ const (
 func (pm *PersonalMessages) GetStickerByID(ctx context.Context, stickerID uint) (sticker *domain.Sticker, err error) {
 	sticker = new(domain.Sticker)
 
-	contextlogger.LogSQL(ctx, getStickerByIDQuery, stickerID)
+	contextlogger.LogSQL(ctx, GetStickerByIDQuery, stickerID)
 
-	err = pm.db.QueryRow(context.Background(), getStickerByIDQuery, stickerID).Scan(
+	err = pm.db.QueryRow(context.Background(), GetStickerByIDQuery, stickerID).Scan(
 		&sticker.ID,
 		&sticker.AuthorID,
 		&sticker.Name,
@@ -92,9 +92,9 @@ func (pm *PersonalMessages) GetStickerByID(ctx context.Context, stickerID uint) 
 func (pm *PersonalMessages) GetStickersByAuthorID(ctx context.Context, authorID uint) (stickers []*domain.Sticker, err error) {
 	stickers = make([]*domain.Sticker, 0)
 
-	contextlogger.LogSQL(ctx, getStickersByAuthorIDQuery, authorID)
+	contextlogger.LogSQL(ctx, GetStickersByAuthorIDQuery, authorID)
 
-	rows, err := pm.db.Query(context.Background(), getStickersByAuthorIDQuery, authorID)
+	rows, err := pm.db.Query(context.Background(), GetStickersByAuthorIDQuery, authorID)
 	if err != nil {
 		return
 	}
@@ -124,9 +124,9 @@ func (pm *PersonalMessages) GetStickersByAuthorID(ctx context.Context, authorID 
 func (pm *PersonalMessages) GetAllStickers(ctx context.Context) (stickers []*domain.Sticker, err error) {
 	stickers = make([]*domain.Sticker, 0)
 
-	contextlogger.LogSQL(ctx, getAllStickersQuery)
+	contextlogger.LogSQL(ctx, GetAllStickersQuery)
 
-	rows, err := pm.db.Query(context.Background(), getAllStickersQuery)
+	rows, err := pm.db.Query(context.Background(), GetAllStickersQuery)
 	if err != nil {
 		return
 	}
@@ -156,9 +156,9 @@ func (pm *PersonalMessages) GetAllStickers(ctx context.Context) (stickers []*dom
 func (pm *PersonalMessages) StoreSticker(ctx context.Context, sticker *domain.Sticker) (newSticker *domain.Sticker, err error) {
 	newSticker = new(domain.Sticker)
 
-	contextlogger.LogSQL(ctx, storeStickerQuery, sticker.AuthorID, sticker.Name, sticker.FileName)
+	contextlogger.LogSQL(ctx, StoreStickerQuery, sticker.AuthorID, sticker.Name, sticker.FileName)
 
-	err = pm.db.QueryRow(context.Background(), storeStickerQuery, sticker.AuthorID, sticker.Name, sticker.FileName).Scan(
+	err = pm.db.QueryRow(context.Background(), StoreStickerQuery, sticker.AuthorID, sticker.Name, sticker.FileName).Scan(
 		&newSticker.ID,
 		&newSticker.AuthorID,
 		&newSticker.Name,
@@ -174,9 +174,9 @@ func (pm *PersonalMessages) StoreSticker(ctx context.Context, sticker *domain.St
 }
 
 func (pm *PersonalMessages) DeleteSticker(ctx context.Context, stickerID uint) (err error) {
-	contextlogger.LogSQL(ctx, deleteStickerQuery, stickerID)
+	contextlogger.LogSQL(ctx, DeleteStickerQuery, stickerID)
 
-	_, err = pm.db.Exec(context.Background(), deleteStickerQuery, stickerID)
+	_, err = pm.db.Exec(context.Background(), DeleteStickerQuery, stickerID)
 	if err != nil {
 		return
 	}
@@ -188,9 +188,9 @@ func (pm *PersonalMessages) StoreStickerMessage(ctx context.Context, senderID, r
 	newStickerMessage = new(domain.PersonalMessage)
 	sticker := new(domain.Sticker)
 
-	contextlogger.LogSQL(ctx, storeStickerMessageQuery, senderID, receiverID, stickerID)
+	contextlogger.LogSQL(ctx, StoreStickerMessageQuery, senderID, receiverID, stickerID)
 
-	err = pm.db.QueryRow(context.Background(), storeStickerMessageQuery, senderID, receiverID, stickerID).Scan(
+	err = pm.db.QueryRow(context.Background(), StoreStickerMessageQuery, senderID, receiverID, stickerID).Scan(
 		&newStickerMessage.ID,
 		&newStickerMessage.SenderID,
 		&newStickerMessage.ReceiverID,

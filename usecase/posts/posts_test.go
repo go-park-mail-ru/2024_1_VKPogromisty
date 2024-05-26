@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetPostByID(t *testing.T) {
@@ -206,116 +207,209 @@ func TestCreatePost(t *testing.T) {
 	}
 }
 
-// func TestUpdatePost(t *testing.T) {
-// 	t.Parallel()
+func TestUpdatePost(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-// 	tests := []struct {
-// 		name     string
-// 		userID   uint
-// 		input    posts.PostUpdateInput
-// 		mock     func(postsStorage *mock_posts.MockPostsStorage, attachmentStorage *mock_posts.MockAttachmentStorage, userID uint, input posts.PostUpdateInput)
-// 		wantPost *domain.Post
-// 		wantErr  bool
-// 	}{
-// 		{
-// 			name:   "Test OK",
-// 			userID: 1,
-// 			input: posts.PostUpdateInput{
-// 				PostID:  1,
-// 				Content: "Updated Content",
-// 			},
-// 			mock: func(postsStorage *mock_posts.MockPostsStorage, attachmentStorage *mock_posts.MockAttachmentStorage, userID uint, input posts.PostUpdateInput) {
-// 				oldPost := &domain.Post{ID: input.PostID, AuthorID: userID, Content: "Old Content"}
-// 				postsStorage.EXPECT().GetPostByID(gomock.Any(), input.PostID).Return(oldPost, nil)
-// 				updatedPost := &domain.Post{ID: input.PostID, AuthorID: userID, Content: input.Content}
-// 				postsStorage.EXPECT().UpdatePost(gomock.Any(), updatedPost).Return(updatedPost, nil)
-// 			},
-// 			wantPost: &domain.Post{ID: 1, AuthorID: 1, Content: "Updated Content"},
-// 			wantErr:  false,
-// 		},
-// 		{
-// 			name:   "Test Error",
-// 			userID: 1,
-// 			input: posts.PostUpdateInput{
-// 				PostID:  1,
-// 				Content: "",
-// 			},
-// 			mock: func(postsStorage *mock_posts.MockPostsStorage, attachmentStorage *mock_posts.MockAttachmentStorage, userID uint, input posts.PostUpdateInput) {
-// 				oldPost := &domain.Post{ID: input.PostID, AuthorID: userID, Content: "Old Content", Attachments: []string{}}
-// 				postsStorage.EXPECT().GetPostByID(gomock.Any(), input.PostID).Return(oldPost, nil)
-// 			},
-// 			wantPost: nil,
-// 			wantErr:  true,
-// 		},
-// 		{
-// 			name:   "Test err not found",
-// 			userID: 1,
-// 			input: posts.PostUpdateInput{
-// 				PostID:  1,
-// 				Content: "Updated Content",
-// 			},
-// 			mock: func(postsStorage *mock_posts.MockPostsStorage, attachmentStorage *mock_posts.MockAttachmentStorage, userID uint, input posts.PostUpdateInput) {
-// 				postsStorage.EXPECT().GetPostByID(gomock.Any(), input.PostID).Return(nil, errors.ErrNotFound)
-// 			},
-// 			wantPost: nil,
-// 			wantErr:  true,
-// 		},
-// 		{
-// 			name:   "Test forbidden",
-// 			userID: 1,
-// 			input: posts.PostUpdateInput{
-// 				PostID:  1,
-// 				Content: "Updated Content",
-// 			},
-// 			mock: func(postsStorage *mock_posts.MockPostsStorage, attachmentStorage *mock_posts.MockAttachmentStorage, userID uint, input posts.PostUpdateInput) {
-// 				oldPost := &domain.Post{ID: input.PostID, AuthorID: 0, Content: "Old Content"}
-// 				postsStorage.EXPECT().GetPostByID(gomock.Any(), input.PostID).Return(oldPost, nil)
-// 			},
-// 			wantPost: nil,
-// 			wantErr:  true,
-// 		},
-// 		{
-// 			name:   "Test err internal",
-// 			userID: 1,
-// 			input: posts.PostUpdateInput{
-// 				PostID:  1,
-// 				Content: "Updated Content",
-// 			},
-// 			mock: func(postsStorage *mock_posts.MockPostsStorage, attachmentStorage *mock_posts.MockAttachmentStorage, userID uint, input posts.PostUpdateInput) {
-// 				oldPost := &domain.Post{ID: input.PostID, AuthorID: userID, Content: "Old Content"}
-// 				postsStorage.EXPECT().GetPostByID(gomock.Any(), input.PostID).Return(oldPost, nil)
-// 				updatedPost := &domain.Post{ID: input.PostID, AuthorID: userID, Content: input.Content}
-// 				postsStorage.EXPECT().UpdatePost(gomock.Any(), updatedPost).Return(nil, errors.ErrInternal)
-// 			},
-// 			wantPost: nil,
-// 			wantErr:  true,
-// 		},
-// 	}
+	mockPostsStorage := mock_posts.NewMockPostsStorage(ctrl)
+	mockAttachmentStorage := mock_posts.NewMockAttachmentStorage(ctrl)
 
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			ctrl := gomock.NewController(t)
-// 			defer ctrl.Finish()
+	tests := []struct {
+		name    string
+		userID  uint
+		input   posts.PostUpdateInput
+		want    *domain.Post
+		wantErr error
+		setup   func()
+	}{
+		{
+			name:   "test case 1 - successful update",
+			userID: 1,
+			input: posts.PostUpdateInput{
+				PostID:              1,
+				Content:             "Updated content",
+				AttachmentsToAdd:    []string{"new_attachment.jpg"},
+				AttachmentsToDelete: []string{"old_attachment.jpg"},
+			},
+			want: &domain.Post{
+				ID:          1,
+				AuthorID:    1,
+				Content:     "Updated content",
+				Attachments: []string{"new_attachment.jpg"},
+			},
+			wantErr: nil,
+			setup: func() {
+				mockPostsStorage.EXPECT().GetPostByID(gomock.Any(), uint(1)).Return(&domain.Post{
+					ID:          1,
+					AuthorID:    1,
+					Content:     "Old content",
+					Attachments: []string{"old_attachment.jpg"},
+				}, nil).Times(2)
 
-// 			postsStorage := mock_posts.NewMockPostsStorage(ctrl)
-// 			attachmentStorage := mock_posts.NewMockAttachmentStorage(ctrl)
+				mockPostsStorage.EXPECT().UpdatePost(gomock.Any(), gomock.Any(), gomock.Any()).Return(&domain.Post{
+					ID:          1,
+					AuthorID:    1,
+					Content:     "Updated content",
+					Attachments: []string{"new_attachment.jpg"},
+				}, nil)
 
-// 			s := posts.NewPostsService(postsStorage, attachmentStorage)
+				mockAttachmentStorage.EXPECT().Delete("old_attachment.jpg").Return(nil)
+			},
+		},
+		{
+			name:   "test case 2",
+			userID: 1,
+			input: posts.PostUpdateInput{
+				PostID:              1,
+				Content:             "Updated content",
+				AttachmentsToAdd:    []string{"new_attachment.jpg"},
+				AttachmentsToDelete: []string{"old_attachment.jpg"},
+			},
+			want:    &domain.Post{},
+			wantErr: errors.ErrNotFound,
+			setup: func() {
+				mockPostsStorage.EXPECT().GetPostByID(gomock.Any(), uint(1)).Return(&domain.Post{
+					ID:          1,
+					AuthorID:    1,
+					Content:     "Old content",
+					Attachments: []string{"old_attachment.jpg"},
+				}, nil)
 
-// 			tt.mock(postsStorage, attachmentStorage, tt.userID, tt.input)
+				mockPostsStorage.EXPECT().UpdatePost(gomock.Any(), gomock.Any(), gomock.Any()).Return(&domain.Post{
+					ID:          1,
+					AuthorID:    1,
+					Content:     "Updated content",
+					Attachments: []string{"new_attachment.jpg"},
+				}, nil)
 
-// 			gotPost, err := s.UpdatePost(context.Background(), tt.userID, tt.input)
+				mockAttachmentStorage.EXPECT().Delete("old_attachment.jpg").Return(nil)
 
-// 			if (err != nil) != tt.wantErr {
-// 				t.Errorf("UpdatePost() error = %v, wantErr %v", err, tt.wantErr)
-// 			}
+				mockPostsStorage.EXPECT().GetPostByID(gomock.Any(), uint(1)).Return(nil, errors.ErrNotFound)
+			},
+		},
+		{
+			name:   "test case 2",
+			userID: 1,
+			input: posts.PostUpdateInput{
+				PostID:              1,
+				Content:             "Updated content",
+				AttachmentsToAdd:    []string{"new_attachment.jpg"},
+				AttachmentsToDelete: []string{"old_attachment.jpg"},
+			},
+			want:    nil,
+			wantErr: errors.ErrNotFound,
+			setup: func() {
+				mockPostsStorage.EXPECT().GetPostByID(gomock.Any(), uint(1)).Return(&domain.Post{
+					ID:          1,
+					AuthorID:    1,
+					Content:     "Old content",
+					Attachments: []string{"old_attachment.jpg"},
+				}, nil)
 
-// 			if !reflect.DeepEqual(gotPost, tt.wantPost) {
-// 				t.Errorf("UpdatePost() gotPost = %v, want %v", gotPost, tt.wantPost)
-// 			}
-// 		})
-// 	}
-// }
+				mockPostsStorage.EXPECT().UpdatePost(gomock.Any(), gomock.Any(), gomock.Any()).Return(&domain.Post{
+					ID:          1,
+					AuthorID:    1,
+					Content:     "Updated content",
+					Attachments: []string{"new_attachment.jpg"},
+				}, nil)
+
+				mockAttachmentStorage.EXPECT().Delete("old_attachment.jpg").Return(errors.ErrNotFound)
+			},
+		},
+		{
+			name:   "test case 3",
+			userID: 1,
+			input: posts.PostUpdateInput{
+				PostID:              1,
+				Content:             "Updated content",
+				AttachmentsToAdd:    []string{"new_attachment.jpg"},
+				AttachmentsToDelete: []string{"old_attachment.jpg"},
+			},
+			want:    nil,
+			wantErr: errors.ErrNotFound,
+			setup: func() {
+				mockPostsStorage.EXPECT().GetPostByID(gomock.Any(), uint(1)).Return(&domain.Post{
+					ID:          1,
+					AuthorID:    1,
+					Content:     "Old content",
+					Attachments: []string{"old_attachment.jpg"},
+				}, nil)
+
+				mockPostsStorage.EXPECT().UpdatePost(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.ErrNotFound)
+			},
+		},
+		{
+			name:   "test case 4",
+			userID: 1,
+			input: posts.PostUpdateInput{
+				PostID:              1,
+				Content:             "Updated content",
+				AttachmentsToAdd:    []string{"new_attachment.jpg"},
+				AttachmentsToDelete: []string{"old_attachment.jpg"},
+			},
+			want:    nil,
+			wantErr: errors.ErrNotFound,
+			setup: func() {
+				mockPostsStorage.EXPECT().GetPostByID(gomock.Any(), uint(1)).Return(nil, errors.ErrNotFound)
+			},
+		},
+		{
+			name:   "test case 5",
+			userID: 1,
+			input: posts.PostUpdateInput{
+				PostID:              1,
+				Content:             "",
+				AttachmentsToAdd:    []string{},
+				AttachmentsToDelete: []string{},
+			},
+			want:    nil,
+			wantErr: errors.ErrInvalidBody,
+			setup: func() {
+				mockPostsStorage.EXPECT().GetPostByID(gomock.Any(), uint(1)).Return(&domain.Post{
+					ID:          1,
+					AuthorID:    1,
+					Content:     "Old content",
+					Attachments: []string{},
+				}, nil)
+			},
+		},
+		{
+			name:   "test case 6",
+			userID: 1,
+			input: posts.PostUpdateInput{
+				PostID:              1,
+				Content:             "Updated content",
+				AttachmentsToAdd:    []string{"new_attachment.jpg"},
+				AttachmentsToDelete: []string{"old_attachment.jpg"},
+			},
+			want:    nil,
+			wantErr: errors.ErrForbidden,
+			setup: func() {
+				mockPostsStorage.EXPECT().GetPostByID(gomock.Any(), uint(1)).Return(&domain.Post{
+					ID:          1,
+					AuthorID:    2,
+					Content:     "Old content",
+					Attachments: []string{"old_attachment.jpg"},
+				}, nil)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setup()
+
+			s := posts.NewPostsService(mockPostsStorage, mockAttachmentStorage)
+
+			got, err := s.UpdatePost(context.Background(), tt.userID, tt.input)
+			assert.Equal(t, tt.wantErr, err)
+
+			if tt.wantErr == nil {
+				assert.Equal(t, tt.want, got)
+			}
+		})
+	}
+}
 
 func TestGetUserFriendsPosts(t *testing.T) {
 	t.Parallel()
@@ -986,6 +1080,86 @@ func TestGetNewPosts(t *testing.T) {
 
 			if !reflect.DeepEqual(gotPosts, tt.wantPosts) {
 				t.Errorf("GetNewPosts() gotPosts = %v, want %v", gotPosts, tt.wantPosts)
+			}
+		})
+	}
+}
+
+func TestGetGroupPostByPostID(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockPostsStorage := mock_posts.NewMockPostsStorage(ctrl)
+
+	tests := []struct {
+		name    string
+		postID  uint
+		want    *domain.GroupPost
+		wantErr error
+		setup   func()
+	}{
+		{
+			name:   "test case 1 - successful retrieval",
+			postID: 1,
+			want: &domain.GroupPost{
+				PostID:  1,
+				GroupID: 1,
+			},
+			wantErr: nil,
+			setup: func() {
+				mockPostsStorage.EXPECT().GetPostByID(gomock.Any(), uint(1)).Return(&domain.Post{
+					ID:       1,
+					AuthorID: 1,
+				}, nil)
+
+				mockPostsStorage.EXPECT().GetGroupPostByPostID(gomock.Any(), uint(1)).Return(&domain.GroupPost{
+					PostID:  1,
+					GroupID: 1,
+				}, nil)
+			},
+		},
+		{
+			name:   "test case 2",
+			postID: 1,
+			want: &domain.GroupPost{
+				PostID:  1,
+				GroupID: 1,
+			},
+			wantErr: errors.ErrNotFound,
+			setup: func() {
+				mockPostsStorage.EXPECT().GetPostByID(gomock.Any(), uint(1)).Return(&domain.Post{
+					ID:       1,
+					AuthorID: 1,
+				}, nil)
+
+				mockPostsStorage.EXPECT().GetGroupPostByPostID(gomock.Any(), uint(1)).Return(nil, errors.ErrNotFound)
+			},
+		},
+		{
+			name:   "test case 3",
+			postID: 1,
+			want: &domain.GroupPost{
+				PostID:  1,
+				GroupID: 1,
+			},
+			wantErr: errors.ErrNotFound,
+			setup: func() {
+				mockPostsStorage.EXPECT().GetPostByID(gomock.Any(), uint(1)).Return(nil, errors.ErrNotFound)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setup()
+
+			s := posts.NewPostsService(mockPostsStorage, nil)
+
+			got, err := s.GetGroupPostByPostID(context.Background(), tt.postID)
+			assert.Equal(t, tt.wantErr, err)
+
+			if tt.wantErr == nil {
+				assert.Equal(t, tt.want, got)
 			}
 		})
 	}

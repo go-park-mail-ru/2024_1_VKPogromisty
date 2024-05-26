@@ -2,13 +2,13 @@ package rest
 
 import (
 	"context"
+	"mime/multipart"
 	"net/http"
 	"socio/domain"
 	"socio/errors"
 	"socio/internal/rest/middleware"
 	"socio/pkg/json"
 	"socio/pkg/requestcontext"
-	"socio/pkg/sanitizer"
 	customtime "socio/pkg/time"
 	"socio/usecase/chat"
 	"socio/usecase/csrf"
@@ -35,7 +35,23 @@ const (
 )
 
 type ChatServer struct {
-	Service *chat.Service
+	Service ChatService
+}
+
+type ChatService interface {
+	CreateSticker(ctx context.Context, sticker *domain.Sticker, image *multipart.FileHeader) (newSticker *domain.Sticker, err error)
+	CreateUnsentMessageAttachments(ctx context.Context, attachs *domain.UnsentMessageAttachment, fhs []*multipart.FileHeader) (filenames []string, err error)
+	DeleteSticker(ctx context.Context, stickerID uint, userID uint) (err error)
+	DeleteUnsentMessageAttachment(ctx context.Context, attach *domain.UnsentMessageAttachment) (err error)
+	DeleteUnsentMessageAttachments(ctx context.Context, attach *domain.UnsentMessageAttachment) (err error)
+	GetAllStickers(ctx context.Context) (stickers []*domain.Sticker, err error)
+	GetClient(ctx context.Context, userID uint) (c *chat.Client, err error)
+	GetDialogsByUserID(ctx context.Context, userID uint) (dialogs []*domain.Dialog, err error)
+	GetMessagesByDialog(ctx context.Context, userID uint, peerID uint, lastMessageID uint, messagesAmount uint) (messages []*domain.PersonalMessage, err error)
+	GetStickersByAuthorID(ctx context.Context, authorID uint) (stickers []*domain.Sticker, err error)
+	GetUnsentMessageAttachments(ctx context.Context, attach *domain.UnsentMessageAttachment) (fileNames []string, err error)
+	Register(ctx context.Context, userID uint) (c *chat.Client, err error)
+	Unregister(userID uint) (err error)
 }
 
 var upgrader = &websocket.Upgrader{
@@ -44,9 +60,9 @@ var upgrader = &websocket.Upgrader{
 	CheckOrigin:     middleware.CheckOrigin,
 }
 
-func NewChatServer(pubSubRepo chat.PubSubRepository, unsentMessageAttachmentsStorage chat.UnsentMessageAttachmentsStorage, messagesRepo chat.PersonalMessagesRepository, stickerStorage chat.StickerStorage, messageAttachmentStorage chat.MessageAttachmentStorage, sanitizer *sanitizer.Sanitizer) (chatServer *ChatServer) {
+func NewChatServer(service ChatService) (chatServer *ChatServer) {
 	return &ChatServer{
-		Service: chat.NewChatService(pubSubRepo, unsentMessageAttachmentsStorage, messagesRepo, stickerStorage, messageAttachmentStorage, sanitizer),
+		Service: service,
 	}
 }
 
