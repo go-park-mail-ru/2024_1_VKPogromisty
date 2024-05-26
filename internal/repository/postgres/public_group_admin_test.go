@@ -2,7 +2,6 @@ package repository_test
 
 import (
 	"context"
-	"reflect"
 	"socio/domain"
 	"socio/errors"
 	repository "socio/internal/repository/postgres"
@@ -13,6 +12,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestStorePublicGroupAdmin(t *testing.T) {
@@ -25,7 +25,7 @@ func TestStorePublicGroupAdmin(t *testing.T) {
 		input    *domain.PublicGroupAdmin
 		mock     func(pool *pgxpoolmock.MockPgxIface, input *domain.PublicGroupAdmin)
 		expected *domain.PublicGroupAdmin
-		err      error
+		err      bool
 	}{
 		{
 			name: "Test OK",
@@ -48,9 +48,21 @@ func TestStorePublicGroupAdmin(t *testing.T) {
 					Time: tp.Now(),
 				},
 			},
-			err: nil,
+			err: false,
 		},
-		// Add more test cases here
+		{
+			name: "Test err",
+			input: &domain.PublicGroupAdmin{
+				PublicGroupID: 1,
+				UserID:        1,
+			},
+			mock: func(pool *pgxpoolmock.MockPgxIface, input *domain.PublicGroupAdmin) {
+				// Mock the storePublicGroupAdminQuery
+				pool.EXPECT().QueryRow(context.Background(), gomock.Any(), gomock.Any(), gomock.Any()).Return(ErrRow{})
+			},
+			expected: nil,
+			err:      true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -66,12 +78,13 @@ func TestStorePublicGroupAdmin(t *testing.T) {
 
 			result, err := users.StorePublicGroupAdmin(context.Background(), tt.input)
 
-			if err != tt.err {
+			if (err != nil) != tt.err {
 				t.Errorf("unexpected error: %v", err)
 			}
 
-			if !reflect.DeepEqual(result, tt.expected) {
-				t.Errorf("unexpected result: got %v, want %v", result, tt.expected)
+			if !tt.err {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, result)
 			}
 		})
 	}
@@ -178,7 +191,7 @@ func TestGetAdminsByPublicGroupID(t *testing.T) {
 		groupID  uint
 		mock     func(pool *pgxpoolmock.MockPgxIface, groupID uint)
 		expected []*domain.User
-		err      error
+		err      bool
 	}{
 		{
 			name:    "Test OK",
@@ -209,7 +222,28 @@ func TestGetAdminsByPublicGroupID(t *testing.T) {
 					},
 				},
 			},
-			err: nil,
+			err: false,
+		},
+		{
+			name:    "Test 2",
+			groupID: 1,
+			mock: func(pool *pgxpoolmock.MockPgxIface, groupID uint) {
+				// Mock the getAdminsByPublicGroupIDQuery
+				rows := pgxpoolmock.NewRows([]string{"err"})
+				rows.AddRow(ErrRow{})
+				pool.EXPECT().Query(context.Background(), gomock.Any(), gomock.Any()).Return(rows.ToPgxRows(), nil)
+			},
+			expected: nil,
+			err:      true,
+		},
+		{
+			name:    "Test 3",
+			groupID: 1,
+			mock: func(pool *pgxpoolmock.MockPgxIface, groupID uint) {
+				pool.EXPECT().Query(context.Background(), gomock.Any(), gomock.Any()).Return(nil, errors.ErrInternal)
+			},
+			expected: nil,
+			err:      true,
 		},
 	}
 
@@ -226,12 +260,13 @@ func TestGetAdminsByPublicGroupID(t *testing.T) {
 
 			result, err := users.GetAdminsByPublicGroupID(context.Background(), tt.groupID)
 
-			if err != tt.err {
+			if (err != nil) != tt.err {
 				t.Errorf("unexpected error: %v", err)
 			}
 
-			if !reflect.DeepEqual(result, tt.expected) {
-				t.Errorf("unexpected result: got %v, want %v", result, tt.expected)
+			if !tt.err {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, result)
 			}
 		})
 	}

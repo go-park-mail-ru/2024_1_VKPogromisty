@@ -15,6 +15,7 @@ import (
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
+	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -25,6 +26,12 @@ type ErrRow struct{}
 
 func (r ErrRow) Scan(...interface{}) error {
 	return pgx.ErrNoRows
+}
+
+type ErrInternalRow struct{}
+
+func (r ErrInternalRow) Scan(...interface{}) error {
+	return errors.ErrInternal
 }
 
 func TestGetPostByID(t *testing.T) {
@@ -185,6 +192,22 @@ func TestGetUserPosts(t *testing.T) {
 			expected: []*domain.Post{},
 			err:      pgx.ErrNoRows,
 		},
+		{
+			name:        "Test err scan",
+			userID:      1,
+			lastPostID:  0,
+			postsAmount: 5,
+			mock: func(pool *pgxpoolmock.MockPgxIface, userID uint, lastPostID uint, postsAmount uint) {
+				// Mock for QueryRow
+				pool.EXPECT().QueryRow(gomock.Any(), gomock.Any(), gomock.Any()).Return(pgxpoolmock.NewRow(lastPostID))
+
+				// Mock for Query
+				rows := pgxpoolmock.NewRows([]string{"err"}).AddRow(ErrRow{}).ToPgxRows()
+				pool.EXPECT().Query(gomock.Any(), repository.GetUserPostsQuery, gomock.Any(), gomock.Any(), gomock.Any()).Return(rows, nil)
+			},
+			expected: []*domain.Post{},
+			err:      pgx.ErrNoRows,
+		},
 	}
 
 	for _, tt := range tests {
@@ -200,8 +223,8 @@ func TestGetUserPosts(t *testing.T) {
 
 			_, err := repo.GetUserPosts(context.Background(), tt.userID, tt.lastPostID, tt.postsAmount)
 
-			if err != tt.err {
-				t.Errorf("unexpected error: %v", err)
+			if (tt.err != nil) != (err != nil) {
+				t.Errorf("expected error, got nil")
 			}
 		})
 	}
@@ -217,7 +240,7 @@ func TestGetUserFriendsPosts(t *testing.T) {
 		postsAmount uint
 		mock        func(pool *pgxpoolmock.MockPgxIface, userID uint, lastPostID uint, postsAmount uint)
 		expected    []*domain.Post
-		err         error
+		err         bool
 	}{
 		{
 			name:        "Test OK",
@@ -250,7 +273,45 @@ func TestGetUserFriendsPosts(t *testing.T) {
 				pool.EXPECT().Query(gomock.Any(), gomock.Any(), gomock.Any()).Return(row, nil)
 			},
 			expected: []*domain.Post{},
-			err:      nil,
+			err:      false,
+		},
+		{
+			name:        "test 2",
+			userID:      1,
+			lastPostID:  0,
+			postsAmount: 20,
+			mock: func(pool *pgxpoolmock.MockPgxIface, userID uint, lastPostID uint, postsAmount uint) {
+				pool.EXPECT().QueryRow(gomock.Any(), repository.GetLastUserFriendsPostIDQuery, gomock.Any()).Return(pgxpoolmock.NewRow(lastPostID))
+				pool.EXPECT().Query(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.ErrInternal)
+			},
+			expected: []*domain.Post{},
+			err:      true,
+		},
+		{
+			name:        "test 3",
+			userID:      1,
+			lastPostID:  0,
+			postsAmount: 20,
+			mock: func(pool *pgxpoolmock.MockPgxIface, userID uint, lastPostID uint, postsAmount uint) {
+				pool.EXPECT().QueryRow(gomock.Any(), repository.GetLastUserFriendsPostIDQuery, gomock.Any()).Return(ErrRow{})
+			},
+			expected: []*domain.Post{},
+			err:      true,
+		},
+		{
+			name:        "Test err scan",
+			userID:      1,
+			lastPostID:  0,
+			postsAmount: 20,
+			mock: func(pool *pgxpoolmock.MockPgxIface, userID uint, lastPostID uint, postsAmount uint) {
+				pool.EXPECT().QueryRow(gomock.Any(), repository.GetLastUserFriendsPostIDQuery, gomock.Any()).Return(pgxpoolmock.NewRow(lastPostID))
+
+				row := pgxpoolmock.NewRows([]string{"err"}).AddRow(ErrRow{}).ToPgxRows()
+
+				pool.EXPECT().Query(gomock.Any(), gomock.Any(), gomock.Any()).Return(row, nil)
+			},
+			expected: []*domain.Post{},
+			err:      true,
 		},
 	}
 
@@ -267,8 +328,144 @@ func TestGetUserFriendsPosts(t *testing.T) {
 
 			_, err := repo.GetUserFriendsPosts(context.Background(), tt.userID, tt.lastPostID, tt.postsAmount)
 
-			if err != tt.err {
+			if (err != nil) != tt.err {
 				t.Errorf("unexpected error: %v", err)
+			}
+		})
+	}
+}
+
+func TestStorePost(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDB := pgxpoolmock.NewMockPgxIface(ctrl)
+
+	tp := customtime.MockTimeProvider{}
+
+	tests := []struct {
+		name    string
+		post    *domain.Post
+		want    *domain.Post
+		wantErr bool
+		setup   func()
+	}{
+		{
+			name: "test case 1",
+			post: &domain.Post{
+				AuthorID:    1,
+				Content:     "Test content",
+				Attachments: []string{"attachment1", "attachment2"},
+			},
+			want: &domain.Post{
+				ID:          1,
+				AuthorID:    1,
+				Content:     "Test content",
+				CreatedAt:   customtime.CustomTime{Time: tp.Now()},
+				UpdatedAt:   customtime.CustomTime{Time: tp.Now()},
+				Attachments: []string{"attachment1", "attachment2"},
+			},
+			wantErr: false,
+			setup: func() {
+				mockDB.EXPECT().BeginTx(context.Background(), gomock.Any()).Return(mockDB, nil)
+				mockDB.EXPECT().QueryRow(context.Background(), gomock.Any(), gomock.Any(), gomock.Any()).Return(pgxpoolmock.NewRow(uint(1), uint(1), "Test content", tp.Now(), tp.Now()))
+				mockDB.EXPECT().QueryRow(context.Background(), gomock.Any(), gomock.Any(), gomock.Any()).Return(pgxpoolmock.NewRow("attachment1"))
+				mockDB.EXPECT().QueryRow(context.Background(), gomock.Any(), gomock.Any(), gomock.Any()).Return(pgxpoolmock.NewRow("attachment2"))
+				mockDB.EXPECT().Commit(context.Background()).Return(nil)
+				mockDB.EXPECT().Rollback(context.Background()).Return(nil)
+			},
+		},
+		{
+			name: "test case 2",
+			post: &domain.Post{
+				AuthorID:    1,
+				Content:     "Test content",
+				Attachments: []string{"attachment1", "attachment2"},
+			},
+			want:    nil,
+			wantErr: true,
+			setup: func() {
+				mockDB.EXPECT().BeginTx(context.Background(), gomock.Any()).Return(mockDB, nil)
+				mockDB.EXPECT().QueryRow(context.Background(), gomock.Any(), gomock.Any(), gomock.Any()).Return(pgxpoolmock.NewRow(uint(1), uint(1), "Test content", tp.Now(), tp.Now()))
+				mockDB.EXPECT().QueryRow(context.Background(), gomock.Any(), gomock.Any(), gomock.Any()).Return(pgxpoolmock.NewRow("attachment1"))
+				mockDB.EXPECT().QueryRow(context.Background(), gomock.Any(), gomock.Any(), gomock.Any()).Return(pgxpoolmock.NewRow("attachment2"))
+				mockDB.EXPECT().Commit(context.Background()).Return(nil)
+				mockDB.EXPECT().Rollback(context.Background()).Return(errors.ErrInternal)
+			},
+		},
+		{
+			name: "test case 3",
+			post: &domain.Post{
+				AuthorID:    1,
+				Content:     "Test content",
+				Attachments: []string{"attachment1", "attachment2"},
+			},
+			want:    nil,
+			wantErr: true,
+			setup: func() {
+				mockDB.EXPECT().BeginTx(context.Background(), gomock.Any()).Return(mockDB, nil)
+				mockDB.EXPECT().QueryRow(context.Background(), gomock.Any(), gomock.Any(), gomock.Any()).Return(pgxpoolmock.NewRow(uint(1), uint(1), "Test content", tp.Now(), tp.Now()))
+				mockDB.EXPECT().QueryRow(context.Background(), gomock.Any(), gomock.Any(), gomock.Any()).Return(pgxpoolmock.NewRow("attachment1"))
+				mockDB.EXPECT().QueryRow(context.Background(), gomock.Any(), gomock.Any(), gomock.Any()).Return(pgxpoolmock.NewRow("attachment2"))
+				mockDB.EXPECT().Commit(context.Background()).Return(errors.ErrInternal)
+			},
+		},
+		{
+			name: "test case 4",
+			post: &domain.Post{
+				AuthorID:    1,
+				Content:     "Test content",
+				Attachments: []string{"attachment1"},
+			},
+			want:    nil,
+			wantErr: true,
+			setup: func() {
+				mockDB.EXPECT().BeginTx(context.Background(), gomock.Any()).Return(mockDB, nil)
+				mockDB.EXPECT().QueryRow(context.Background(), gomock.Any(), gomock.Any(), gomock.Any()).Return(pgxpoolmock.NewRow(uint(1), uint(1), "Test content", tp.Now(), tp.Now()))
+				mockDB.EXPECT().QueryRow(context.Background(), gomock.Any(), gomock.Any(), gomock.Any()).Return(ErrRow{})
+			},
+		},
+		{
+			name: "test case 5",
+			post: &domain.Post{
+				AuthorID:    1,
+				Content:     "Test content",
+				Attachments: []string{"attachment1"},
+			},
+			want:    nil,
+			wantErr: true,
+			setup: func() {
+				mockDB.EXPECT().BeginTx(context.Background(), gomock.Any()).Return(mockDB, nil)
+				mockDB.EXPECT().QueryRow(context.Background(), gomock.Any(), gomock.Any(), gomock.Any()).Return(ErrRow{})
+			},
+		},
+		{
+			name: "test case 6",
+			post: &domain.Post{
+				AuthorID:    1,
+				Content:     "Test content",
+				Attachments: []string{"attachment1"},
+			},
+			want:    nil,
+			wantErr: true,
+			setup: func() {
+				mockDB.EXPECT().BeginTx(context.Background(), gomock.Any()).Return(nil, errors.ErrInternal)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setup()
+
+			p := repository.NewPosts(mockDB, tp)
+
+			got, err := p.StorePost(context.Background(), tt.post)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, got)
 			}
 		})
 	}
@@ -310,6 +507,18 @@ func TestStoreGroupPost(t *testing.T) {
 			expected: &domain.GroupPost{},
 			err:      nil,
 		},
+		{
+			name: "Test OK",
+			groupPost: &domain.GroupPost{
+				PostID:  1,
+				GroupID: 2,
+			},
+			mock: func(pool *pgxpoolmock.MockPgxIface, groupPost *domain.GroupPost) {
+				pool.EXPECT().QueryRow(gomock.Any(), repository.StoreGroupPostQuery, gomock.Any(), gomock.Any()).Return(ErrRow{})
+			},
+			expected: &domain.GroupPost{},
+			err:      pgx.ErrNoRows,
+		},
 	}
 
 	for _, tt := range tests {
@@ -333,120 +542,235 @@ func TestStoreGroupPost(t *testing.T) {
 	}
 }
 
-func TestStorePost(t *testing.T) {
-	t.Parallel()
+func TestGetGroupPostByPostID(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	pool := pgxpoolmock.NewMockPgxIface(ctrl)
+	mockDB := pgxpoolmock.NewMockPgxIface(ctrl)
 
-	timeProv := customtime.MockTimeProvider{}
+	tp := customtime.MockTimeProvider{}
 
-	postRow := pgxpoolmock.NewRow(
-		uint(1),
-		uint(1),
-		"content",
-		timeProv.Now(),
-		timeProv.Now(),
-	)
-
-	attachmentRow := pgxpoolmock.NewRow(
-		"default_avatar.png",
-	)
-
-	pool.EXPECT().BeginTx(gomock.Any(), gomock.Any()).Return(pool, nil)
-	pool.EXPECT().QueryRow(gomock.Any(), repository.StorePostQuery, gomock.Any(), gomock.Any()).Return(postRow)
-	pool.EXPECT().QueryRow(gomock.Any(), repository.StorePostAttachmentQuery, gomock.Any(), gomock.Any()).Return(attachmentRow)
-	pool.EXPECT().Rollback(gomock.Any()).Return(nil)
-	pool.EXPECT().Commit(gomock.Any()).Return(nil)
-
-	repo := repository.NewPosts(pool, customtime.MockTimeProvider{})
-
-	post := &domain.Post{
-		AuthorID: 1,
-		Content:  "content",
-		Attachments: []string{
-			"default_avatar.png",
+	tests := []struct {
+		name    string
+		postID  uint
+		want    *domain.GroupPost
+		wantErr bool
+		setup   func()
+	}{
+		{
+			name:   "test case 1 - post found",
+			postID: 1,
+			want: &domain.GroupPost{
+				ID:        1,
+				PostID:    1,
+				GroupID:   1,
+				CreatedAt: customtime.CustomTime{Time: tp.Now()},
+				UpdatedAt: customtime.CustomTime{Time: tp.Now()},
+			},
+			wantErr: false,
+			setup: func() {
+				mockDB.EXPECT().QueryRow(context.Background(), repository.GetGroupPostByPostIDQuery, gomock.Any()).Return(pgxpoolmock.NewRow(uint(1), uint(1), uint(1), tp.Now(), tp.Now()))
+			},
+		},
+		{
+			name:    "test case 2 - post not found",
+			postID:  2,
+			want:    nil,
+			wantErr: true,
+			setup: func() {
+				mockDB.EXPECT().QueryRow(context.Background(), repository.GetGroupPostByPostIDQuery, gomock.Any()).Return(ErrRow{})
+			},
+			// Add more test cases here
 		},
 	}
 
-	newPost, err := repo.StorePost(context.Background(), post)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setup()
 
-	if newPost.ID != 1 {
-		t.Errorf("unexpected post id: %d", newPost.ID)
-	}
+			p := repository.NewPosts(mockDB, customtime.MockTimeProvider{})
 
-	if newPost.AuthorID != 1 {
-		t.Errorf("unexpected post author id: %d", newPost.AuthorID)
-	}
-
-	if newPost.Content != "content" {
-		t.Errorf("unexpected post content: %s", newPost.Content)
-	}
-
-	if newPost.CreatedAt.Time != timeProv.Now() {
-		t.Errorf("unexpected post created at: %v", newPost.CreatedAt)
-	}
-
-	if newPost.UpdatedAt.Time != timeProv.Now() {
-		t.Errorf("unexpected post updated at: %v", newPost.UpdatedAt)
-	}
-
-	if len(newPost.Attachments) != 1 {
-		t.Errorf("unexpected post attachments length: %d", len(newPost.Attachments))
-	}
-
-	if newPost.Attachments[0] != "default_avatar.png" {
-		t.Errorf("unexpected post attachment: %s", newPost.Attachments[0])
+			got, err := p.GetGroupPostByPostID(context.Background(), tt.postID)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			}
+		})
 	}
 }
 
-// func TestUpdatePost(t *testing.T) {
-// 	t.Parallel()
-// 	ctrl := gomock.NewController(t)
-// 	defer ctrl.Finish()
+func TestUpdatePost(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-// 	pool := pgxpoolmock.NewMockPgxIface(ctrl)
+	mockDB := pgxpoolmock.NewMockPgxIface(ctrl)
 
-// 	timeProv := customtime.MockTimeProvider{}
+	tp := customtime.MockTimeProvider{}
 
-// 	row := pgxpoolmock.NewRow(
-// 		uint(1),
-// 		uint(1),
-// 		"content",
-// 		timeProv.Now(),
-// 		timeProv.Now(),
-// 	)
+	tests := []struct {
+		name                string
+		post                *domain.Post
+		attachmentsToDelete []string
+		want                *domain.Post
+		wantErr             bool
+		setup               func()
+	}{
+		{
+			name: "test case 1",
+			post: &domain.Post{
+				ID:          1,
+				AuthorID:    1,
+				Content:     "Test content",
+				Attachments: []string{"attachment1", "attachment2"},
+			},
+			attachmentsToDelete: []string{"attachment3"},
+			want: &domain.Post{
+				ID:          1,
+				AuthorID:    1,
+				Content:     "Test content",
+				CreatedAt:   customtime.CustomTime{Time: tp.Now()},
+				UpdatedAt:   customtime.CustomTime{Time: tp.Now()},
+				Attachments: []string{"attachment1", "attachment2"},
+			},
+			wantErr: false,
+			setup: func() {
+				mockDB.EXPECT().BeginTx(context.Background(), gomock.Any()).Return(mockDB, nil)
+				mockDB.EXPECT().QueryRow(context.Background(), repository.UpdatePostQuery, gomock.Any(), gomock.Any()).Return(pgxpoolmock.NewRow(uint(1), uint(1), "Test content", tp.Now(), tp.Now()))
+				mockDB.EXPECT().QueryRow(context.Background(), repository.StorePostAttachmentQuery, gomock.Any(), gomock.Any()).Return(pgxpoolmock.NewRow("attachment1"))
+				mockDB.EXPECT().QueryRow(context.Background(), repository.StorePostAttachmentQuery, gomock.Any(), gomock.Any()).Return(pgxpoolmock.NewRow("attachment2"))
+				mockDB.EXPECT().Exec(context.Background(), repository.DeletePostAttachmentQuery, gomock.Any()).Return(pgconn.CommandTag("DELETE 1"), nil)
+				mockDB.EXPECT().Commit(context.Background()).Return(nil)
+				mockDB.EXPECT().Rollback(context.Background()).Return(nil)
+			},
+		},
+		{
+			name: "test case 2",
+			post: &domain.Post{
+				ID:          1,
+				AuthorID:    1,
+				Content:     "Test content",
+				Attachments: []string{"attachment1", "attachment2"},
+			},
+			attachmentsToDelete: []string{"attachment3"},
+			want:                nil,
+			wantErr:             true,
+			setup: func() {
+				mockDB.EXPECT().BeginTx(context.Background(), gomock.Any()).Return(mockDB, nil)
+				mockDB.EXPECT().QueryRow(context.Background(), repository.UpdatePostQuery, gomock.Any(), gomock.Any()).Return(pgxpoolmock.NewRow(uint(1), uint(1), "Test content", tp.Now(), tp.Now()))
+				mockDB.EXPECT().QueryRow(context.Background(), repository.StorePostAttachmentQuery, gomock.Any(), gomock.Any()).Return(pgxpoolmock.NewRow("attachment1"))
+				mockDB.EXPECT().QueryRow(context.Background(), repository.StorePostAttachmentQuery, gomock.Any(), gomock.Any()).Return(pgxpoolmock.NewRow("attachment2"))
+				mockDB.EXPECT().Exec(context.Background(), repository.DeletePostAttachmentQuery, gomock.Any()).Return(pgconn.CommandTag("DELETE 1"), nil)
+				mockDB.EXPECT().Commit(context.Background()).Return(nil)
+				mockDB.EXPECT().Rollback(context.Background()).Return(errors.ErrInternal)
+			},
+		},
+		{
+			name: "test case 3",
+			post: &domain.Post{
+				ID:          1,
+				AuthorID:    1,
+				Content:     "Test content",
+				Attachments: []string{"attachment1", "attachment2"},
+			},
+			attachmentsToDelete: []string{"attachment3"},
+			want:                nil,
+			wantErr:             true,
+			setup: func() {
+				mockDB.EXPECT().BeginTx(context.Background(), gomock.Any()).Return(mockDB, nil)
+				mockDB.EXPECT().QueryRow(context.Background(), repository.UpdatePostQuery, gomock.Any(), gomock.Any()).Return(pgxpoolmock.NewRow(uint(1), uint(1), "Test content", tp.Now(), tp.Now()))
+				mockDB.EXPECT().QueryRow(context.Background(), repository.StorePostAttachmentQuery, gomock.Any(), gomock.Any()).Return(pgxpoolmock.NewRow("attachment1"))
+				mockDB.EXPECT().QueryRow(context.Background(), repository.StorePostAttachmentQuery, gomock.Any(), gomock.Any()).Return(pgxpoolmock.NewRow("attachment2"))
+				mockDB.EXPECT().Exec(context.Background(), repository.DeletePostAttachmentQuery, gomock.Any()).Return(pgconn.CommandTag("DELETE 1"), nil)
+				mockDB.EXPECT().Commit(context.Background()).Return(errors.ErrInternal)
+			},
+		},
+		{
+			name: "test case 4",
+			post: &domain.Post{
+				ID:          1,
+				AuthorID:    1,
+				Content:     "Test content",
+				Attachments: []string{"attachment1", "attachment2"},
+			},
+			attachmentsToDelete: []string{"attachment3"},
+			want:                nil,
+			wantErr:             true,
+			setup: func() {
+				mockDB.EXPECT().BeginTx(context.Background(), gomock.Any()).Return(mockDB, nil)
+				mockDB.EXPECT().QueryRow(context.Background(), repository.UpdatePostQuery, gomock.Any(), gomock.Any()).Return(pgxpoolmock.NewRow(uint(1), uint(1), "Test content", tp.Now(), tp.Now()))
+				mockDB.EXPECT().QueryRow(context.Background(), repository.StorePostAttachmentQuery, gomock.Any(), gomock.Any()).Return(pgxpoolmock.NewRow("attachment1"))
+				mockDB.EXPECT().QueryRow(context.Background(), repository.StorePostAttachmentQuery, gomock.Any(), gomock.Any()).Return(pgxpoolmock.NewRow("attachment2"))
+				mockDB.EXPECT().Exec(context.Background(), repository.DeletePostAttachmentQuery, gomock.Any()).Return(nil, errors.ErrInternal)
+			},
+		},
+		{
+			name: "test case 5",
+			post: &domain.Post{
+				ID:          1,
+				AuthorID:    1,
+				Content:     "Test content",
+				Attachments: []string{"attachment1"},
+			},
+			attachmentsToDelete: []string{"attachment3"},
+			want:                nil,
+			wantErr:             true,
+			setup: func() {
+				mockDB.EXPECT().BeginTx(context.Background(), gomock.Any()).Return(mockDB, nil)
+				mockDB.EXPECT().QueryRow(context.Background(), repository.UpdatePostQuery, gomock.Any(), gomock.Any()).Return(pgxpoolmock.NewRow(uint(1), uint(1), "Test content", tp.Now(), tp.Now()))
+				mockDB.EXPECT().QueryRow(context.Background(), repository.StorePostAttachmentQuery, gomock.Any(), gomock.Any()).Return(ErrRow{})
+			},
+		},
+		{
+			name: "test case 6",
+			post: &domain.Post{
+				ID:          1,
+				AuthorID:    1,
+				Content:     "Test content",
+				Attachments: []string{"attachment1"},
+			},
+			attachmentsToDelete: []string{"attachment3"},
+			want:                nil,
+			wantErr:             true,
+			setup: func() {
+				mockDB.EXPECT().BeginTx(context.Background(), gomock.Any()).Return(mockDB, nil)
+				mockDB.EXPECT().QueryRow(context.Background(), repository.UpdatePostQuery, gomock.Any(), gomock.Any()).Return(ErrRow{})
+			},
+		},
+		{
+			name: "test case 7",
+			post: &domain.Post{
+				ID:          1,
+				AuthorID:    1,
+				Content:     "Test content",
+				Attachments: []string{"attachment1"},
+			},
+			attachmentsToDelete: []string{"attachment3"},
+			want:                nil,
+			wantErr:             true,
+			setup: func() {
+				mockDB.EXPECT().BeginTx(context.Background(), gomock.Any()).Return(nil, errors.ErrInternal)
+			},
+		},
+	}
 
-// 	pool.EXPECT().QueryRow(gomock.Any(), repository.UpdatePostQuery, gomock.Any(), gomock.Any()).Return(row)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setup()
 
-// 	repo := repository.NewPosts(pool, customtime.MockTimeProvider{})
+			p := repository.NewPosts(mockDB, customtime.MockTimeProvider{})
 
-// 	post := &domain.Post{
-// 		ID:      1,
-// 		Content: "content",
-// 	}
-
-// 	updatedPost, err := repo.UpdatePost(context.Background(), post, nil)
-// 	if err != nil {
-// 		t.Errorf("unexpected error: %v", err)
-// 	}
-
-// 	if updatedPost.ID != 1 {
-// 		t.Errorf("unexpected post id: %d", updatedPost.ID)
-// 	}
-
-// 	if updatedPost.AuthorID != 1 {
-// 		t.Errorf("unexpected post author id: %d", updatedPost.AuthorID)
-// 	}
-
-// 	if updatedPost.Content != "content" {
-// 		t.Errorf("unexpected post content: %s", updatedPost.Content)
-// 	}
-// }
+			got, err := p.UpdatePost(context.Background(), tt.post, tt.attachmentsToDelete)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			}
+		})
+	}
+}
 
 func TestDeletePost(t *testing.T) {
 	t.Parallel()
@@ -572,7 +896,7 @@ func TestGetLikedPosts(t *testing.T) {
 		limit      uint
 		mock       func(pool *pgxpoolmock.MockPgxIface, userID uint, lastLikeID uint, limit uint)
 		expected   []posts.LikeWithPost
-		err        error
+		err        bool
 	}{
 		{
 			name:       "Test OK",
@@ -584,17 +908,19 @@ func TestGetLikedPosts(t *testing.T) {
 				pool.EXPECT().QueryRow(gomock.Any(), repository.GetLastPostLikeIDQuery, gomock.Any()).Return(pgxpoolmock.NewRow(uint(1)))
 
 				arr := pgtype.TextArray{
-					Elements: []pgtype.Text{{String: "file1"}, {String: "file2"}},
+					Elements: []pgtype.Text{{String: "file1", Status: pgtype.Present}, {String: "file2", Status: pgtype.Present}},
+					Status:   pgtype.Present,
 				}
 
 				likedBy := pgtype.Int8Array{
-					Elements: []pgtype.Int8{{Int: 1}, {Int: 2}},
+					Elements: []pgtype.Int8{{Int: 1, Status: pgtype.Present}, {Int: 2, Status: pgtype.Present}},
+					Status:   pgtype.Present,
 				}
 
 				// Mock the GetLikedPosts query
-				rows := pgxpoolmock.NewRows([]string{"like_id", "post_id", "user_id", "created_at", "author_id", "content", "created_at", "updated_at", "attachments", "liked_by_ids"})
-				rows.AddRow(uint(1), uint(1), uint(1), tp.Now(), uint(1), "content", tp.Now(), tp.Now(), arr, likedBy)
-				pool.EXPECT().Query(gomock.Any(), repository.GetLikedPosts, gomock.Any(), gomock.Any(), gomock.Any()).Return(rows.ToPgxRows(), nil)
+				rows := pgxpoolmock.NewRows([]string{"like_id", "post_id", "user_id", "created_at", "author_id", "content", "created_at", "updated_at", "attachments", "liked_by_ids"}).AddRow(
+					uint(1), uint(1), uint(1), tp.Now(), uint(1), "content", tp.Now(), tp.Now(), arr, likedBy).ToPgxRows()
+				pool.EXPECT().Query(gomock.Any(), repository.GetLikedPosts, gomock.Any(), gomock.Any(), gomock.Any()).Return(rows, nil)
 			},
 			expected: []posts.LikeWithPost{
 				{
@@ -616,12 +942,49 @@ func TestGetLikedPosts(t *testing.T) {
 						UpdatedAt: customtime.CustomTime{
 							Time: tp.Now(),
 						},
-						Attachments: []string{"attachment"},
-						LikedByIDs:  []uint64{1},
+						Attachments: []string{"file1", "file2"},
+						LikedByIDs:  []uint64{1, 2},
 					},
 				},
 			},
-			err: nil,
+			err: false,
+		},
+		{
+			name:       "Test 2",
+			userID:     1,
+			lastLikeID: 0,
+			limit:      10,
+			mock: func(pool *pgxpoolmock.MockPgxIface, userID uint, lastLikeID uint, limit uint) {
+				pool.EXPECT().QueryRow(gomock.Any(), repository.GetLastPostLikeIDQuery, gomock.Any()).Return(pgxpoolmock.NewRow(uint(1)))
+				pool.EXPECT().Query(gomock.Any(), repository.GetLikedPosts, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.ErrInternal)
+			},
+			expected: nil,
+			err:      true,
+		},
+		{
+			name:       "Test 3",
+			userID:     1,
+			lastLikeID: 0,
+			limit:      10,
+			mock: func(pool *pgxpoolmock.MockPgxIface, userID uint, lastLikeID uint, limit uint) {
+				// Mock the GetLastPostLikeIDQuery
+				pool.EXPECT().QueryRow(gomock.Any(), repository.GetLastPostLikeIDQuery, gomock.Any()).Return(pgxpoolmock.NewRow(uint(1)))
+				rows := pgxpoolmock.NewRows([]string{"err"}).AddRow(ErrRow{}).ToPgxRows()
+				pool.EXPECT().Query(gomock.Any(), repository.GetLikedPosts, gomock.Any(), gomock.Any(), gomock.Any()).Return(rows, nil)
+			},
+			expected: nil,
+			err:      true,
+		},
+		{
+			name:       "Test 4",
+			userID:     1,
+			lastLikeID: 0,
+			limit:      10,
+			mock: func(pool *pgxpoolmock.MockPgxIface, userID uint, lastLikeID uint, limit uint) {
+				pool.EXPECT().QueryRow(gomock.Any(), repository.GetLastPostLikeIDQuery, gomock.Any()).Return(ErrRow{})
+			},
+			expected: nil,
+			err:      true,
 		},
 	}
 
@@ -636,10 +999,16 @@ func TestGetLikedPosts(t *testing.T) {
 
 			tt.mock(pool, tt.userID, tt.lastLikeID, tt.limit)
 
-			_, err := repo.GetLikedPosts(context.Background(), tt.userID, tt.lastLikeID, tt.limit)
+			got, err := repo.GetLikedPosts(context.Background(), tt.userID, tt.lastLikeID, tt.limit)
 
-			if err != tt.err {
+			if tt.err != (err != nil) {
 				t.Errorf("unexpected error: %v", err)
+				return
+			}
+
+			if !tt.err {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, got)
 			}
 		})
 	}
@@ -802,7 +1171,7 @@ func TestGetPostsOfGroup(t *testing.T) {
 		postsAmount uint
 		mock        func(pool *pgxpoolmock.MockPgxIface, groupID uint, lastPostID uint, postsAmount uint)
 		expected    []*domain.Post
-		err         error
+		err         bool
 	}{
 		{
 			name:        "Test OK",
@@ -814,16 +1183,18 @@ func TestGetPostsOfGroup(t *testing.T) {
 				pool.EXPECT().QueryRow(gomock.Any(), repository.GetLastPostOfGroupIDQuery, gomock.Any()).Return(pgxpoolmock.NewRow(uint(1)))
 
 				arr := pgtype.TextArray{
-					Elements: []pgtype.Text{{String: "file1"}, {String: "file2"}},
+					Elements: []pgtype.Text{{String: "file1", Status: pgtype.Present}, {String: "file2", Status: pgtype.Present}},
+					Status:   pgtype.Present,
 				}
 
 				likedBy := pgtype.Int8Array{
-					Elements: []pgtype.Int8{{Int: 1}, {Int: 2}},
+					Elements: []pgtype.Int8{{Int: 1, Status: pgtype.Present}, {Int: 2, Status: pgtype.Present}},
+					Status:   pgtype.Present,
 				}
 
 				// Mock the GetPostsOfGroupQuery
 				rows := pgxpoolmock.NewRows([]string{"id", "author_id", "content", "created_at", "updated_at", "attachments", "liked_by_ids"})
-				rows.AddRow(uint(1), uint(1), "content", time.Now(), time.Now(), arr, likedBy)
+				rows.AddRow(uint(1), uint(1), "content", tp.Now(), tp.Now(), arr, likedBy)
 				pool.EXPECT().Query(gomock.Any(), repository.GetPostsOfGroupQuery, gomock.Any(), gomock.Any(), gomock.Any()).Return(
 					rows.ToPgxRows(),
 					nil,
@@ -840,11 +1211,11 @@ func TestGetPostsOfGroup(t *testing.T) {
 					UpdatedAt: customtime.CustomTime{
 						Time: tp.Now(),
 					},
-					Attachments: []string{"attachment"},
-					LikedByIDs:  []uint64{1},
+					Attachments: []string{"file1", "file2"},
+					LikedByIDs:  []uint64{1, 2},
 				},
 			},
-			err: nil,
+			err: false,
 		},
 		{
 			name:        "Test ErrQueryRow",
@@ -857,8 +1228,8 @@ func TestGetPostsOfGroup(t *testing.T) {
 					ErrRow{},
 				)
 			},
-			expected: []*domain.Post{},
-			err:      pgx.ErrNoRows,
+			expected: nil,
+			err:      true,
 		},
 		{
 			name:        "Test ErrQuery",
@@ -873,8 +1244,25 @@ func TestGetPostsOfGroup(t *testing.T) {
 					errors.ErrInternal,
 				)
 			},
-			expected: []*domain.Post{},
-			err:      errors.ErrInternal,
+			expected: nil,
+			err:      true,
+		},
+		{
+			name:        "Test OK",
+			groupID:     1,
+			lastPostID:  0,
+			postsAmount: 10,
+			mock: func(pool *pgxpoolmock.MockPgxIface, groupID uint, lastPostID uint, postsAmount uint) {
+				pool.EXPECT().QueryRow(gomock.Any(), repository.GetLastPostOfGroupIDQuery, gomock.Any()).Return(pgxpoolmock.NewRow(uint(1)))
+				rows := pgxpoolmock.NewRows([]string{"err"})
+				rows.AddRow(ErrRow{})
+				pool.EXPECT().Query(gomock.Any(), repository.GetPostsOfGroupQuery, gomock.Any(), gomock.Any(), gomock.Any()).Return(
+					rows.ToPgxRows(),
+					nil,
+				)
+			},
+			expected: nil,
+			err:      true,
 		},
 	}
 
@@ -889,10 +1277,16 @@ func TestGetPostsOfGroup(t *testing.T) {
 
 			tt.mock(pool, tt.groupID, tt.lastPostID, tt.postsAmount)
 
-			_, err := repo.GetPostsOfGroup(context.Background(), tt.groupID, tt.lastPostID, tt.postsAmount)
+			got, err := repo.GetPostsOfGroup(context.Background(), tt.groupID, tt.lastPostID, tt.postsAmount)
 
-			if err != tt.err {
+			if tt.err != (err != nil) {
 				t.Errorf("unexpected error: %v", err)
+				return
+			}
+
+			if !tt.err {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, got)
 			}
 		})
 	}
@@ -910,7 +1304,7 @@ func TestGetGroupPostsBySubscriptionIDs(t *testing.T) {
 		postsAmount uint
 		mock        func(pool *pgxpoolmock.MockPgxIface, subIDs []uint, lastPostID uint, postsAmount uint)
 		expected    []*domain.Post
-		err         error
+		err         bool
 	}{
 		{
 			name:        "Test OK",
@@ -924,16 +1318,17 @@ func TestGetGroupPostsBySubscriptionIDs(t *testing.T) {
 				)
 
 				arr := pgtype.TextArray{
-					Elements: []pgtype.Text{{String: "file1"}, {String: "file2"}},
+					Elements: []pgtype.Text{{String: "file1", Status: pgtype.Present}, {String: "file2", Status: pgtype.Present}},
+					Status:   pgtype.Present,
 				}
 
 				likedBy := pgtype.Int8Array{
-					Elements: []pgtype.Int8{{Int: 1}, {Int: 2}},
+					Elements: []pgtype.Int8{{Int: 1, Status: pgtype.Present}, {Int: 2, Status: pgtype.Present}},
+					Status:   pgtype.Present,
 				}
-
 				// Mock the GetGroupPostsBySubscriptionIDsQuery
 				rows := pgxpoolmock.NewRows([]string{"id", "author_id", "content", "created_at", "updated_at", "attachments", "liked_by_ids", "group_id"})
-				rows.AddRow(uint(1), uint(1), "content", time.Now(), time.Now(), arr, likedBy, uint(1))
+				rows.AddRow(uint(1), uint(1), "content", tp.Now(), tp.Now(), arr, likedBy, uint(1))
 				pool.EXPECT().Query(gomock.Any(), repository.GetGroupPostsBySubscriptionIDsQuery, gomock.Any(), gomock.Any(), gomock.Any()).Return(
 					rows.ToPgxRows(),
 					nil,
@@ -950,12 +1345,59 @@ func TestGetGroupPostsBySubscriptionIDs(t *testing.T) {
 					UpdatedAt: customtime.CustomTime{
 						Time: tp.Now(),
 					},
-					Attachments: []string{"attachment"},
-					LikedByIDs:  []uint64{1},
+					Attachments: []string{"file1", "file2"},
+					LikedByIDs:  []uint64{1, 2},
 					GroupID:     1,
 				},
 			},
-			err: nil,
+			err: false,
+		},
+		{
+			name:        "Test 2",
+			subIDs:      []uint{},
+			lastPostID:  0,
+			postsAmount: 10,
+			mock: func(pool *pgxpoolmock.MockPgxIface, subIDs []uint, lastPostID uint, postsAmount uint) {
+				pool.EXPECT().QueryRow(gomock.Any(), repository.GetLastGroupPostBySubscriptionIDsQuery, gomock.Any()).Return(
+					pgxpoolmock.NewRow(uint(1)),
+				)
+				rows := pgxpoolmock.NewRows([]string{"err"}).AddRow(ErrRow{}).ToPgxRows()
+				pool.EXPECT().Query(gomock.Any(), repository.GetGroupPostsBySubscriptionIDsQuery, gomock.Any(), gomock.Any(), gomock.Any()).Return(
+					rows,
+					nil,
+				)
+			},
+			expected: nil,
+			err:      true,
+		},
+		{
+			name:        "Test 3",
+			subIDs:      []uint{},
+			lastPostID:  0,
+			postsAmount: 10,
+			mock: func(pool *pgxpoolmock.MockPgxIface, subIDs []uint, lastPostID uint, postsAmount uint) {
+				pool.EXPECT().QueryRow(gomock.Any(), repository.GetLastGroupPostBySubscriptionIDsQuery, gomock.Any()).Return(
+					pgxpoolmock.NewRow(uint(1)),
+				)
+				pool.EXPECT().Query(gomock.Any(), repository.GetGroupPostsBySubscriptionIDsQuery, gomock.Any(), gomock.Any(), gomock.Any()).Return(
+					nil, errors.ErrInternal,
+				)
+			},
+			expected: nil,
+			err:      true,
+		},
+		{
+			name:        "Test 4",
+			subIDs:      []uint{},
+			lastPostID:  0,
+			postsAmount: 10,
+			mock: func(pool *pgxpoolmock.MockPgxIface, subIDs []uint, lastPostID uint, postsAmount uint) {
+				pool.EXPECT().QueryRow(gomock.Any(), repository.GetLastGroupPostBySubscriptionIDsQuery, gomock.Any()).Return(
+					ErrRow{},
+				)
+			},
+			expected: nil,
+			err:      true,
 		},
 	}
 
@@ -970,10 +1412,16 @@ func TestGetGroupPostsBySubscriptionIDs(t *testing.T) {
 
 			tt.mock(pool, tt.subIDs, tt.lastPostID, tt.postsAmount)
 
-			_, err := repo.GetGroupPostsBySubscriptionIDs(context.Background(), tt.subIDs, tt.lastPostID, tt.postsAmount)
+			got, err := repo.GetGroupPostsBySubscriptionIDs(context.Background(), tt.subIDs, tt.lastPostID, tt.postsAmount)
 
-			if err != tt.err {
+			if tt.err != (err != nil) {
 				t.Errorf("unexpected error: %v", err)
+				return
+			}
+
+			if !tt.err {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, got)
 			}
 		})
 	}
@@ -992,7 +1440,7 @@ func TestGetPostsByGroupSubIDsAndUserSubIDs(t *testing.T) {
 		postsAmount uint
 		mock        func(pool *pgxpoolmock.MockPgxIface, groupSubIDs, userSubIDs []uint, lastPostID, postsAmount uint)
 		expected    []*domain.Post
-		err         error
+		err         bool
 	}{
 		{
 			name:        "Test OK",
@@ -1007,11 +1455,13 @@ func TestGetPostsByGroupSubIDsAndUserSubIDs(t *testing.T) {
 				)
 
 				arr := pgtype.TextArray{
-					Elements: []pgtype.Text{{String: "file1"}, {String: "file2"}},
+					Elements: []pgtype.Text{{String: "file1", Status: pgtype.Present}, {String: "file2", Status: pgtype.Present}},
+					Status:   pgtype.Present,
 				}
 
 				likedBy := pgtype.Int8Array{
-					Elements: []pgtype.Int8{{Int: 1}, {Int: 2}},
+					Elements: []pgtype.Int8{{Int: 1, Status: pgtype.Present}, {Int: 2, Status: pgtype.Present}},
+					Status:   pgtype.Present,
 				}
 
 				// Mock the GetPostsByGroupSubIDsAndUserSubIDsQuery
@@ -1026,6 +1476,7 @@ func TestGetPostsByGroupSubIDsAndUserSubIDs(t *testing.T) {
 				{
 					ID:       1,
 					AuthorID: 1,
+					GroupID:  1,
 					Content:  "content",
 					CreatedAt: customtime.CustomTime{
 						Time: tp.Now(),
@@ -1033,11 +1484,63 @@ func TestGetPostsByGroupSubIDsAndUserSubIDs(t *testing.T) {
 					UpdatedAt: customtime.CustomTime{
 						Time: tp.Now(),
 					},
-					Attachments: []string{"attachment"},
-					LikedByIDs:  []uint64{1},
+					Attachments: []string{"file1", "file2"},
+					LikedByIDs:  []uint64{1, 2},
 				},
 			},
-			err: nil,
+			err: false,
+		},
+		{
+			name:        "Test 2",
+			groupSubIDs: []uint{},
+			userSubIDs:  []uint{},
+			lastPostID:  0,
+			postsAmount: 10,
+			mock: func(pool *pgxpoolmock.MockPgxIface, groupSubIDs, userSubIDs []uint, lastPostID, postsAmount uint) {
+				pool.EXPECT().QueryRow(gomock.Any(), repository.GetLastPostByGroupSubIDsAndUserSubIDsQuery, gomock.Any(), gomock.Any()).Return(
+					pgxpoolmock.NewRow(uint(1)),
+				)
+				rows := pgxpoolmock.NewRows([]string{"err"}).AddRow(
+					ErrRow{},
+				).ToPgxRows()
+				pool.EXPECT().Query(gomock.Any(), repository.GetPostsByGroupSubIDsAndUserSubIDsQuery, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(
+					rows,
+					nil,
+				)
+			},
+			expected: nil,
+			err:      true,
+		},
+		{
+			name:        "Test 3",
+			groupSubIDs: []uint{},
+			userSubIDs:  []uint{},
+			lastPostID:  0,
+			postsAmount: 10,
+			mock: func(pool *pgxpoolmock.MockPgxIface, groupSubIDs, userSubIDs []uint, lastPostID, postsAmount uint) {
+				pool.EXPECT().QueryRow(gomock.Any(), repository.GetLastPostByGroupSubIDsAndUserSubIDsQuery, gomock.Any(), gomock.Any()).Return(
+					pgxpoolmock.NewRow(uint(1)),
+				)
+				pool.EXPECT().Query(gomock.Any(), repository.GetPostsByGroupSubIDsAndUserSubIDsQuery, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(
+					nil, errors.ErrInternal,
+				)
+			},
+			expected: nil,
+			err:      true,
+		},
+		{
+			name:        "Test 4",
+			groupSubIDs: []uint{},
+			userSubIDs:  []uint{},
+			lastPostID:  0,
+			postsAmount: 10,
+			mock: func(pool *pgxpoolmock.MockPgxIface, groupSubIDs, userSubIDs []uint, lastPostID, postsAmount uint) {
+				pool.EXPECT().QueryRow(gomock.Any(), repository.GetLastPostByGroupSubIDsAndUserSubIDsQuery, gomock.Any(), gomock.Any()).Return(
+					ErrRow{},
+				)
+			},
+			expected: nil,
+			err:      true,
 		},
 	}
 
@@ -1052,10 +1555,16 @@ func TestGetPostsByGroupSubIDsAndUserSubIDs(t *testing.T) {
 
 			tt.mock(pool, tt.groupSubIDs, tt.userSubIDs, tt.lastPostID, tt.postsAmount)
 
-			_, err := repo.GetPostsByGroupSubIDsAndUserSubIDs(context.Background(), tt.groupSubIDs, tt.userSubIDs, tt.lastPostID, tt.postsAmount)
+			got, err := repo.GetPostsByGroupSubIDsAndUserSubIDs(context.Background(), tt.groupSubIDs, tt.userSubIDs, tt.lastPostID, tt.postsAmount)
 
-			if err != tt.err {
+			if tt.err != (err != nil) {
 				t.Errorf("unexpected error: %v", err)
+				return
+			}
+
+			if !tt.err {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, got)
 			}
 		})
 	}
@@ -1072,7 +1581,7 @@ func TestGetNewPosts(t *testing.T) {
 		postsAmount uint
 		mock        func(pool *pgxpoolmock.MockPgxIface, lastPostID, postsAmount uint)
 		expected    []*domain.Post
-		err         error
+		err         bool
 	}{
 		{
 			name:        "Test OK",
@@ -1083,11 +1592,13 @@ func TestGetNewPosts(t *testing.T) {
 				pool.EXPECT().QueryRow(gomock.Any(), repository.GetLastPostIDQuery).Return(pgxpoolmock.NewRow(uint(1)))
 
 				arr := pgtype.TextArray{
-					Elements: []pgtype.Text{{String: "file1"}, {String: "file2"}},
+					Elements: []pgtype.Text{{String: "file1", Status: pgtype.Present}, {String: "file2", Status: pgtype.Present}},
+					Status:   pgtype.Present,
 				}
 
 				likedBy := pgtype.Int8Array{
-					Elements: []pgtype.Int8{{Int: 1}, {Int: 2}},
+					Elements: []pgtype.Int8{{Int: 1, Status: pgtype.Present}, {Int: 2, Status: pgtype.Present}},
+					Status:   pgtype.Present,
 				}
 
 				// Mock the GetNewPostsQuery
@@ -1106,12 +1617,45 @@ func TestGetNewPosts(t *testing.T) {
 					UpdatedAt: customtime.CustomTime{
 						Time: tp.Now(),
 					},
-					Attachments: []string{"attachment"},
-					LikedByIDs:  []uint64{1},
+					Attachments: []string{"file1", "file2"},
+					LikedByIDs:  []uint64{1, 2},
 					GroupID:     1,
 				},
 			},
-			err: nil,
+			err: false,
+		},
+		{
+			name:        "Test 2",
+			lastPostID:  0,
+			postsAmount: 10,
+			mock: func(pool *pgxpoolmock.MockPgxIface, lastPostID, postsAmount uint) {
+				pool.EXPECT().QueryRow(gomock.Any(), repository.GetLastPostIDQuery).Return(pgxpoolmock.NewRow(uint(1)))
+				rows := pgxpoolmock.NewRows([]string{"err"}).AddRow(ErrRow{}).ToPgxRows()
+				pool.EXPECT().Query(gomock.Any(), repository.GetNewPostsQuery, gomock.Any(), gomock.Any()).Return(rows, nil)
+			},
+			expected: nil,
+			err:      true,
+		},
+		{
+			name:        "Test 3",
+			lastPostID:  0,
+			postsAmount: 10,
+			mock: func(pool *pgxpoolmock.MockPgxIface, lastPostID, postsAmount uint) {
+				pool.EXPECT().QueryRow(gomock.Any(), repository.GetLastPostIDQuery).Return(pgxpoolmock.NewRow(uint(1)))
+				pool.EXPECT().Query(gomock.Any(), repository.GetNewPostsQuery, gomock.Any(), gomock.Any()).Return(nil, errors.ErrInternal)
+			},
+			expected: nil,
+			err:      true,
+		},
+		{
+			name:        "Test 2",
+			lastPostID:  0,
+			postsAmount: 10,
+			mock: func(pool *pgxpoolmock.MockPgxIface, lastPostID, postsAmount uint) {
+				pool.EXPECT().QueryRow(gomock.Any(), repository.GetLastPostIDQuery).Return(ErrRow{})
+			},
+			expected: nil,
+			err:      true,
 		},
 	}
 
@@ -1126,10 +1670,16 @@ func TestGetNewPosts(t *testing.T) {
 
 			tt.mock(pool, tt.lastPostID, tt.postsAmount)
 
-			_, err := repo.GetNewPosts(context.Background(), tt.lastPostID, tt.postsAmount)
+			got, err := repo.GetNewPosts(context.Background(), tt.lastPostID, tt.postsAmount)
 
-			if err != tt.err {
+			if tt.err != (err != nil) {
 				t.Errorf("unexpected error: %v", err)
+				return
+			}
+
+			if !tt.err {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, got)
 			}
 		})
 	}

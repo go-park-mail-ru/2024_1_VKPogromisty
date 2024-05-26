@@ -6,8 +6,11 @@ MOCKS_DESTINATION=mocks
 mocks: 
 	@echo "Generating mocks..."
 	@rm -rf $(MOCKS_DESTINATION)
-	@for file in $(shell find usecase -type f -name '*.go' ! -name '*_test.go'); do \
+	@for file in $(shell find usecase -type f -name '*.go' ! -name '*_test.go' ! -name '*_easyjson.go'); do \
 		mkdir -p $(MOCKS_DESTINATION)/`dirname $$file` && mockgen -source=$$file -destination=$(MOCKS_DESTINATION)/$$file; \
+	done
+	@for file in $(shell find internal/rest/chat -type f -name '*.go' ! -name '*_test.go' ! -name '*_easyjson.go'); do \
+		mkdir -p $(MOCKS_DESTINATION)/`dirname $$file | sed 's/internal\///'` && mockgen -source=$$file -destination=$(MOCKS_DESTINATION)/`echo $$file | sed 's/internal\///'`; \
 	done
 	@mkdir -p mocks/grpc
 	@find internal/grpc -name '*.proto' -print0 | while IFS= read -r -d '' file; do \

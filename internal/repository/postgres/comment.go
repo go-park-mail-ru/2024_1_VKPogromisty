@@ -218,6 +218,7 @@ func (p *Posts) DeleteComment(ctx context.Context, id uint) (err error) {
 	}
 
 	if result.RowsAffected() > 1 {
+		err = errors.ErrRowsAffected
 		return
 	}
 
@@ -293,6 +294,7 @@ func (p *Posts) DeleteCommentLike(ctx context.Context, commentLike *domain.Comme
 	}
 
 	if result.RowsAffected() > 1 {
+		err = errors.ErrRowsAffected
 		return
 	}
 

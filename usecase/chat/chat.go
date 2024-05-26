@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
+	"github.com/microcosm-cc/bluemonday"
 )
 
 const (
@@ -33,7 +34,7 @@ type StickerStorage interface {
 	Delete(fileName string) (err error)
 }
 
-func NewChatService(pubSubRepo PubSubRepository, unsentMessageAttachmentsStorage UnsentMessageAttachmentsStorage, messagesRepo PersonalMessagesRepository, stickerStorage StickerStorage, messageAttachmentStorage MessageAttachmentStorage, sanitizer *sanitizer.Sanitizer) (chatService *Service) {
+func NewChatService(pubSubRepo PubSubRepository, unsentMessageAttachmentsStorage UnsentMessageAttachmentsStorage, messagesRepo PersonalMessagesRepository, stickerStorage StickerStorage, messageAttachmentStorage MessageAttachmentStorage) (chatService *Service) {
 	return &Service{
 		Clients:                         &sync.Map{},
 		PubSubRepository:                pubSubRepo,
@@ -41,7 +42,7 @@ func NewChatService(pubSubRepo PubSubRepository, unsentMessageAttachmentsStorage
 		MessagesRepo:                    messagesRepo,
 		StickerStorage:                  stickerStorage,
 		MessageAttachmentStorage:        messageAttachmentStorage,
-		Sanitizer:                       sanitizer,
+		Sanitizer:                       sanitizer.NewSanitizer(bluemonday.UGCPolicy()),
 	}
 }
 
