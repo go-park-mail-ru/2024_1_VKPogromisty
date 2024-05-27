@@ -7,10 +7,12 @@ services:
       - POSTGRES_USER=${PG_USER}
       - POSTGRES_PASSWORD=${PG_PASSWORD}
       - POSTGRES_DB=${PG_DBNAME}
+      - POSTGRES_CONFIG_FILE=/etc/postgresql/postgresql.conf
     ports:
       - 5431:5432
     volumes:
       - pg_data:/var/lib/postgresql/data/
+      - ./db/postgresql.conf:/etc/postgresql/postgresql.conf
 
   redis:
     image: redis:7.2.4

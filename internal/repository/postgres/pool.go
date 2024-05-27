@@ -22,6 +22,8 @@ func NewPool(connStr string) (pool *pgxpool.Pool, err error) {
 		return
 	}
 
+	pgConfig.MaxConns = 10
+
 	pool, err = pgxpool.ConnectConfig(context.Background(), pgConfig)
 	if err != nil {
 		return
