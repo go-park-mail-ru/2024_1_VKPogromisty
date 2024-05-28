@@ -1,0 +1,57 @@
+name: Test, lint and deploy
+
+on:
+  push:
+    branches: [ main, dev ]
+
+jobs:
+  build:
+      name: Test
+      runs-on: ubuntu-latest
+      steps:
+
+      - name: Set up Go 1.22
+        uses: actions/setup-go@v2
+        with:
+          go-version: ^1.22
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+
+      - name: Get dependencies
+        run: go get ./...
+
+      - name: Run make test
+        run: make test
+
+  golangci:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.58
+
+  deploy:
+    name: Deploy to VM
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Execute commands over ssh
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        script: |
+          cd ./back
+          sudo git checkout dev
+          sudo git pull
+          sudo make docker-build
+          sudo docker-compose down
+          sudo docker-compose up -d
