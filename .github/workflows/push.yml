@@ -24,11 +24,7 @@ jobs:
       - name: Run make test
         run: make test
 
-<<<<<<< HEAD
   linter:
-=======
-  golangci:
->>>>>>> 9693994540549bd2d8efa26ec4a7a7348eae8845
     name: Lint
     runs-on: ubuntu-latest
     steps:
