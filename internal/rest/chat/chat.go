@@ -364,6 +364,10 @@ func (c *ChatServer) listenWrite(ctx context.Context, client *chat.Client) {
 	for {
 		select {
 		case message, ok := <-client.Send:
+			if !ok {
+				return
+			}
+
 			messages := make([][]byte, 0, len(client.Send)+1)
 
 			messageData, err := easyjson.Marshal(message)
