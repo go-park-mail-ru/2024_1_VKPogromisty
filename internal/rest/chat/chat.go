@@ -14,6 +14,7 @@ import (
 	"socio/usecase/csrf"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -36,6 +37,7 @@ const (
 
 type ChatServer struct {
 	Service ChatService
+	wsConns *sync.Map
 }
 
 type ChatService interface {
@@ -63,7 +65,23 @@ var upgrader = &websocket.Upgrader{
 func NewChatServer(service ChatService) (chatServer *ChatServer) {
 	return &ChatServer{
 		Service: service,
+		wsConns: &sync.Map{},
 	}
+}
+
+func (c *ChatServer) getWSConns(userID uint) (conns []*websocket.Conn, ok bool) {
+	untypedConns, ok := c.wsConns.Load(userID)
+	if !ok {
+		conns = nil
+		return
+	}
+
+	conns, ok = untypedConns.([]*websocket.Conn)
+	if !ok {
+		return
+	}
+
+	return
 }
 
 // HandleGetDialogs godoc
@@ -246,7 +264,18 @@ func (c *ChatServer) ServeWS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	go c.listenWrite(r.Context(), conn, client)
+	conns, ok := c.wsConns.Load(userID)
+	if !ok {
+		conns = make([]*websocket.Conn, 0, 1)
+		conns = append(conns.([]*websocket.Conn), conn)
+		c.wsConns.Store(userID, conns)
+
+		go c.listenWrite(r.Context(), client)
+	} else {
+		conns = append(conns.([]*websocket.Conn), conn)
+		c.wsConns.Store(userID, conns)
+	}
+
 	go c.listenRead(r.Context(), conn, client)
 }
 
@@ -308,17 +337,110 @@ func (c *ChatServer) listenRead(ctx context.Context, conn *websocket.Conn, clien
 	}
 }
 
-func (c *ChatServer) listenWrite(ctx context.Context, conn *websocket.Conn, client *chat.Client) {
-	ticker := time.NewTicker(pingPeriod)
+func (c *ChatServer) cleanupConn(userID uint, conn *websocket.Conn) (err error) {
+	conns, ok := c.getWSConns(userID)
+	if !ok {
+		return
+	}
 
-	defer func() {
-		ticker.Stop()
-		err := conn.Close()
+	for i, c := range conns {
+		if c == conn {
+			conns = append(conns[:i], conns[i+1:]...)
+			break
+		}
+	}
+
+	if len(conns) == 0 {
+		c.wsConns.Delete(userID)
+	} else {
+		c.wsConns.Store(userID, conns)
+	}
+
+	err = conn.WriteMessage(websocket.CloseMessage, []byte{})
+	if err != nil {
+		err = conn.Close()
 		if err != nil {
 			return
 		}
 
-		err = c.Service.Unregister(client.UserID)
+		return
+	}
+
+	return
+}
+
+func (c *ChatServer) sendMessages(ctx context.Context, client *chat.Client, conn *websocket.Conn, messages [][]byte) {
+	err := conn.SetWriteDeadline(time.Now().Add(writeWait))
+	if err != nil {
+		err := c.cleanupConn(client.UserID, conn)
+		if err != nil {
+			return
+		}
+
+		return
+	}
+
+	w, err := conn.NextWriter(websocket.TextMessage)
+	if err != nil {
+		err := c.cleanupConn(client.UserID, conn)
+		if err != nil {
+			return
+		}
+
+		return
+	}
+
+	for _, message := range messages {
+		_, err := w.Write([]byte{newline})
+		if err != nil {
+			err := c.cleanupConn(client.UserID, conn)
+			if err != nil {
+				return
+			}
+
+			return
+		}
+
+		_, err = w.Write(message)
+		if err != nil {
+			err := c.cleanupConn(client.UserID, conn)
+			if err != nil {
+				return
+			}
+
+			return
+		}
+	}
+
+	if err := w.Close(); err != nil {
+		err := c.cleanupConn(client.UserID, conn)
+		if err != nil {
+			return
+		}
+
+		return
+	}
+}
+
+func (c *ChatServer) listenWrite(ctx context.Context, client *chat.Client) {
+	ticker := time.NewTicker(pingPeriod)
+
+	defer func() {
+		ticker.Stop()
+
+		conns, ok := c.getWSConns(client.UserID)
+		if !ok {
+			return
+		}
+
+		for _, conn := range conns {
+			err := c.cleanupConn(client.UserID, conn)
+			if err != nil {
+				return
+			}
+		}
+
+		err := c.Service.Unregister(client.UserID)
 		if err != nil {
 			return
 		}
@@ -326,35 +448,15 @@ func (c *ChatServer) listenWrite(ctx context.Context, conn *websocket.Conn, clie
 
 	for {
 		select {
-		case message, ok := <-client.Send:
-			err := conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if err != nil {
-				return
-			}
-
-			if !ok {
-				err := conn.WriteMessage(websocket.CloseMessage, []byte{})
-				if err != nil {
-					return
-				}
-
-				return
-			}
-
-			w, err := conn.NextWriter(websocket.TextMessage)
-			if err != nil {
-				return
-			}
+		case message := <-client.Send:
+			messages := make([][]byte, 0, len(client.Send)+1)
 
 			messageData, err := easyjson.Marshal(message)
 			if err != nil {
 				return
 			}
 
-			_, err = w.Write(messageData)
-			if err != nil {
-				return
-			}
+			messages = append(messages, messageData)
 
 			n := len(client.Send)
 			for i := 0; i < n; i++ {
@@ -362,29 +464,44 @@ func (c *ChatServer) listenWrite(ctx context.Context, conn *websocket.Conn, clie
 				if err != nil {
 					return
 				}
-				_, err := w.Write([]byte{newline})
-				if err != nil {
-					return
-				}
 
-				_, err = w.Write(messageData)
-				if err != nil {
-					return
-				}
+				messages = append(messages, messageData)
 			}
 
-			if err := w.Close(); err != nil {
+			conns, ok := c.getWSConns(client.UserID)
+			if !ok {
 				return
+			}
+
+			for _, conn := range conns {
+				go c.sendMessages(ctx, client, conn, messages)
 			}
 
 		case <-ticker.C:
-			err := conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if err != nil {
+			conns, ok := c.getWSConns(client.UserID)
+			if !ok {
 				return
 			}
 
-			if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-				return
+			for _, conn := range conns {
+				err := conn.SetWriteDeadline(time.Now().Add(writeWait))
+				if err != nil {
+					err := c.cleanupConn(client.UserID, conn)
+					if err != nil {
+						continue
+					}
+
+					continue
+				}
+
+				if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+					err := c.cleanupConn(client.UserID, conn)
+					if err != nil {
+						continue
+					}
+
+					continue
+				}
 			}
 		}
 	}
