@@ -20,3 +20,5 @@ mc
 post-attachments.txt
 user-avatars.txt
 node_exporter-1.2.2.linux-amd64
+headers.txt
+csrf.txt
