@@ -13,7 +13,7 @@
 </ul>
 
 <b>Сервис задеплоен по адресу:</b>
-https://socio-project.ru/login
+https://socio-project.ru
 
 <b>Swagger-документация:</b>
 https://socio-project.ru/swagger/index.html#/
