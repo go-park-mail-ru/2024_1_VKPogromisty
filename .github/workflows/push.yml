@@ -2,7 +2,7 @@ name: Test, lint and deploy
 
 on:
   push:
-    branches: [ ]
+    branches: [ dev ]
 
 jobs:
   build:
