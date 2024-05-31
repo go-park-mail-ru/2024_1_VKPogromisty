@@ -48,7 +48,7 @@ easyjson:
 	@echo "easyjson generation completed."
 
 test:
-	go test ./... -coverprofile cover.out.tmp
+	go test ./... -coverpkg ./... -coverprofile cover.out.tmp
 	cat cover.out.tmp | grep -v "docs" | grep -v "mocks" | grep -v "proto" | grep -v "easyjson" > cover.out
 
 coverage:
