@@ -62,7 +62,13 @@ func main() {
 		return
 	}
 
-	defer prodLogger.Sync()
+	defer func() {
+		err = prodLogger.Sync()
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+	}()
 
 	logger := logger.NewLogger(prodLogger)
 
@@ -84,7 +90,13 @@ func main() {
 
 	r := mux.NewRouter()
 	r.Handle("/metrics", promhttp.Handler())
-	go http.ListenAndServe(metricsPort, r)
+	go func() {
+		err = http.ListenAndServe(metricsPort, r)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+	}()
 	fmt.Println("Metrics of auth service is running on port:", metricsPort)
 
 	authpb.RegisterAuthServer(server, manager)

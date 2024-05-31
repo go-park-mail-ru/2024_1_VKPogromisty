@@ -14,6 +14,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetPublicGroupByID(t *testing.T) {
@@ -27,7 +28,7 @@ func TestGetPublicGroupByID(t *testing.T) {
 		userID   uint
 		mock     func(pool *pgxpoolmock.MockPgxIface, groupID, userID uint)
 		expected *publicgroup.PublicGroupWithInfo
-		err      error
+		err      bool
 	}{
 		{
 			name:    "Test OK",
@@ -51,7 +52,7 @@ func TestGetPublicGroupByID(t *testing.T) {
 				},
 				IsSubscribed: true,
 			},
-			err: nil,
+			err: false,
 		},
 		{
 			name:    "Test ErrNotFound",
@@ -67,7 +68,7 @@ func TestGetPublicGroupByID(t *testing.T) {
 				PublicGroup:  &domain.PublicGroup{},
 				IsSubscribed: false,
 			},
-			err: errors.ErrNotFound,
+			err: true,
 		},
 	}
 
@@ -84,12 +85,13 @@ func TestGetPublicGroupByID(t *testing.T) {
 
 			result, err := publicGroup.GetPublicGroupByID(context.Background(), tt.groupID, tt.userID)
 
-			if err != tt.err {
-				t.Errorf("unexpected error: %v", err)
+			if (err != nil) != tt.err {
+				t.Errorf("unexpected error: got %v, want %v", err, tt.err)
 			}
 
-			if !reflect.DeepEqual(result, tt.expected) {
-				t.Errorf("unexpected result: got %v, want %v", result, tt.expected)
+			if !tt.err {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, result)
 			}
 		})
 	}
@@ -106,7 +108,7 @@ func TestSearchPublicGroupsByNameWithInfo(t *testing.T) {
 		userID   uint
 		mock     func(pool *pgxpoolmock.MockPgxIface, query string, userID uint)
 		expected []*publicgroup.PublicGroupWithInfo
-		err      error
+		err      bool
 	}{
 		{
 			name:   "Test OK",
@@ -132,7 +134,7 @@ func TestSearchPublicGroupsByNameWithInfo(t *testing.T) {
 					IsSubscribed: true,
 				},
 			},
-			err: nil,
+			err: false,
 		},
 		{
 			name:   "Test Empty",
@@ -143,7 +145,20 @@ func TestSearchPublicGroupsByNameWithInfo(t *testing.T) {
 				pool.EXPECT().Query(context.Background(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, pgx.ErrNoRows)
 			},
 			expected: nil,
-			err:      pgx.ErrNoRows,
+			err:      true,
+		},
+		{
+			name:   "Test 3",
+			query:  "Group",
+			userID: 1,
+			mock: func(pool *pgxpoolmock.MockPgxIface, query string, userID uint) {
+				// Mock the searchPublicGroupsByNameWithInfoQuery
+				rows := pgxpoolmock.NewRows([]string{"err"})
+				rows.AddRow(ErrRow{})
+				pool.EXPECT().Query(context.Background(), gomock.Any(), gomock.Any(), gomock.Any()).Return(rows.ToPgxRows(), nil)
+			},
+			expected: nil,
+			err:      true,
 		},
 	}
 
@@ -160,12 +175,13 @@ func TestSearchPublicGroupsByNameWithInfo(t *testing.T) {
 
 			result, err := publicGroup.SearchPublicGroupsByNameWithInfo(context.Background(), tt.query, tt.userID)
 
-			if err != tt.err {
-				t.Errorf("unexpected error: %v", err)
+			if (err != nil) != tt.err {
+				t.Errorf("unexpected error: got %v, want %v", err, tt.err)
 			}
 
-			if !reflect.DeepEqual(result, tt.expected) {
-				t.Errorf("unexpected result: got %v, want %v", result, tt.expected)
+			if !tt.err {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, result)
 			}
 		})
 	}
@@ -484,7 +500,7 @@ func TestGetPublicGroupsBySubscriberID(t *testing.T) {
 		subscriberID uint
 		mock         func(pool *pgxpoolmock.MockPgxIface, subscriberID uint)
 		expected     []*domain.PublicGroup
-		err          error
+		err          bool
 	}{
 		{
 			name:         "Test OK",
@@ -505,7 +521,7 @@ func TestGetPublicGroupsBySubscriberID(t *testing.T) {
 					SubscribersCount: 10,
 				},
 			},
-			err: nil,
+			err: false,
 		},
 		{
 			name:         "Test ErrNoRows",
@@ -514,7 +530,18 @@ func TestGetPublicGroupsBySubscriberID(t *testing.T) {
 				pool.EXPECT().Query(context.Background(), gomock.Any(), gomock.Any()).Return(nil, pgx.ErrNoRows)
 			},
 			expected: nil,
-			err:      pgx.ErrNoRows,
+			err:      true,
+		},
+		{
+			name:         "Test 3",
+			subscriberID: 1,
+			mock: func(pool *pgxpoolmock.MockPgxIface, subscriberID uint) {
+				rows := pgxpoolmock.NewRows([]string{"err"})
+				rows.AddRow(ErrRow{})
+				pool.EXPECT().Query(context.Background(), gomock.Any(), gomock.Any()).Return(rows.ToPgxRows(), nil)
+			},
+			expected: nil,
+			err:      true,
 		},
 	}
 
@@ -531,12 +558,13 @@ func TestGetPublicGroupsBySubscriberID(t *testing.T) {
 
 			result, err := publicGroup.GetPublicGroupsBySubscriberID(context.Background(), tt.subscriberID)
 
-			if err != tt.err {
+			if (err != nil) != tt.err {
 				t.Errorf("unexpected error: got %v, want %v", err, tt.err)
 			}
 
-			if !reflect.DeepEqual(result, tt.expected) {
-				t.Errorf("unexpected result: got %v, want %v", result, tt.expected)
+			if !tt.err {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, result)
 			}
 		})
 	}
@@ -715,7 +743,7 @@ func TestGetPublicGroupSubscriptionIDs(t *testing.T) {
 		userID   uint
 		mock     func(pool *pgxpoolmock.MockPgxIface, userID uint)
 		expected []uint
-		err      error
+		err      bool
 	}{
 		{
 			name:   "Test OK",
@@ -728,7 +756,28 @@ func TestGetPublicGroupSubscriptionIDs(t *testing.T) {
 				pool.EXPECT().Query(context.Background(), gomock.Any(), gomock.Any()).Return(rows.ToPgxRows(), nil)
 			},
 			expected: []uint{1, 2},
-			err:      nil,
+			err:      false,
+		},
+		{
+			name:   "Test 2",
+			userID: 1,
+			mock: func(pool *pgxpoolmock.MockPgxIface, userID uint) {
+				// Mock the getPublicGroupSubscriptionIDsQuery
+				rows := pgxpoolmock.NewRows([]string{"id"})
+				rows.AddRow(ErrRow{})
+				pool.EXPECT().Query(context.Background(), gomock.Any(), gomock.Any()).Return(rows.ToPgxRows(), nil)
+			},
+			expected: nil,
+			err:      true,
+		},
+		{
+			name:   "Test 3",
+			userID: 1,
+			mock: func(pool *pgxpoolmock.MockPgxIface, userID uint) {
+				pool.EXPECT().Query(context.Background(), gomock.Any(), gomock.Any()).Return(nil, errors.ErrInternal)
+			},
+			expected: nil,
+			err:      true,
 		},
 	}
 
@@ -745,12 +794,13 @@ func TestGetPublicGroupSubscriptionIDs(t *testing.T) {
 
 			result, err := publicGroup.GetPublicGroupSubscriptionIDs(context.Background(), tt.userID)
 
-			if err != tt.err {
+			if (err != nil) != tt.err {
 				t.Errorf("unexpected error: got %v, want %v", err, tt.err)
 			}
 
-			if !reflect.DeepEqual(result, tt.expected) {
-				t.Errorf("unexpected result: got %v, want %v", result, tt.expected)
+			if !tt.err {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, result)
 			}
 		})
 	}

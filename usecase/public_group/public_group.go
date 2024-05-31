@@ -10,6 +10,7 @@ import (
 	"github.com/microcosm-cc/bluemonday"
 )
 
+//easyjson:json
 type PublicGroupWithInfo struct {
 	PublicGroup  *domain.PublicGroup `json:"publicGroup"`
 	IsSubscribed bool                `json:"isSubscribed"`

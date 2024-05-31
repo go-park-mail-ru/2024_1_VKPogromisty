@@ -3,3 +3,60 @@
 
 // Package mock_chat is a generated GoMock package.
 package mock_chat
+
+import (
+	reflect "reflect"
+
+	gomock "github.com/golang/mock/gomock"
+)
+
+// MockStickerStorage is a mock of StickerStorage interface.
+type MockStickerStorage struct {
+	ctrl     *gomock.Controller
+	recorder *MockStickerStorageMockRecorder
+}
+
+// MockStickerStorageMockRecorder is the mock recorder for MockStickerStorage.
+type MockStickerStorageMockRecorder struct {
+	mock *MockStickerStorage
+}
+
+// NewMockStickerStorage creates a new mock instance.
+func NewMockStickerStorage(ctrl *gomock.Controller) *MockStickerStorage {
+	mock := &MockStickerStorage{ctrl: ctrl}
+	mock.recorder = &MockStickerStorageMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockStickerStorage) EXPECT() *MockStickerStorageMockRecorder {
+	return m.recorder
+}
+
+// Delete mocks base method.
+func (m *MockStickerStorage) Delete(fileName string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Delete", fileName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Delete indicates an expected call of Delete.
+func (mr *MockStickerStorageMockRecorder) Delete(fileName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockStickerStorage)(nil).Delete), fileName)
+}
+
+// Store mocks base method.
+func (m *MockStickerStorage) Store(fileName, filePath, contentType string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Store", fileName, filePath, contentType)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Store indicates an expected call of Store.
+func (mr *MockStickerStorageMockRecorder) Store(fileName, filePath, contentType interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Store", reflect.TypeOf((*MockStickerStorage)(nil).Store), fileName, filePath, contentType)
+}

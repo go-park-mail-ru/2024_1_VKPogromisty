@@ -58,6 +58,10 @@ func (s *Sanitizer) SanitizePersonalMessage(message *domain.PersonalMessage) {
 	}
 
 	message.Content = s.Sanitize(message.Content)
+
+	for i := range message.Attachments {
+		message.Attachments[i] = s.Sanitize(message.Attachments[i])
+	}
 }
 
 func (s *Sanitizer) SanitizeDialog(dialog *domain.Dialog) {
@@ -78,4 +82,32 @@ func (s *Sanitizer) SanitizePublicGroup(publicGroup *domain.PublicGroup) {
 	publicGroup.Name = s.Sanitize(publicGroup.Name)
 	publicGroup.Description = s.Sanitize(publicGroup.Description)
 	publicGroup.Avatar = s.Sanitize(publicGroup.Avatar)
+}
+
+func (s *Sanitizer) SanitizeComment(comment *domain.Comment) {
+	if comment == nil {
+		return
+	}
+
+	comment.Content = s.Sanitize(comment.Content)
+}
+
+func (s *Sanitizer) SanitizeComments(comments []*domain.Comment) {
+	for _, comment := range comments {
+		s.SanitizeComment(comment)
+	}
+}
+
+func (s *Sanitizer) SanitizeSticker(sticker *domain.Sticker) {
+	if sticker == nil {
+		return
+	}
+
+	sticker.Name = s.Sanitize(sticker.Name)
+}
+
+func (s *Sanitizer) SanitizeStickers(stickers []*domain.Sticker) {
+	for _, sticker := range stickers {
+		s.SanitizeSticker(sticker)
+	}
 }

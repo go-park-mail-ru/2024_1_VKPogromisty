@@ -37,6 +37,26 @@ func (m *MockPostClient) EXPECT() *MockPostClientMockRecorder {
 	return m.recorder
 }
 
+// CreateComment mocks base method.
+func (m *MockPostClient) CreateComment(ctx context.Context, in *post.CreateCommentRequest, opts ...grpc.CallOption) (*post.CreateCommentResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "CreateComment", varargs...)
+	ret0, _ := ret[0].(*post.CreateCommentResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateComment indicates an expected call of CreateComment.
+func (mr *MockPostClientMockRecorder) CreateComment(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateComment", reflect.TypeOf((*MockPostClient)(nil).CreateComment), varargs...)
+}
+
 // CreateGroupPost mocks base method.
 func (m *MockPostClient) CreateGroupPost(ctx context.Context, in *post.CreateGroupPostRequest, opts ...grpc.CallOption) (*post.CreateGroupPostResponse, error) {
 	m.ctrl.T.Helper()
@@ -77,6 +97,26 @@ func (mr *MockPostClientMockRecorder) CreatePost(ctx, in interface{}, opts ...in
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePost", reflect.TypeOf((*MockPostClient)(nil).CreatePost), varargs...)
 }
 
+// DeleteComment mocks base method.
+func (m *MockPostClient) DeleteComment(ctx context.Context, in *post.DeleteCommentRequest, opts ...grpc.CallOption) (*post.DeleteCommentResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DeleteComment", varargs...)
+	ret0, _ := ret[0].(*post.DeleteCommentResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteComment indicates an expected call of DeleteComment.
+func (mr *MockPostClientMockRecorder) DeleteComment(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteComment", reflect.TypeOf((*MockPostClient)(nil).DeleteComment), varargs...)
+}
+
 // DeletePost mocks base method.
 func (m *MockPostClient) DeletePost(ctx context.Context, in *post.DeletePostRequest, opts ...grpc.CallOption) (*post.DeletePostResponse, error) {
 	m.ctrl.T.Helper()
@@ -95,6 +135,46 @@ func (mr *MockPostClientMockRecorder) DeletePost(ctx, in interface{}, opts ...in
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeletePost", reflect.TypeOf((*MockPostClient)(nil).DeletePost), varargs...)
+}
+
+// GetCommentsByPostID mocks base method.
+func (m *MockPostClient) GetCommentsByPostID(ctx context.Context, in *post.GetCommentsByPostIDRequest, opts ...grpc.CallOption) (*post.GetCommentsByPostIDResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetCommentsByPostID", varargs...)
+	ret0, _ := ret[0].(*post.GetCommentsByPostIDResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCommentsByPostID indicates an expected call of GetCommentsByPostID.
+func (mr *MockPostClientMockRecorder) GetCommentsByPostID(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCommentsByPostID", reflect.TypeOf((*MockPostClient)(nil).GetCommentsByPostID), varargs...)
+}
+
+// GetGroupPostByPostID mocks base method.
+func (m *MockPostClient) GetGroupPostByPostID(ctx context.Context, in *post.GetGroupPostByPostIDRequest, opts ...grpc.CallOption) (*post.GetGroupPostByPostIDResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetGroupPostByPostID", varargs...)
+	ret0, _ := ret[0].(*post.GetGroupPostByPostIDResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetGroupPostByPostID indicates an expected call of GetGroupPostByPostID.
+func (mr *MockPostClientMockRecorder) GetGroupPostByPostID(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGroupPostByPostID", reflect.TypeOf((*MockPostClient)(nil).GetGroupPostByPostID), varargs...)
 }
 
 // GetGroupPostsBySubscriptionIDs mocks base method.
@@ -257,6 +337,26 @@ func (mr *MockPostClientMockRecorder) GetUserPosts(ctx, in interface{}, opts ...
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserPosts", reflect.TypeOf((*MockPostClient)(nil).GetUserPosts), varargs...)
 }
 
+// LikeComment mocks base method.
+func (m *MockPostClient) LikeComment(ctx context.Context, in *post.LikeCommentRequest, opts ...grpc.CallOption) (*post.LikeCommentResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "LikeComment", varargs...)
+	ret0, _ := ret[0].(*post.LikeCommentResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// LikeComment indicates an expected call of LikeComment.
+func (mr *MockPostClientMockRecorder) LikeComment(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LikeComment", reflect.TypeOf((*MockPostClient)(nil).LikeComment), varargs...)
+}
+
 // LikePost mocks base method.
 func (m *MockPostClient) LikePost(ctx context.Context, in *post.LikePostRequest, opts ...grpc.CallOption) (*post.LikePostResponse, error) {
 	m.ctrl.T.Helper()
@@ -277,6 +377,26 @@ func (mr *MockPostClientMockRecorder) LikePost(ctx, in interface{}, opts ...inte
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LikePost", reflect.TypeOf((*MockPostClient)(nil).LikePost), varargs...)
 }
 
+// UnlikeComment mocks base method.
+func (m *MockPostClient) UnlikeComment(ctx context.Context, in *post.UnlikeCommentRequest, opts ...grpc.CallOption) (*post.UnlikeCommentResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "UnlikeComment", varargs...)
+	ret0, _ := ret[0].(*post.UnlikeCommentResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UnlikeComment indicates an expected call of UnlikeComment.
+func (mr *MockPostClientMockRecorder) UnlikeComment(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnlikeComment", reflect.TypeOf((*MockPostClient)(nil).UnlikeComment), varargs...)
+}
+
 // UnlikePost mocks base method.
 func (m *MockPostClient) UnlikePost(ctx context.Context, in *post.UnlikePostRequest, opts ...grpc.CallOption) (*post.UnlikePostResponse, error) {
 	m.ctrl.T.Helper()
@@ -295,6 +415,26 @@ func (mr *MockPostClientMockRecorder) UnlikePost(ctx, in interface{}, opts ...in
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnlikePost", reflect.TypeOf((*MockPostClient)(nil).UnlikePost), varargs...)
+}
+
+// UpdateComment mocks base method.
+func (m *MockPostClient) UpdateComment(ctx context.Context, in *post.UpdateCommentRequest, opts ...grpc.CallOption) (*post.UpdateCommentResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "UpdateComment", varargs...)
+	ret0, _ := ret[0].(*post.UpdateCommentResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateComment indicates an expected call of UpdateComment.
+func (mr *MockPostClientMockRecorder) UpdateComment(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateComment", reflect.TypeOf((*MockPostClient)(nil).UpdateComment), varargs...)
 }
 
 // UpdatePost mocks base method.
@@ -497,6 +637,21 @@ func (m *MockPostServer) EXPECT() *MockPostServerMockRecorder {
 	return m.recorder
 }
 
+// CreateComment mocks base method.
+func (m *MockPostServer) CreateComment(arg0 context.Context, arg1 *post.CreateCommentRequest) (*post.CreateCommentResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateComment", arg0, arg1)
+	ret0, _ := ret[0].(*post.CreateCommentResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateComment indicates an expected call of CreateComment.
+func (mr *MockPostServerMockRecorder) CreateComment(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateComment", reflect.TypeOf((*MockPostServer)(nil).CreateComment), arg0, arg1)
+}
+
 // CreateGroupPost mocks base method.
 func (m *MockPostServer) CreateGroupPost(arg0 context.Context, arg1 *post.CreateGroupPostRequest) (*post.CreateGroupPostResponse, error) {
 	m.ctrl.T.Helper()
@@ -527,6 +682,21 @@ func (mr *MockPostServerMockRecorder) CreatePost(arg0, arg1 interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePost", reflect.TypeOf((*MockPostServer)(nil).CreatePost), arg0, arg1)
 }
 
+// DeleteComment mocks base method.
+func (m *MockPostServer) DeleteComment(arg0 context.Context, arg1 *post.DeleteCommentRequest) (*post.DeleteCommentResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteComment", arg0, arg1)
+	ret0, _ := ret[0].(*post.DeleteCommentResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteComment indicates an expected call of DeleteComment.
+func (mr *MockPostServerMockRecorder) DeleteComment(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteComment", reflect.TypeOf((*MockPostServer)(nil).DeleteComment), arg0, arg1)
+}
+
 // DeletePost mocks base method.
 func (m *MockPostServer) DeletePost(arg0 context.Context, arg1 *post.DeletePostRequest) (*post.DeletePostResponse, error) {
 	m.ctrl.T.Helper()
@@ -540,6 +710,36 @@ func (m *MockPostServer) DeletePost(arg0 context.Context, arg1 *post.DeletePostR
 func (mr *MockPostServerMockRecorder) DeletePost(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeletePost", reflect.TypeOf((*MockPostServer)(nil).DeletePost), arg0, arg1)
+}
+
+// GetCommentsByPostID mocks base method.
+func (m *MockPostServer) GetCommentsByPostID(arg0 context.Context, arg1 *post.GetCommentsByPostIDRequest) (*post.GetCommentsByPostIDResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCommentsByPostID", arg0, arg1)
+	ret0, _ := ret[0].(*post.GetCommentsByPostIDResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCommentsByPostID indicates an expected call of GetCommentsByPostID.
+func (mr *MockPostServerMockRecorder) GetCommentsByPostID(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCommentsByPostID", reflect.TypeOf((*MockPostServer)(nil).GetCommentsByPostID), arg0, arg1)
+}
+
+// GetGroupPostByPostID mocks base method.
+func (m *MockPostServer) GetGroupPostByPostID(arg0 context.Context, arg1 *post.GetGroupPostByPostIDRequest) (*post.GetGroupPostByPostIDResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetGroupPostByPostID", arg0, arg1)
+	ret0, _ := ret[0].(*post.GetGroupPostByPostIDResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetGroupPostByPostID indicates an expected call of GetGroupPostByPostID.
+func (mr *MockPostServerMockRecorder) GetGroupPostByPostID(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGroupPostByPostID", reflect.TypeOf((*MockPostServer)(nil).GetGroupPostByPostID), arg0, arg1)
 }
 
 // GetGroupPostsBySubscriptionIDs mocks base method.
@@ -662,6 +862,21 @@ func (mr *MockPostServerMockRecorder) GetUserPosts(arg0, arg1 interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserPosts", reflect.TypeOf((*MockPostServer)(nil).GetUserPosts), arg0, arg1)
 }
 
+// LikeComment mocks base method.
+func (m *MockPostServer) LikeComment(arg0 context.Context, arg1 *post.LikeCommentRequest) (*post.LikeCommentResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LikeComment", arg0, arg1)
+	ret0, _ := ret[0].(*post.LikeCommentResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// LikeComment indicates an expected call of LikeComment.
+func (mr *MockPostServerMockRecorder) LikeComment(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LikeComment", reflect.TypeOf((*MockPostServer)(nil).LikeComment), arg0, arg1)
+}
+
 // LikePost mocks base method.
 func (m *MockPostServer) LikePost(arg0 context.Context, arg1 *post.LikePostRequest) (*post.LikePostResponse, error) {
 	m.ctrl.T.Helper()
@@ -677,6 +892,21 @@ func (mr *MockPostServerMockRecorder) LikePost(arg0, arg1 interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LikePost", reflect.TypeOf((*MockPostServer)(nil).LikePost), arg0, arg1)
 }
 
+// UnlikeComment mocks base method.
+func (m *MockPostServer) UnlikeComment(arg0 context.Context, arg1 *post.UnlikeCommentRequest) (*post.UnlikeCommentResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UnlikeComment", arg0, arg1)
+	ret0, _ := ret[0].(*post.UnlikeCommentResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UnlikeComment indicates an expected call of UnlikeComment.
+func (mr *MockPostServerMockRecorder) UnlikeComment(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnlikeComment", reflect.TypeOf((*MockPostServer)(nil).UnlikeComment), arg0, arg1)
+}
+
 // UnlikePost mocks base method.
 func (m *MockPostServer) UnlikePost(arg0 context.Context, arg1 *post.UnlikePostRequest) (*post.UnlikePostResponse, error) {
 	m.ctrl.T.Helper()
@@ -690,6 +920,21 @@ func (m *MockPostServer) UnlikePost(arg0 context.Context, arg1 *post.UnlikePostR
 func (mr *MockPostServerMockRecorder) UnlikePost(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnlikePost", reflect.TypeOf((*MockPostServer)(nil).UnlikePost), arg0, arg1)
+}
+
+// UpdateComment mocks base method.
+func (m *MockPostServer) UpdateComment(arg0 context.Context, arg1 *post.UpdateCommentRequest) (*post.UpdateCommentResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateComment", arg0, arg1)
+	ret0, _ := ret[0].(*post.UpdateCommentResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateComment indicates an expected call of UpdateComment.
+func (mr *MockPostServerMockRecorder) UpdateComment(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateComment", reflect.TypeOf((*MockPostServer)(nil).UpdateComment), arg0, arg1)
 }
 
 // UpdatePost mocks base method.

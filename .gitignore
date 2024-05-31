@@ -14,10 +14,11 @@ tern.conf
 socio-docker.session.sql
 fullchain.pem
 privkey.pem
-socio.conf
 /static
 /volumes
 mc
 post-attachments.txt
 user-avatars.txt
 node_exporter-1.2.2.linux-amd64
+csrf.txt
+headers.txt

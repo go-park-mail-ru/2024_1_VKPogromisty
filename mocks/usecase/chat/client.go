@@ -50,6 +50,35 @@ func (mr *MockPersonalMessagesRepositoryMockRecorder) DeleteMessage(ctx, message
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteMessage", reflect.TypeOf((*MockPersonalMessagesRepository)(nil).DeleteMessage), ctx, messageID)
 }
 
+// DeleteSticker mocks base method.
+func (m *MockPersonalMessagesRepository) DeleteSticker(ctx context.Context, stickerID uint) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteSticker", ctx, stickerID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteSticker indicates an expected call of DeleteSticker.
+func (mr *MockPersonalMessagesRepositoryMockRecorder) DeleteSticker(ctx, stickerID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSticker", reflect.TypeOf((*MockPersonalMessagesRepository)(nil).DeleteSticker), ctx, stickerID)
+}
+
+// GetAllStickers mocks base method.
+func (m *MockPersonalMessagesRepository) GetAllStickers(ctx context.Context) ([]*domain.Sticker, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAllStickers", ctx)
+	ret0, _ := ret[0].([]*domain.Sticker)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAllStickers indicates an expected call of GetAllStickers.
+func (mr *MockPersonalMessagesRepositoryMockRecorder) GetAllStickers(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllStickers", reflect.TypeOf((*MockPersonalMessagesRepository)(nil).GetAllStickers), ctx)
+}
+
 // GetDialogsByUserID mocks base method.
 func (m *MockPersonalMessagesRepository) GetDialogsByUserID(ctx context.Context, userID uint) ([]*domain.Dialog, error) {
 	m.ctrl.T.Helper()
@@ -80,6 +109,21 @@ func (mr *MockPersonalMessagesRepositoryMockRecorder) GetLastMessageID(ctx, send
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastMessageID", reflect.TypeOf((*MockPersonalMessagesRepository)(nil).GetLastMessageID), ctx, senderID, receiverID)
 }
 
+// GetMessageByID mocks base method.
+func (m *MockPersonalMessagesRepository) GetMessageByID(ctx context.Context, msgID uint) (*domain.PersonalMessage, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetMessageByID", ctx, msgID)
+	ret0, _ := ret[0].(*domain.PersonalMessage)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetMessageByID indicates an expected call of GetMessageByID.
+func (mr *MockPersonalMessagesRepositoryMockRecorder) GetMessageByID(ctx, msgID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMessageByID", reflect.TypeOf((*MockPersonalMessagesRepository)(nil).GetMessageByID), ctx, msgID)
+}
+
 // GetMessagesByDialog mocks base method.
 func (m *MockPersonalMessagesRepository) GetMessagesByDialog(ctx context.Context, senderID, receiverID, lastMessageID, messagesAmount uint) ([]*domain.PersonalMessage, error) {
 	m.ctrl.T.Helper()
@@ -93,6 +137,36 @@ func (m *MockPersonalMessagesRepository) GetMessagesByDialog(ctx context.Context
 func (mr *MockPersonalMessagesRepositoryMockRecorder) GetMessagesByDialog(ctx, senderID, receiverID, lastMessageID, messagesAmount interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMessagesByDialog", reflect.TypeOf((*MockPersonalMessagesRepository)(nil).GetMessagesByDialog), ctx, senderID, receiverID, lastMessageID, messagesAmount)
+}
+
+// GetStickerByID mocks base method.
+func (m *MockPersonalMessagesRepository) GetStickerByID(ctx context.Context, stickerID uint) (*domain.Sticker, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetStickerByID", ctx, stickerID)
+	ret0, _ := ret[0].(*domain.Sticker)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetStickerByID indicates an expected call of GetStickerByID.
+func (mr *MockPersonalMessagesRepositoryMockRecorder) GetStickerByID(ctx, stickerID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStickerByID", reflect.TypeOf((*MockPersonalMessagesRepository)(nil).GetStickerByID), ctx, stickerID)
+}
+
+// GetStickersByAuthorID mocks base method.
+func (m *MockPersonalMessagesRepository) GetStickersByAuthorID(ctx context.Context, authorID uint) ([]*domain.Sticker, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetStickersByAuthorID", ctx, authorID)
+	ret0, _ := ret[0].([]*domain.Sticker)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetStickersByAuthorID indicates an expected call of GetStickersByAuthorID.
+func (mr *MockPersonalMessagesRepositoryMockRecorder) GetStickersByAuthorID(ctx, authorID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStickersByAuthorID", reflect.TypeOf((*MockPersonalMessagesRepository)(nil).GetStickersByAuthorID), ctx, authorID)
 }
 
 // StoreMessage mocks base method.
@@ -110,19 +184,49 @@ func (mr *MockPersonalMessagesRepositoryMockRecorder) StoreMessage(ctx, message 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreMessage", reflect.TypeOf((*MockPersonalMessagesRepository)(nil).StoreMessage), ctx, message)
 }
 
-// UpdateMessage mocks base method.
-func (m *MockPersonalMessagesRepository) UpdateMessage(ctx context.Context, message *domain.PersonalMessage) (*domain.PersonalMessage, error) {
+// StoreSticker mocks base method.
+func (m *MockPersonalMessagesRepository) StoreSticker(ctx context.Context, sticker *domain.Sticker) (*domain.Sticker, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateMessage", ctx, message)
+	ret := m.ctrl.Call(m, "StoreSticker", ctx, sticker)
+	ret0, _ := ret[0].(*domain.Sticker)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// StoreSticker indicates an expected call of StoreSticker.
+func (mr *MockPersonalMessagesRepositoryMockRecorder) StoreSticker(ctx, sticker interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreSticker", reflect.TypeOf((*MockPersonalMessagesRepository)(nil).StoreSticker), ctx, sticker)
+}
+
+// StoreStickerMessage mocks base method.
+func (m *MockPersonalMessagesRepository) StoreStickerMessage(ctx context.Context, senderID, receiverID, stickerID uint) (*domain.PersonalMessage, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StoreStickerMessage", ctx, senderID, receiverID, stickerID)
+	ret0, _ := ret[0].(*domain.PersonalMessage)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// StoreStickerMessage indicates an expected call of StoreStickerMessage.
+func (mr *MockPersonalMessagesRepositoryMockRecorder) StoreStickerMessage(ctx, senderID, receiverID, stickerID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreStickerMessage", reflect.TypeOf((*MockPersonalMessagesRepository)(nil).StoreStickerMessage), ctx, senderID, receiverID, stickerID)
+}
+
+// UpdateMessage mocks base method.
+func (m *MockPersonalMessagesRepository) UpdateMessage(ctx context.Context, msg *domain.PersonalMessage, attachmentsToDelete []string) (*domain.PersonalMessage, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateMessage", ctx, msg, attachmentsToDelete)
 	ret0, _ := ret[0].(*domain.PersonalMessage)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpdateMessage indicates an expected call of UpdateMessage.
-func (mr *MockPersonalMessagesRepositoryMockRecorder) UpdateMessage(ctx, message interface{}) *gomock.Call {
+func (mr *MockPersonalMessagesRepositoryMockRecorder) UpdateMessage(ctx, msg, attachmentsToDelete interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateMessage", reflect.TypeOf((*MockPersonalMessagesRepository)(nil).UpdateMessage), ctx, message)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateMessage", reflect.TypeOf((*MockPersonalMessagesRepository)(nil).UpdateMessage), ctx, msg, attachmentsToDelete)
 }
 
 // MockPubSubRepository is a mock of PubSubRepository interface.

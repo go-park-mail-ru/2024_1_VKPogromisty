@@ -5,9 +5,11 @@ import (
 )
 
 const (
-	UserAvatarsBucket  = "user-avatars"
-	AttachmentsBucket  = "post-attachments"
-	GroupAvatarsBucket = "group-avatars"
+	UserAvatarsBucket        = "user-avatars"
+	PostAttachmentsBucket    = "post-attachments"
+	GroupAvatarsBucket       = "group-avatars"
+	StickersBucket           = "stickers"
+	MessageAttachmentsBucket = "message-attachments"
 )
 
 type StaticStorage struct {

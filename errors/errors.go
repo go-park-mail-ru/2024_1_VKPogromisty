@@ -2,6 +2,7 @@ package errors
 
 import "errors"
 
+//easyjson:json
 type HTTPError struct {
 	Error string `json:"error"`
 }

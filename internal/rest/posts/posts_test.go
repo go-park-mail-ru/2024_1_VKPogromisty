@@ -3,10 +3,11 @@ package rest
 import (
 	"bytes"
 	"context"
-	"encoding/json"
+	"fmt"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"socio/domain"
 	"socio/errors"
 	postpb "socio/internal/grpc/post/proto"
 	pgpb "socio/internal/grpc/public_group/proto"
@@ -15,12 +16,16 @@ import (
 	mock_public_group "socio/mocks/grpc/public_group_grpc"
 	mock_user "socio/mocks/grpc/user_grpc"
 	"socio/pkg/requestcontext"
-	"socio/usecase/posts"
 	"testing"
 
 	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
+	"github.com/mailru/easyjson"
 	"github.com/stretchr/testify/assert"
+)
+
+var (
+	validCtx = context.WithValue(context.Background(), requestcontext.UserIDKey, uint(1))
 )
 
 type fields struct {
@@ -33,6 +38,7 @@ func TestHandleGetPostByID(t *testing.T) {
 	tests := []struct {
 		name           string
 		request        *http.Request
+		ctx            context.Context
 		expectedStatus int
 		prepare        func(f *fields)
 	}{
@@ -40,6 +46,7 @@ func TestHandleGetPostByID(t *testing.T) {
 			name:           "TestHandleGetPostByID",
 			request:        httptest.NewRequest("GET", "/posts/1", nil),
 			expectedStatus: http.StatusOK,
+			ctx:            validCtx,
 			prepare: func(f *fields) {
 				f.PostsClient.EXPECT().GetPostByID(gomock.Any(), gomock.Any()).Return(
 					&postpb.GetPostByIDResponse{
@@ -48,11 +55,33 @@ func TestHandleGetPostByID(t *testing.T) {
 						},
 					}, nil,
 				)
+				f.UserClient.EXPECT().GetByID(gomock.Any(), gomock.Any()).Return(&uspb.GetByIDResponse{
+					User: &uspb.UserResponse{
+						Id: 1,
+					},
+				}, nil)
+				f.PostsClient.EXPECT().GetGroupPostByPostID(gomock.Any(), gomock.Any()).Return(
+					&postpb.GetGroupPostByPostIDResponse{
+						GroupPost: &postpb.GroupPostResponse{
+							PostId: 1,
+						},
+					}, nil,
+				)
+				f.PublicGroupClient.EXPECT().GetByID(gomock.Any(), gomock.Any()).Return(
+					&pgpb.GetByIDResponse{
+						PublicGroup: &pgpb.PublicGroupWithInfoResponse{
+							PublicGroup: &pgpb.PublicGroupResponse{
+								Id: 1,
+							},
+						},
+					}, nil,
+				)
 			},
 		},
 		{
 			name:           "TestHandleGetPostByID",
 			request:        httptest.NewRequest("GET", "/posts/", nil),
+			ctx:            validCtx,
 			expectedStatus: http.StatusNotFound,
 			prepare: func(f *fields) {
 			},
@@ -60,6 +89,7 @@ func TestHandleGetPostByID(t *testing.T) {
 		{
 			name:           "TestHandleGetPostByID",
 			request:        httptest.NewRequest("GET", "/posts/asd", nil),
+			ctx:            validCtx,
 			expectedStatus: http.StatusBadRequest,
 			prepare: func(f *fields) {
 			},
@@ -68,6 +98,7 @@ func TestHandleGetPostByID(t *testing.T) {
 			name:           "TestHandleGetPostByID",
 			request:        httptest.NewRequest("GET", "/posts/1", nil),
 			expectedStatus: http.StatusNotFound,
+			ctx:            validCtx,
 			prepare: func(f *fields) {
 				f.PostsClient.EXPECT().GetPostByID(gomock.Any(), gomock.Any()).Return(nil, errors.ErrNotFound.GRPCStatus().Err())
 			},
@@ -80,8 +111,9 @@ func TestHandleGetPostByID(t *testing.T) {
 			defer ctrl.Finish()
 
 			f := &fields{
-				PostsClient: mock_posts.NewMockPostClient(ctrl),
-				UserClient:  mock_user.NewMockUserClient(ctrl),
+				PostsClient:       mock_posts.NewMockPostClient(ctrl),
+				UserClient:        mock_user.NewMockUserClient(ctrl),
+				PublicGroupClient: mock_public_group.NewMockPublicGroupClient(ctrl),
 			}
 
 			if tt.prepare != nil {
@@ -93,6 +125,8 @@ func TestHandleGetPostByID(t *testing.T) {
 			rr := httptest.NewRecorder()
 			router := mux.NewRouter()
 			router.HandleFunc("/posts/{postID}", h.HandleGetPostByID)
+
+			tt.request = tt.request.WithContext(tt.ctx)
 
 			router.ServeHTTP(rr, tt.request)
 
@@ -456,7 +490,6 @@ func TestHandleCreatePost(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Set up the request
 			body := &bytes.Buffer{}
 			writer := multipart.NewWriter(body)
 			_ = writer.WriteField("content", tt.content)
@@ -466,7 +499,6 @@ func TestHandleCreatePost(t *testing.T) {
 			r.Header.Set("Content-Type", writer.FormDataContentType())
 			r = r.WithContext(tt.ctx)
 
-			// Set up the response recorder
 			rr := httptest.NewRecorder()
 
 			mockPostsClient := mock_posts.NewMockPostClient(ctrl)
@@ -475,100 +507,10 @@ func TestHandleCreatePost(t *testing.T) {
 
 			tt.mock(mockPostsClient, mockUserClient, publicGroupClient)
 
-			// Set up the handler
 			h := NewPostsHandler(mockPostsClient, mockUserClient, publicGroupClient)
 
-			// Call the handler
 			h.HandleCreatePost(rr, r)
 
-			// Check the status code
-			assert.Equal(t, tt.expectedStatus, rr.Code)
-		})
-	}
-}
-
-func TestHandleUpdatePost(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	tests := []struct {
-		name           string
-		ctx            context.Context
-		input          *postpb.UpdatePostRequest
-		mockError      error
-		expectedStatus int
-		mock           func(postsClient *mock_posts.MockPostClient, userClient *mock_user.MockUserClient, publicGroupClient *mock_public_group.MockPublicGroupClient)
-	}{
-		{
-			name: "Successful post update",
-			input: &postpb.UpdatePostRequest{
-				PostId:  1,
-				Content: "Test content",
-			},
-			mockError:      nil,
-			ctx:            context.WithValue(context.Background(), requestcontext.UserIDKey, uint(1)),
-			expectedStatus: http.StatusOK,
-			mock: func(postsClient *mock_posts.MockPostClient, userClient *mock_user.MockUserClient, publicGroupClient *mock_public_group.MockPublicGroupClient) {
-				postsClient.EXPECT().UpdatePost(gomock.Any(), gomock.Any()).Return(&postpb.UpdatePostResponse{
-					Post: &postpb.PostResponse{},
-				}, nil)
-			},
-		},
-		{
-			name: "no user id in context",
-			input: &postpb.UpdatePostRequest{
-				PostId:  1,
-				Content: "Test content",
-			},
-			mockError:      nil,
-			ctx:            context.Background(),
-			expectedStatus: http.StatusBadRequest,
-			mock: func(postsClient *mock_posts.MockPostClient, userClient *mock_user.MockUserClient, publicGroupClient *mock_public_group.MockPublicGroupClient) {
-
-			},
-		},
-		{
-			name: "internal error",
-			input: &postpb.UpdatePostRequest{
-				PostId:  1,
-				Content: "Test content",
-			},
-			mockError:      nil,
-			ctx:            context.WithValue(context.Background(), requestcontext.UserIDKey, uint(1)),
-			expectedStatus: http.StatusInternalServerError,
-			mock: func(postsClient *mock_posts.MockPostClient, userClient *mock_user.MockUserClient, publicGroupClient *mock_public_group.MockPublicGroupClient) {
-				postsClient.EXPECT().UpdatePost(gomock.Any(), gomock.Any()).Return(nil, errors.ErrInternal.GRPCStatus().Err())
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Set up the request
-			input := posts.PostUpdateInput{
-				PostID:  uint(tt.input.PostId),
-				Content: tt.input.Content,
-			}
-			inputBytes, _ := json.Marshal(input)
-			r := httptest.NewRequest("PUT", "/", bytes.NewBuffer(inputBytes))
-			r = r.WithContext(tt.ctx)
-
-			// Set up the response recorder
-			rr := httptest.NewRecorder()
-
-			mockPostsClient := mock_posts.NewMockPostClient(ctrl)
-			mockUserClient := mock_user.NewMockUserClient(ctrl)
-			publicGroupClient := mock_public_group.NewMockPublicGroupClient(ctrl)
-
-			tt.mock(mockPostsClient, mockUserClient, publicGroupClient)
-
-			// Set up the handler
-			h := NewPostsHandler(mockPostsClient, mockUserClient, publicGroupClient)
-
-			// Call the handler
-			h.HandleUpdatePost(rr, r)
-
-			// Check the status code
 			assert.Equal(t, tt.expectedStatus, rr.Code)
 		})
 	}
@@ -685,11 +627,9 @@ func TestHandleGetLikedPosts(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Set up the request
 			r := httptest.NewRequest("GET", "/?lastLikeId="+tt.lastLikeID+"&postsAmount="+tt.postsAmount, nil)
 			r = r.WithContext(tt.ctx)
 
-			// Set up the response recorder
 			rr := httptest.NewRecorder()
 
 			mockPostsClient := mock_posts.NewMockPostClient(ctrl)
@@ -698,13 +638,10 @@ func TestHandleGetLikedPosts(t *testing.T) {
 
 			tt.mock(mockPostsClient, mockUserClient, publicGroupClient)
 
-			// Set up the handler
 			h := NewPostsHandler(mockPostsClient, mockUserClient, publicGroupClient)
 
-			// Call the handler
 			h.HandleGetLikedPosts(rr, r)
 
-			// Check the status code
 			assert.Equal(t, tt.expectedStatus, rr.Code)
 		})
 	}
@@ -764,27 +701,22 @@ func TestHandleLikePost(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Set up the request
 			input := LikePostInput{
 				PostID: uint(tt.postID),
 			}
-			inputBytes, _ := json.Marshal(input)
+			inputBytes, _ := easyjson.Marshal(input)
 			r := httptest.NewRequest("POST", "/", bytes.NewBuffer(inputBytes))
 			r = r.WithContext(tt.ctx)
 
-			// Set up the response recorder
 			rr := httptest.NewRecorder()
 
 			mockPostsClient := mock_posts.NewMockPostClient(ctrl)
 			tt.mock(mockPostsClient)
 
-			// Set up the handler
 			h := NewPostsHandler(mockPostsClient, nil, nil)
 
-			// Call the handler
 			h.HandleLikePost(rr, r)
 
-			// Check the status code
 			assert.Equal(t, tt.expectedStatus, rr.Code)
 		})
 	}
@@ -844,27 +776,22 @@ func TestHandleUnlikePost(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Set up the request
 			input := UnlikePostInput{
 				PostID: uint(tt.postID),
 			}
-			inputBytes, _ := json.Marshal(input)
+			inputBytes, _ := easyjson.Marshal(input)
 			r := httptest.NewRequest("POST", "/", bytes.NewBuffer(inputBytes))
 			r = r.WithContext(tt.ctx)
 
-			// Set up the response recorder
 			rr := httptest.NewRecorder()
 
 			mockPostsClient := mock_posts.NewMockPostClient(ctrl)
 			tt.mock(mockPostsClient)
 
-			// Set up the handler
 			h := NewPostsHandler(mockPostsClient, nil, nil)
 
-			// Call the handler
 			h.HandleUnlikePost(rr, r)
 
-			// Check the status code
 			assert.Equal(t, tt.expectedStatus, rr.Code)
 		})
 	}
@@ -1047,11 +974,9 @@ func TestHandleGetGroupPostsBySubscriptions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Set up the request
 			r := httptest.NewRequest("GET", "/?lastPostId="+tt.lastPostID+"&postsAmount="+tt.postsAmount, nil)
 			r = r.WithContext(tt.ctx)
 
-			// Set up the response recorder
 			rr := httptest.NewRecorder()
 
 			mockPostsClient := mock_posts.NewMockPostClient(ctrl)
@@ -1059,13 +984,10 @@ func TestHandleGetGroupPostsBySubscriptions(t *testing.T) {
 			publicGroupClient := mock_public_group.NewMockPublicGroupClient(ctrl)
 			tt.mock(mockPostsClient, userClient, publicGroupClient)
 
-			// Set up the handler
 			h := NewPostsHandler(mockPostsClient, userClient, publicGroupClient)
 
-			// Call the handler
 			h.HandleGetGroupPostsBySubscriptions(rr, r)
 
-			// Check the status code
 			assert.Equal(t, tt.expectedStatus, rr.Code)
 		})
 	}
@@ -1262,11 +1184,9 @@ func TestHandleGetPostsByGroupSubIDsAndUserSubIDs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Set up the request
 			r := httptest.NewRequest("GET", "/?lastPostId="+tt.lastPostID+"&postsAmount="+tt.postsAmount, nil)
 			r = r.WithContext(tt.ctx)
 
-			// Set up the response recorder
 			rr := httptest.NewRecorder()
 
 			mockPostsClient := mock_posts.NewMockPostClient(ctrl)
@@ -1274,13 +1194,10 @@ func TestHandleGetPostsByGroupSubIDsAndUserSubIDs(t *testing.T) {
 			mockUserClient := mock_user.NewMockUserClient(ctrl)
 			tt.mock(mockPostsClient, mockPublicGroupClient, mockUserClient)
 
-			// Set up the handler
 			h := NewPostsHandler(mockPostsClient, mockUserClient, mockPublicGroupClient)
 
-			// Call the handler
 			h.HandleGetPostsByGroupSubIDsAndUserSubIDs(rr, r)
 
-			// Check the status code
 			assert.Equal(t, tt.expectedStatus, rr.Code)
 		})
 	}
@@ -1467,11 +1384,9 @@ func TestHandleGetNewPosts(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Set up the request
 			r := httptest.NewRequest("GET", "/?lastPostId="+tt.lastPostID+"&postsAmount="+tt.postsAmount, nil)
 			r = r.WithContext(tt.ctx)
 
-			// Set up the response recorder
 			rr := httptest.NewRecorder()
 
 			mockPostsClient := mock_posts.NewMockPostClient(ctrl)
@@ -1479,13 +1394,566 @@ func TestHandleGetNewPosts(t *testing.T) {
 			mockUserClient := mock_user.NewMockUserClient(ctrl)
 			tt.mock(mockPostsClient, mockPublicGroupClient, mockUserClient)
 
-			// Set up the handler
 			h := NewPostsHandler(mockPostsClient, mockUserClient, mockPublicGroupClient)
 
-			// Call the handler
 			h.HandleGetNewPosts(rr, r)
 
-			// Check the status code
+			assert.Equal(t, tt.expectedStatus, rr.Code)
+		})
+	}
+}
+
+func TestHandleGetCommentsByPostID(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockPostsClient := mock_posts.NewMockPostClient(ctrl)
+	mockUserClient := mock_user.NewMockUserClient(ctrl)
+
+	tests := []struct {
+		name         string
+		postID       uint
+		ctx          context.Context
+		wantComments []*domain.CommentWithAuthor
+		wantErr      error
+		setup        func()
+		muxVars      map[string]string
+	}{
+		{
+			name:   "test case 1 - successful retrieval",
+			postID: 1,
+			wantComments: []*domain.CommentWithAuthor{
+				{
+					Comment: &domain.Comment{
+						ID: 1,
+					},
+					Author: &domain.User{
+						ID: 1,
+					},
+				},
+			},
+			wantErr: nil,
+			ctx:     context.Background(),
+			setup: func() {
+				mockPostsClient.EXPECT().GetCommentsByPostID(gomock.Any(), gomock.Any()).Return(&postpb.GetCommentsByPostIDResponse{
+					Comments: []*postpb.CommentResponse{
+						{
+							Id: 1,
+						},
+					},
+				}, nil)
+				mockUserClient.EXPECT().GetByID(gomock.Any(), gomock.Any()).Return(&uspb.GetByIDResponse{
+					User: &uspb.UserResponse{
+						Id: 1,
+					},
+				}, nil)
+			},
+			muxVars: map[string]string{
+				"postID": fmt.Sprintf("%d", 1),
+			},
+		},
+		{
+			name:         "test case 2",
+			postID:       1,
+			wantComments: nil,
+			wantErr:      errors.ErrInvalidData,
+			ctx:          context.Background(),
+			setup: func() {
+
+			},
+			muxVars: map[string]string{},
+		},
+		{
+			name:         "test case 3",
+			postID:       1,
+			wantComments: nil,
+			wantErr:      errors.ErrInvalidData,
+			ctx:          context.Background(),
+			setup: func() {
+
+			},
+			muxVars: map[string]string{
+				"postID": "asd",
+			},
+		},
+		{
+			name:         "test case 4",
+			postID:       1,
+			wantComments: nil,
+			wantErr:      errors.ErrInvalidData,
+			ctx:          context.Background(),
+			setup: func() {
+				mockPostsClient.EXPECT().GetCommentsByPostID(gomock.Any(), gomock.Any()).Return(&postpb.GetCommentsByPostIDResponse{
+					Comments: []*postpb.CommentResponse{
+						{
+							Id: 1,
+						},
+					},
+				}, nil)
+				mockUserClient.EXPECT().GetByID(gomock.Any(), gomock.Any()).Return(nil, errors.ErrInternal.GRPCStatus().Err())
+			},
+			muxVars: map[string]string{
+				"postID": fmt.Sprintf("%d", 1),
+			},
+		},
+		{
+			name:         "test case 2",
+			postID:       1,
+			wantComments: nil,
+			wantErr:      errors.ErrInvalidData,
+			ctx:          context.Background(),
+			setup: func() {
+				mockPostsClient.EXPECT().GetCommentsByPostID(gomock.Any(), gomock.Any()).Return(nil, errors.ErrInternal.GRPCStatus().Err())
+			},
+			muxVars: map[string]string{
+				"postID": fmt.Sprintf("%d", 1),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setup()
+
+			h := NewPostsHandler(mockPostsClient, mockUserClient, nil)
+
+			req, err := http.NewRequest("GET", "/{postID}/comments/", nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			req = req.WithContext(tt.ctx)
+
+			req = mux.SetURLVars(req, tt.muxVars)
+
+			rr := httptest.NewRecorder()
+			handler := http.HandlerFunc(h.HandleGetCommentsByPostID)
+
+			handler.ServeHTTP(rr, req)
+
+			if tt.wantErr != nil {
+				assert.NotEqual(t, http.StatusOK, rr.Code)
+			} else {
+				assert.Equal(t, http.StatusOK, rr.Code)
+			}
+		})
+	}
+}
+
+func TestHandleCreateComment(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	tests := []struct {
+		name           string
+		ctx            context.Context
+		userID         int64
+		commentInput   CreateCommentInput
+		mockError      error
+		expectedStatus int
+		mock           func(postsClient *mock_posts.MockPostClient, userClient *mock_user.MockUserClient)
+	}{
+		{
+			name:   "Successful comment creation",
+			ctx:    context.WithValue(context.Background(), requestcontext.UserIDKey, uint(1)),
+			userID: 1,
+			commentInput: CreateCommentInput{
+				PostID:  1,
+				Content: "text",
+			},
+			mockError:      nil,
+			expectedStatus: http.StatusCreated,
+			mock: func(postsClient *mock_posts.MockPostClient, userClient *mock_user.MockUserClient) {
+				userClient.EXPECT().GetByID(gomock.Any(), gomock.Any()).Return(&uspb.GetByIDResponse{
+					User: &uspb.UserResponse{},
+				}, nil)
+				postsClient.EXPECT().CreateComment(gomock.Any(), gomock.Any()).Return(&postpb.CreateCommentResponse{
+					Comment: &postpb.CommentResponse{},
+				}, nil)
+			},
+		},
+		{
+			name:   "err ctx",
+			ctx:    context.Background(),
+			userID: 1,
+			commentInput: CreateCommentInput{
+				PostID:  1,
+				Content: "text",
+			},
+			mockError:      errors.ErrInvalidData,
+			expectedStatus: http.StatusBadRequest,
+			mock: func(postsClient *mock_posts.MockPostClient, userClient *mock_user.MockUserClient) {
+
+			},
+		},
+		{
+			name:   "internal 1",
+			ctx:    context.WithValue(context.Background(), requestcontext.UserIDKey, uint(1)),
+			userID: 1,
+			commentInput: CreateCommentInput{
+				PostID:  1,
+				Content: "text",
+			},
+			mockError:      errors.ErrInternal,
+			expectedStatus: http.StatusInternalServerError,
+			mock: func(postsClient *mock_posts.MockPostClient, userClient *mock_user.MockUserClient) {
+				postsClient.EXPECT().CreateComment(gomock.Any(), gomock.Any()).Return(&postpb.CreateCommentResponse{
+					Comment: &postpb.CommentResponse{},
+				}, nil)
+				userClient.EXPECT().GetByID(gomock.Any(), gomock.Any()).Return(
+					nil, errors.ErrInternal.GRPCStatus().Err(),
+				)
+			},
+		},
+		{
+			name:   "internal 2",
+			ctx:    context.WithValue(context.Background(), requestcontext.UserIDKey, uint(1)),
+			userID: 1,
+			commentInput: CreateCommentInput{
+				PostID:  1,
+				Content: "text",
+			},
+			mockError:      errors.ErrInternal,
+			expectedStatus: http.StatusInternalServerError,
+			mock: func(postsClient *mock_posts.MockPostClient, userClient *mock_user.MockUserClient) {
+				postsClient.EXPECT().CreateComment(gomock.Any(), gomock.Any()).Return(
+					nil, errors.ErrInternal.GRPCStatus().Err(),
+				)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			inputBytes, _ := easyjson.Marshal(tt.commentInput)
+			r := httptest.NewRequest("POST", "/", bytes.NewBuffer(inputBytes))
+			r = r.WithContext(tt.ctx)
+
+			rr := httptest.NewRecorder()
+
+			mockPostsClient := mock_posts.NewMockPostClient(ctrl)
+			mockUserClient := mock_user.NewMockUserClient(ctrl)
+			tt.mock(mockPostsClient, mockUserClient)
+
+			h := NewPostsHandler(mockPostsClient, mockUserClient, nil)
+
+			h.HandleCreateComment(rr, r)
+
+			assert.Equal(t, tt.expectedStatus, rr.Code)
+		})
+	}
+}
+
+func TestHandleUpdateComment(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	tests := []struct {
+		name           string
+		ctx            context.Context
+		commentInput   UpdateCommentInput
+		mockError      error
+		expectedStatus int
+		mock           func(postsClient *mock_posts.MockPostClient, userClient *mock_user.MockUserClient)
+	}{
+		{
+			name: "Successful comment update",
+			ctx:  context.WithValue(context.Background(), requestcontext.UserIDKey, uint(1)),
+			commentInput: UpdateCommentInput{
+				CommentID: 1,
+				Content:   "text",
+			},
+			mockError:      nil,
+			expectedStatus: http.StatusOK,
+			mock: func(postsClient *mock_posts.MockPostClient, userClient *mock_user.MockUserClient) {
+				userClient.EXPECT().GetByID(gomock.Any(), gomock.Any()).Return(&uspb.GetByIDResponse{
+					User: &uspb.UserResponse{},
+				}, nil)
+				postsClient.EXPECT().UpdateComment(gomock.Any(), gomock.Any()).Return(&postpb.UpdateCommentResponse{
+					Comment: &postpb.CommentResponse{},
+				}, nil)
+			},
+		},
+		{
+			name: "err ctx",
+			ctx:  context.Background(),
+			commentInput: UpdateCommentInput{
+				CommentID: 1,
+				Content:   "text",
+			},
+			mockError:      errors.ErrInvalidData,
+			expectedStatus: http.StatusBadRequest,
+			mock: func(postsClient *mock_posts.MockPostClient, userClient *mock_user.MockUserClient) {
+
+			},
+		},
+		{
+			name: "internal 1",
+			ctx:  context.WithValue(context.Background(), requestcontext.UserIDKey, uint(1)),
+			commentInput: UpdateCommentInput{
+				CommentID: 1,
+				Content:   "text",
+			},
+			mockError:      errors.ErrInternal,
+			expectedStatus: http.StatusInternalServerError,
+			mock: func(postsClient *mock_posts.MockPostClient, userClient *mock_user.MockUserClient) {
+				postsClient.EXPECT().UpdateComment(gomock.Any(), gomock.Any()).Return(
+					nil, errors.ErrInternal.GRPCStatus().Err(),
+				)
+			},
+		},
+		{
+			name: "internal 2",
+			ctx:  context.WithValue(context.Background(), requestcontext.UserIDKey, uint(1)),
+			commentInput: UpdateCommentInput{
+				CommentID: 1,
+				Content:   "text",
+			},
+			mockError:      errors.ErrInternal,
+			expectedStatus: http.StatusInternalServerError,
+			mock: func(postsClient *mock_posts.MockPostClient, userClient *mock_user.MockUserClient) {
+				userClient.EXPECT().GetByID(gomock.Any(), gomock.Any()).Return(
+					nil, errors.ErrInternal.GRPCStatus().Err(),
+				)
+				postsClient.EXPECT().UpdateComment(gomock.Any(), gomock.Any()).Return(&postpb.UpdateCommentResponse{
+					Comment: &postpb.CommentResponse{},
+				}, nil)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			inputBytes, _ := easyjson.Marshal(tt.commentInput)
+			r := httptest.NewRequest("POST", "/", bytes.NewBuffer(inputBytes))
+			r = r.WithContext(tt.ctx)
+
+			rr := httptest.NewRecorder()
+
+			mockPostsClient := mock_posts.NewMockPostClient(ctrl)
+			mockUserClient := mock_user.NewMockUserClient(ctrl)
+			tt.mock(mockPostsClient, mockUserClient)
+
+			h := NewPostsHandler(mockPostsClient, mockUserClient, nil)
+
+			h.HandleUpdateComment(rr, r)
+
+			assert.Equal(t, tt.expectedStatus, rr.Code)
+		})
+	}
+}
+
+func TestHandleDeleteComment(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	tests := []struct {
+		name           string
+		ctx            context.Context
+		commentInput   DeleteCommentInput
+		mockError      error
+		expectedStatus int
+		mock           func(postsClient *mock_posts.MockPostClient)
+	}{
+		{
+			name: "Successful comment deletion",
+			ctx:  context.WithValue(context.Background(), requestcontext.UserIDKey, uint(1)),
+			commentInput: DeleteCommentInput{
+				CommentID: 1,
+			},
+			mockError:      nil,
+			expectedStatus: http.StatusNoContent,
+			mock: func(postsClient *mock_posts.MockPostClient) {
+				postsClient.EXPECT().DeleteComment(gomock.Any(), gomock.Any()).Return(&postpb.DeleteCommentResponse{}, nil)
+			},
+		},
+		{
+			name: "err ctx",
+			ctx:  context.Background(),
+			commentInput: DeleteCommentInput{
+				CommentID: 1,
+			},
+			mockError:      errors.ErrInvalidData,
+			expectedStatus: http.StatusBadRequest,
+			mock: func(postsClient *mock_posts.MockPostClient) {
+			},
+		},
+		{
+			name: "err",
+			ctx:  context.WithValue(context.Background(), requestcontext.UserIDKey, uint(1)),
+			commentInput: DeleteCommentInput{
+				CommentID: 1,
+			},
+			mockError:      errors.ErrInternal,
+			expectedStatus: http.StatusInternalServerError,
+			mock: func(postsClient *mock_posts.MockPostClient) {
+				postsClient.EXPECT().DeleteComment(gomock.Any(), gomock.Any()).Return(
+					nil, errors.ErrInternal.GRPCStatus().Err(),
+				)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			inputBytes, _ := easyjson.Marshal(tt.commentInput)
+			r := httptest.NewRequest("POST", "/", bytes.NewBuffer(inputBytes))
+			r = r.WithContext(tt.ctx)
+
+			rr := httptest.NewRecorder()
+
+			mockPostsClient := mock_posts.NewMockPostClient(ctrl)
+			tt.mock(mockPostsClient)
+
+			h := NewPostsHandler(mockPostsClient, nil, nil)
+
+			h.HandleDeleteComment(rr, r)
+
+			assert.Equal(t, tt.expectedStatus, rr.Code)
+		})
+	}
+}
+
+func TestHandleLikeComment(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	tests := []struct {
+		name           string
+		ctx            context.Context
+		commentInput   LikeCommentInput
+		mockError      error
+		expectedStatus int
+		mock           func(postsClient *mock_posts.MockPostClient)
+	}{
+		{
+			name: "Successful comment like",
+			ctx:  context.WithValue(context.Background(), requestcontext.UserIDKey, uint(1)),
+			commentInput: LikeCommentInput{
+				CommentID: 1,
+			},
+			mockError:      nil,
+			expectedStatus: http.StatusCreated,
+			mock: func(postsClient *mock_posts.MockPostClient) {
+				postsClient.EXPECT().LikeComment(gomock.Any(), gomock.Any()).Return(&postpb.LikeCommentResponse{
+					Like: &postpb.CommentLikeResponse{},
+				}, nil)
+			},
+		},
+		{
+			name: "ctx err",
+			ctx:  context.Background(),
+			commentInput: LikeCommentInput{
+				CommentID: 1,
+			},
+			mockError:      errors.ErrInvalidData,
+			expectedStatus: http.StatusBadRequest,
+			mock: func(postsClient *mock_posts.MockPostClient) {
+
+			},
+		},
+		{
+			name: "err",
+			ctx:  context.WithValue(context.Background(), requestcontext.UserIDKey, uint(1)),
+			commentInput: LikeCommentInput{
+				CommentID: 1,
+			},
+			mockError:      errors.ErrInternal,
+			expectedStatus: http.StatusInternalServerError,
+			mock: func(postsClient *mock_posts.MockPostClient) {
+				postsClient.EXPECT().LikeComment(gomock.Any(), gomock.Any()).Return(
+					nil, errors.ErrInternal.GRPCStatus().Err(),
+				)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			inputBytes, _ := easyjson.Marshal(tt.commentInput)
+			r := httptest.NewRequest("POST", "/", bytes.NewBuffer(inputBytes))
+			r = r.WithContext(tt.ctx)
+
+			rr := httptest.NewRecorder()
+
+			mockPostsClient := mock_posts.NewMockPostClient(ctrl)
+			tt.mock(mockPostsClient)
+
+			h := NewPostsHandler(mockPostsClient, nil, nil)
+
+			h.HandleLikeComment(rr, r)
+
+			assert.Equal(t, tt.expectedStatus, rr.Code)
+		})
+	}
+}
+
+func TestHandleUnlikeComment(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	tests := []struct {
+		name           string
+		ctx            context.Context
+		commentInput   UnlikeCommentInput
+		mockError      error
+		expectedStatus int
+		mock           func(postsClient *mock_posts.MockPostClient)
+	}{
+		{
+			name: "Successful comment unlike",
+			ctx:  context.WithValue(context.Background(), requestcontext.UserIDKey, uint(1)),
+			commentInput: UnlikeCommentInput{
+				CommentID: 1,
+			},
+			mockError:      nil,
+			expectedStatus: http.StatusNoContent,
+			mock: func(postsClient *mock_posts.MockPostClient) {
+				postsClient.EXPECT().UnlikeComment(gomock.Any(), gomock.Any()).Return(&postpb.UnlikeCommentResponse{}, nil)
+			},
+		},
+		{
+			name: "invalid context",
+			ctx:  context.Background(),
+			commentInput: UnlikeCommentInput{
+				CommentID: 1,
+			},
+			mockError:      errors.ErrInvalidData,
+			expectedStatus: http.StatusBadRequest,
+			mock: func(postsClient *mock_posts.MockPostClient) {
+			},
+		},
+		{
+			name: "err",
+			ctx:  context.WithValue(context.Background(), requestcontext.UserIDKey, uint(1)),
+			commentInput: UnlikeCommentInput{
+				CommentID: 1,
+			},
+			mockError:      errors.ErrInternal,
+			expectedStatus: http.StatusInternalServerError,
+			mock: func(postsClient *mock_posts.MockPostClient) {
+				postsClient.EXPECT().UnlikeComment(gomock.Any(), gomock.Any()).Return(
+					nil, errors.ErrInternal.GRPCStatus().Err(),
+				)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			inputBytes, _ := easyjson.Marshal(tt.commentInput)
+			r := httptest.NewRequest("POST", "/", bytes.NewBuffer(inputBytes))
+			r = r.WithContext(tt.ctx)
+
+			rr := httptest.NewRecorder()
+
+			mockPostsClient := mock_posts.NewMockPostClient(ctrl)
+			tt.mock(mockPostsClient)
+
+			h := NewPostsHandler(mockPostsClient, nil, nil)
+
+			h.HandleUnlikeComment(rr, r)
+
 			assert.Equal(t, tt.expectedStatus, rr.Code)
 		})
 	}

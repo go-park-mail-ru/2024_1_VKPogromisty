@@ -73,7 +73,10 @@ type mockHandler struct {
 }
 
 func (m *mockHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte(m.resp))
+	_, err := w.Write([]byte(m.resp))
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
 }
 
 func TestLoggerMiddleware(t *testing.T) {

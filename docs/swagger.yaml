@@ -1,5 +1,48 @@
 basePath: /api/v1
 definitions:
+  domain.Comment:
+    properties:
+      authorId:
+        type: integer
+      content:
+        type: string
+      createdAt:
+        example: "2021-01-01T00:00:00Z"
+        format: date-time
+        type: string
+      id:
+        type: integer
+      likedBy:
+        items:
+          type: integer
+        type: array
+      postId:
+        type: integer
+      updatedAt:
+        example: "2021-01-01T00:00:00Z"
+        format: date-time
+        type: string
+    type: object
+  domain.CommentLike:
+    properties:
+      commentId:
+        type: integer
+      createdAt:
+        example: "2021-01-01T00:00:00Z"
+        format: date-time
+        type: string
+      id:
+        type: integer
+      userId:
+        type: integer
+    type: object
+  domain.CommentWithAuthor:
+    properties:
+      author:
+        $ref: '#/definitions/domain.User'
+      comment:
+        $ref: '#/definitions/domain.Comment'
+    type: object
   domain.Dialog:
     properties:
       lastMessage:
@@ -11,6 +54,10 @@ definitions:
     type: object
   domain.PersonalMessage:
     properties:
+      attachments:
+        items:
+          type: string
+        type: array
       content:
         type: string
       createdAt:
@@ -23,6 +70,8 @@ definitions:
         type: integer
       senderId:
         type: integer
+      sticker:
+        $ref: '#/definitions/domain.Sticker'
       updatedAt:
         example: "2021-01-01T00:00:00Z"
         format: date-time
@@ -117,6 +166,25 @@ definitions:
         type: integer
       subscriberId:
         type: integer
+      updatedAt:
+        example: "2021-01-01T00:00:00Z"
+        format: date-time
+        type: string
+    type: object
+  domain.Sticker:
+    properties:
+      authorId:
+        type: integer
+      createdAt:
+        example: "2021-01-01T00:00:00Z"
+        format: date-time
+        type: string
+      fileName:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
       updatedAt:
         example: "2021-01-01T00:00:00Z"
         format: date-time
@@ -418,11 +486,12 @@ paths:
         "payload": interface{}
         }
 
-        ActionType is a string with one of following values: "SEND_MESSAGE", "UPDATE_MESSAGE", "DELETE_MESSAGE"
+        ActionType is a string with one of following values: "SEND_MESSAGE", "UPDATE_MESSAGE", "DELETE_MESSAGE", "SEND_STICKER_MESSAGE"
 
-        If "type" = "SEND_MESSAGE", then payload should be {"content": string}
-        If "type" = "UPDATE_MESSAGE", then payload should be {"messageId": uint, "content": string}
+        If "type" = "SEND_MESSAGE", then payload should be {"content": string, "attachments": []string}
+        If "type" = "UPDATE_MESSAGE", then payload should be {"messageId": uint, "content": string, attachmentsToDelete: []string}
         If "type" = "DELETE_MESSAGE", then payload should be {"messageId": uint}
+        If "type" = "SEND_STICKER_MESSAGE", then payload should be {"stickerId": uint}
 
         In response clients, subscribed to corresponding channel, will get same structure back:
         {
@@ -436,6 +505,7 @@ paths:
         PersonalMessage if "type" = "SEND_MESSAGE"
         PersonalMessage if "type" = "UPDATE_MESSAGE"
         Absent if "type" = "DELETE_MESSAGE"
+        PersonalMessage if "type" = "SEND_STICKER_MESSAGE"
         {"error": string} if error happened at any point of query processing
       operationId: chat/serve_ws
       parameters:
@@ -514,6 +584,216 @@ paths:
       summary: get user dialogs
       tags:
       - chat
+  /chat/dialogs/{receiverID}/unsent-attachments/:
+    delete:
+      consumes:
+      - application/json
+      description: delete unsent message attachments
+      operationId: chat/delete_unsent_message_attachments
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: ID of the receiver
+        in: path
+        name: receiverID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: delete unsent message attachments
+      tags:
+      - chat
+    get:
+      consumes:
+      - application/json
+      description: get unsent message attachments, returns array of filenames
+      operationId: chat/get_unsent_message_attachments
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: ID of the receiver
+        in: path
+        name: receiverID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  items:
+                    type: string
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: get unsent message attachments
+      tags:
+      - chat
+    post:
+      consumes:
+      - multipart/form-data
+      description: create unsent message attachments
+      operationId: chat/create_unsent_message_attachments
+      parameters:
+      - description: Attachment file
+        in: formData
+        name: attachment
+        required: true
+        type: file
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: ID of the receiver
+        in: path
+        name: receiverID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  items:
+                    type: string
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: create unsent message attachments
+      tags:
+      - chat
+  /chat/dialogs/{receiverID}/unsent-attachments/{fileName}:
+    delete:
+      consumes:
+      - application/json
+      description: delete unsent message attachment
+      operationId: chat/delete_unsent_message_attachment
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: ID of the receiver
+        in: path
+        name: receiverID
+        required: true
+        type: integer
+      - description: Name of the file
+        in: path
+        name: fileName
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: delete unsent message attachment
+      tags:
+      - chat
   /chat/messages/:
     get:
       consumes:
@@ -572,6 +852,218 @@ paths:
           schema:
             $ref: '#/definitions/errors.HTTPError'
       summary: get messages by dialog
+      tags:
+      - chat
+  /chat/stickers/:
+    get:
+      consumes:
+      - application/json
+      description: get all stickers
+      operationId: chat/get_all_stickers
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/domain.Sticker'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: get all stickers
+      tags:
+      - chat
+    post:
+      consumes:
+      - multipart/form-data
+      description: create sticker
+      operationId: chat/create_sticker
+      parameters:
+      - description: Name of the sticker
+        in: formData
+        name: name
+        required: true
+        type: string
+      - description: Image of the sticker
+        in: formData
+        name: image
+        required: true
+        type: file
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  $ref: '#/definitions/domain.Sticker'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: create sticker
+      tags:
+      - chat
+  /chat/stickers/{authorID}:
+    get:
+      consumes:
+      - application/json
+      description: get stickers by author ID
+      operationId: chat/get_stickers
+      parameters:
+      - description: ID of the author
+        in: path
+        name: authorID
+        required: true
+        type: integer
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/domain.Sticker'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: get stickers by author ID
+      tags:
+      - chat
+  /chat/stickers/{stickerID}:
+    delete:
+      consumes:
+      - application/json
+      description: delete sticker
+      operationId: chat/delete_sticker
+      parameters:
+      - description: ID of the sticker
+        in: path
+        name: stickerID
+        required: true
+        type: integer
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: delete sticker
       tags:
       - chat
   /csrf/:
@@ -1633,7 +2125,7 @@ paths:
       - posts
     put:
       consumes:
-      - application/json
+      - multipart/form-data
       description: update post by id
       operationId: posts/update
       parameters:
@@ -1648,17 +2140,29 @@ paths:
         required: true
         type: string
       - description: ID of the post
-        in: body
-        name: post_id
+        in: formData
+        name: postId
         required: true
-        schema:
-          type: integer
+        type: integer
       - description: Content of the post
-        in: body
+        in: formData
         name: content
         required: true
-        schema:
+        type: string
+      - collectionFormat: csv
+        description: Attachments to delete
+        in: formData
+        items:
           type: string
+        name: attachmentsToDelete
+        type: array
+      - collectionFormat: csv
+        description: Attachments of the post
+        in: formData
+        items:
+          type: file
+        name: attachments
+        type: array
       produces:
       - application/json
       responses:
@@ -1669,7 +2173,9 @@ paths:
             - $ref: '#/definitions/json.JSONResponse'
             - properties:
                 body:
-                  $ref: '#/definitions/domain.Post'
+                  additionalProperties:
+                    $ref: '#/definitions/domain.Post'
+                  type: object
               type: object
         "400":
           description: Bad Request
@@ -1722,7 +2228,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/domain.Post'
+            allOf:
+            - $ref: '#/definitions/json.JSONResponse'
+            - properties:
+                body:
+                  $ref: '#/definitions/domain.PostWithAuthorAndGroup'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -1740,6 +2251,60 @@ paths:
           schema:
             $ref: '#/definitions/errors.HTTPError'
       summary: get post by id
+      tags:
+      - posts
+  /posts/{postID}/comments:
+    get:
+      consumes:
+      - application/json
+      description: get comments by post id
+      operationId: posts/get_comments_by_post_id
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: ID of the post
+        in: path
+        name: postID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.CommentWithAuthor'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: get comments by post id
       tags:
       - posts
   /posts/all:
@@ -1797,6 +2362,281 @@ paths:
           schema:
             $ref: '#/definitions/errors.HTTPError'
       summary: get posts by group subscriptions and user subscriptions
+      tags:
+      - posts
+  /posts/comment:
+    delete:
+      consumes:
+      - application/json
+      description: delete comment
+      operationId: posts/delete_comment
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: ID of the comment
+        in: body
+        name: commentId
+        required: true
+        schema:
+          type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            $ref: '#/definitions/json.JSONResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: delete comment
+      tags:
+      - posts
+    post:
+      consumes:
+      - application/json
+      description: create comment
+      operationId: posts/create_comment
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: Content of the comment
+        in: body
+        name: content
+        required: true
+        schema:
+          type: string
+      - description: ID of the post
+        in: body
+        name: postID
+        required: true
+        schema:
+          type: integer
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.CommentWithAuthor'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: create comment
+      tags:
+      - posts
+    put:
+      consumes:
+      - application/json
+      description: update comment
+      operationId: posts/update_comment
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: ID of the comment
+        in: body
+        name: commentID
+        required: true
+        schema:
+          type: integer
+      - description: Content of the comment
+        in: body
+        name: content
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.CommentWithAuthor'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: update comment
+      tags:
+      - posts
+  /posts/comments/like:
+    post:
+      consumes:
+      - application/json
+      description: like comment
+      operationId: posts/like_comment
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: ID of the comment
+        in: body
+        name: commentID
+        required: true
+        schema:
+          type: integer
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.CommentLike'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: like comment
+      tags:
+      - posts
+  /posts/comments/unlike:
+    delete:
+      consumes:
+      - application/json
+      description: unlike comment
+      operationId: posts/unlike_comment
+      parameters:
+      - description: session_id=some_session
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      - description: CSRF token
+        in: header
+        name: X-CSRF-Token
+        required: true
+        type: string
+      - description: ID of the comment
+        in: body
+        name: commentID
+        required: true
+        schema:
+          type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            $ref: '#/definitions/json.JSONResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: unlike comment
       tags:
       - posts
   /posts/friends:

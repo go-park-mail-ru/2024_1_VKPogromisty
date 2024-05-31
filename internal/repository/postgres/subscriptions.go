@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	getSubscriptionsQuery = `
+	GetSubscriptionsQuery = `
 	SELECT DISTINCT id,
 		first_name,
 		last_name,
@@ -31,7 +31,7 @@ const (
 		) AS sub_id
 		JOIN public.user AS u ON u.id = sub_id.subscription_id;
 	`
-	getFriendsQuery = `
+	GetFriendsQuery = `
 	SELECT DISTINCT id,
 		first_name,
 		last_name,
@@ -49,7 +49,7 @@ const (
 		) AS friend_id
 		JOIN public.user AS u ON u.id = friend_id.friend_id;
 	`
-	getSubscribersQuery = `
+	GetSubscribersQuery = `
 	SELECT DISTINCT id,
 		first_name,
 		last_name,
@@ -68,7 +68,7 @@ const (
 		) AS subscriber_id
 		JOIN public.user AS u ON u.id = subscriber_id.subscriber_id;
 	`
-	storeSubscriptionQuery = `
+	StoreSubscriptionQuery = `
 	INSERT INTO public.subscription (subscriber_id, subscribed_to_id)
 	VALUES ($1, $2) 
 	ON CONFLICT (subscriber_id, subscribed_to_id) DO NOTHING
@@ -78,12 +78,12 @@ const (
 		created_at,
 		updated_at;
 	`
-	deleteSubscriptionQuery = `
+	DeleteSubscriptionQuery = `
 	DELETE FROM public.subscription
 	WHERE subscriber_id = $1
 		AND subscribed_to_id = $2;
 	`
-	getSubscriptionBySubscriberAndSubscribedToIDQuery = `
+	GetSubscriptionBySubscriberAndSubscribedToIDQuery = `
 	SELECT id,
 		subscriber_id,
 		subscribed_to_id,
@@ -132,9 +132,9 @@ func (s *Subscriptions) serializeIntoUsers(rows pgx.Rows) (users []*domain.User,
 }
 
 func (s *Subscriptions) GetSubscriptions(ctx context.Context, userID uint) (subscriptions []*domain.User, err error) {
-	contextlogger.LogSQL(ctx, getSubscriptionsQuery, userID)
+	contextlogger.LogSQL(ctx, GetSubscriptionsQuery, userID)
 
-	rows, err := s.db.Query(context.Background(), getSubscriptionsQuery, userID)
+	rows, err := s.db.Query(context.Background(), GetSubscriptionsQuery, userID)
 
 	if err != nil {
 		return
@@ -147,17 +147,13 @@ func (s *Subscriptions) GetSubscriptions(ctx context.Context, userID uint) (subs
 		return
 	}
 
-	if err = rows.Err(); err != nil {
-		return
-	}
-
 	return
 }
 
 func (s *Subscriptions) GetFriends(ctx context.Context, userID uint) (friends []*domain.User, err error) {
-	contextlogger.LogSQL(ctx, getFriendsQuery, userID)
+	contextlogger.LogSQL(ctx, GetFriendsQuery, userID)
 
-	rows, err := s.db.Query(context.Background(), getFriendsQuery, userID)
+	rows, err := s.db.Query(context.Background(), GetFriendsQuery, userID)
 	if err != nil {
 		return
 	}
@@ -169,17 +165,13 @@ func (s *Subscriptions) GetFriends(ctx context.Context, userID uint) (friends []
 		return
 	}
 
-	if err = rows.Err(); err != nil {
-		return
-	}
-
 	return
 }
 
 func (s *Subscriptions) GetSubscribers(ctx context.Context, userID uint) (subscribers []*domain.User, err error) {
-	contextlogger.LogSQL(ctx, getSubscribersQuery, userID)
+	contextlogger.LogSQL(ctx, GetSubscribersQuery, userID)
 
-	rows, err := s.db.Query(context.Background(), getSubscribersQuery, userID)
+	rows, err := s.db.Query(context.Background(), GetSubscribersQuery, userID)
 	if err != nil {
 		return
 	}
@@ -191,19 +183,15 @@ func (s *Subscriptions) GetSubscribers(ctx context.Context, userID uint) (subscr
 		return
 	}
 
-	if err = rows.Err(); err != nil {
-		return
-	}
-
 	return
 }
 
 func (s *Subscriptions) Store(ctx context.Context, sub *domain.Subscription) (subscription *domain.Subscription, err error) {
 	subscription = new(domain.Subscription)
 
-	contextlogger.LogSQL(ctx, storeSubscriptionQuery, sub.SubscriberID, sub.SubscribedToID)
+	contextlogger.LogSQL(ctx, StoreSubscriptionQuery, sub.SubscriberID, sub.SubscribedToID)
 
-	err = s.db.QueryRow(context.Background(), storeSubscriptionQuery,
+	err = s.db.QueryRow(context.Background(), StoreSubscriptionQuery,
 		sub.SubscriberID,
 		sub.SubscribedToID,
 	).Scan(
@@ -216,7 +204,7 @@ func (s *Subscriptions) Store(ctx context.Context, sub *domain.Subscription) (su
 
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return
+			err = errors.ErrNotFound
 		}
 
 		return
@@ -226,9 +214,9 @@ func (s *Subscriptions) Store(ctx context.Context, sub *domain.Subscription) (su
 }
 
 func (s *Subscriptions) Delete(ctx context.Context, subsciberID uint, subscribedToID uint) (err error) {
-	contextlogger.LogSQL(ctx, deleteSubscriptionQuery, subsciberID, subscribedToID)
+	contextlogger.LogSQL(ctx, DeleteSubscriptionQuery, subsciberID, subscribedToID)
 
-	result, err := s.db.Exec(context.Background(), deleteSubscriptionQuery, subsciberID, subscribedToID)
+	result, err := s.db.Exec(context.Background(), DeleteSubscriptionQuery, subsciberID, subscribedToID)
 	if err != nil {
 		return
 	}
@@ -249,9 +237,9 @@ func (s *Subscriptions) Delete(ctx context.Context, subsciberID uint, subscribed
 func (s *Subscriptions) GetBySubscriberAndSubscribedToID(ctx context.Context, subscriberID uint, subscribedToID uint) (subscription *domain.Subscription, err error) {
 	subscription = new(domain.Subscription)
 
-	contextlogger.LogSQL(ctx, getSubscriptionBySubscriberAndSubscribedToIDQuery, subscriberID, subscribedToID)
+	contextlogger.LogSQL(ctx, GetSubscriptionBySubscriberAndSubscribedToIDQuery, subscriberID, subscribedToID)
 
-	err = s.db.QueryRow(context.Background(), getSubscriptionBySubscriberAndSubscribedToIDQuery,
+	err = s.db.QueryRow(context.Background(), GetSubscriptionBySubscriberAndSubscribedToIDQuery,
 		subscriberID,
 		subscribedToID,
 	).Scan(
@@ -264,7 +252,6 @@ func (s *Subscriptions) GetBySubscriberAndSubscribedToID(ctx context.Context, su
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			err = errors.ErrNotFound
-			return
 		}
 
 		return

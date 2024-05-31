@@ -14,37 +14,46 @@ const (
 	DefaultLikedPostsAmount = uint(20)
 )
 
+//easyjson:json
 type PostInput struct {
 	Content     string   `json:"content"`
 	AuthorID    uint     `json:"authorId"`
 	Attachments []string `json:"attachments"`
 }
 
+//easyjson:json
 type ListUserPostsInput struct {
 	UserID      uint `json:"userId"`
 	LastPostID  uint `json:"lastPostId"`
 	PostsAmount uint `json:"postsAmount"`
 }
 
+//easyjson:json
 type ListUserFriendsPostsInput struct {
 	LastPostID  uint `json:"lastPostId"`
 	PostsAmount uint `json:"postsAmount"`
 }
 
+//easyjson:json
 type PostUpdateInput struct {
-	PostID  uint   `json:"postId"`
-	Content string `json:"content"`
+	PostID              uint     `json:"postId"`
+	Content             string   `json:"content"`
+	AttachmentsToAdd    []string `json:"attachmentsToAdd"`
+	AttachmentsToDelete []string `json:"attachmentsToDelete"`
 }
 
+//easyjson:json
 type DeletePostInput struct {
 	PostID uint `json:"postId"`
 }
 
+//easyjson:json
 type LikeWithPost struct {
 	Like *domain.PostLike `json:"like"`
 	Post *domain.Post     `json:"post"`
 }
 
+//easyjson:json
 type LikeWithPostAndUser struct {
 	LikeWithPost
 	User *domain.User `json:"likedBy"`
@@ -55,17 +64,27 @@ type PostsStorage interface {
 	GetUserPosts(ctx context.Context, userID uint, lastPostID uint, postsAmount uint) (posts []*domain.Post, err error)
 	GetUserFriendsPosts(ctx context.Context, userID uint, lastPostID uint, postsAmount uint) (posts []*domain.Post, err error)
 	StorePost(ctx context.Context, post *domain.Post) (newPost *domain.Post, err error)
-	UpdatePost(ctx context.Context, post *domain.Post) (updatedPost *domain.Post, err error)
+	UpdatePost(ctx context.Context, post *domain.Post, attachmentsToDelete []string) (updatedPost *domain.Post, err error)
 	DeletePost(ctx context.Context, postID uint) (err error)
+	GetPostLikeByUserIDAndPostID(ctx context.Context, userID, postID uint) (like *domain.PostLike, err error)
 	GetLikedPosts(ctx context.Context, userID uint, lastLikeID uint, limit uint) (likedPosts []LikeWithPost, err error)
 	StorePostLike(ctx context.Context, likeData *domain.PostLike) (like *domain.PostLike, err error)
 	DeletePostLike(ctx context.Context, likeData *domain.PostLike) (err error)
 	StoreGroupPost(ctx context.Context, groupPost *domain.GroupPost) (newGroupPost *domain.GroupPost, err error)
+	GetGroupPostByPostID(ctx context.Context, postID uint) (groupPost *domain.GroupPost, err error)
 	DeleteGroupPost(ctx context.Context, postID uint) (err error)
 	GetPostsOfGroup(ctx context.Context, groupID, lastPostID, postsAmount uint) (posts []*domain.Post, err error)
 	GetGroupPostsBySubscriptionIDs(ctx context.Context, subIDs []uint, lastPostID, postsAmount uint) (posts []*domain.Post, err error)
 	GetPostsByGroupSubIDsAndUserSubIDs(ctx context.Context, groupSubIDs, userSubIDs []uint, lastPostID, postsAmount uint) (posts []*domain.Post, err error)
 	GetNewPosts(ctx context.Context, lastPostID, postsAmount uint) (posts []*domain.Post, err error)
+	GetCommentsByPostID(ctx context.Context, postID uint) (comments []*domain.Comment, err error)
+	GetCommentByID(ctx context.Context, id uint) (comment *domain.Comment, err error)
+	StoreComment(ctx context.Context, comment *domain.Comment) (newComment *domain.Comment, err error)
+	UpdateComment(ctx context.Context, comment *domain.Comment) (updatedComment *domain.Comment, err error)
+	DeleteComment(ctx context.Context, id uint) (err error)
+	GetCommentLikeByCommentIDAndUserID(ctx context.Context, data *domain.CommentLike) (commentLike *domain.CommentLike, err error)
+	StoreCommentLike(ctx context.Context, commentLike *domain.CommentLike) (newCommentLike *domain.CommentLike, err error)
+	DeleteCommentLike(ctx context.Context, commentLike *domain.CommentLike) (err error)
 }
 
 type AttachmentStorage interface {
@@ -79,6 +98,7 @@ type Service struct {
 	Sanitizer         *sanitizer.Sanitizer
 }
 
+//easyjson:json
 type ListPostsResponse struct {
 	Posts []*domain.Post `json:"posts"`
 }
@@ -165,19 +185,30 @@ func (s *Service) UpdatePost(ctx context.Context, userID uint, input PostUpdateI
 		return
 	}
 
-	if len(input.Content) == 0 && len(oldPost.Attachments) == 0 {
+	if len(input.Content) == 0 && (len(oldPost.Attachments)+len(input.AttachmentsToAdd)-len(input.AttachmentsToDelete)) == 0 {
 		err = errors.ErrInvalidBody
 		return
 	}
 
 	oldPost.Content = input.Content
+	oldPost.Attachments = input.AttachmentsToAdd
 
-	post, err = s.PostsStorage.UpdatePost(ctx, oldPost)
+	_, err = s.PostsStorage.UpdatePost(ctx, oldPost, input.AttachmentsToDelete)
 	if err != nil {
 		return
 	}
 
-	s.Sanitizer.SanitizePost(post)
+	for _, attachment := range input.AttachmentsToDelete {
+		err = s.AttachmentStorage.Delete(attachment)
+		if err != nil {
+			return
+		}
+	}
+
+	post, err = s.PostsStorage.GetPostByID(ctx, input.PostID)
+	if err != nil {
+		return
+	}
 
 	return
 }
@@ -231,6 +262,12 @@ func (s *Service) GetLikedPosts(ctx context.Context, userID uint, lastLikeID uin
 }
 
 func (s *Service) LikePost(ctx context.Context, likeData *domain.PostLike) (like *domain.PostLike, err error) {
+	_, err = s.PostsStorage.GetPostLikeByUserIDAndPostID(ctx, likeData.UserID, likeData.PostID)
+	if err == nil {
+		err = errors.ErrInvalidBody
+		return
+	}
+
 	like, err = s.PostsStorage.StorePostLike(ctx, likeData)
 	if err != nil {
 		return
@@ -259,6 +296,20 @@ func (s *Service) UploadAttachment(fileName string, filePath string, contentType
 
 func (s *Service) CreateGroupPost(ctx context.Context, groupPost *domain.GroupPost) (newGroupPost *domain.GroupPost, err error) {
 	newGroupPost, err = s.PostsStorage.StoreGroupPost(ctx, groupPost)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (s *Service) GetGroupPostByPostID(ctx context.Context, postID uint) (groupPost *domain.GroupPost, err error) {
+	_, err = s.PostsStorage.GetPostByID(ctx, postID)
+	if err != nil {
+		return
+	}
+
+	groupPost, err = s.PostsStorage.GetGroupPostByPostID(ctx, postID)
 	if err != nil {
 		return
 	}

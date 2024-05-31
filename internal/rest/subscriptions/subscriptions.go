@@ -1,7 +1,6 @@
 package rest
 
 import (
-	defJSON "encoding/json"
 	"net/http"
 	"socio/domain"
 	"socio/errors"
@@ -9,14 +8,17 @@ import (
 	"socio/pkg/requestcontext"
 
 	uspb "socio/internal/grpc/user/proto"
+
+	easyjson "github.com/mailru/easyjson"
 )
+
+//easyjson:json
+type SubscriptionInput struct {
+	SubscribedToID uint `json:"subscribedTo"`
+}
 
 type SubscriptionsHandler struct {
 	UserService uspb.UserClient
-}
-
-type SubscriptionInput struct {
-	SubscribedToID uint `json:"subscribedTo"`
 }
 
 func NewSubscriptionsHandler(userService uspb.UserClient) (handler *SubscriptionsHandler) {
@@ -50,7 +52,8 @@ func (api *SubscriptionsHandler) HandleSubscription(w http.ResponseWriter, r *ht
 	defer r.Body.Close()
 
 	input := new(SubscriptionInput)
-	err := defJSON.NewDecoder(r.Body).Decode(input)
+
+	err := easyjson.UnmarshalFromReader(r.Body, input)
 	if err != nil {
 		json.ServeJSONError(r.Context(), w, errors.ErrJSONUnmarshalling)
 		return
@@ -102,7 +105,8 @@ func (api *SubscriptionsHandler) HandleUnsubscription(w http.ResponseWriter, r *
 	defer r.Body.Close()
 
 	input := new(SubscriptionInput)
-	err := defJSON.NewDecoder(r.Body).Decode(input)
+
+	err := easyjson.UnmarshalFromReader(r.Body, input)
 	if err != nil {
 		json.ServeJSONError(r.Context(), w, errors.ErrJSONUnmarshalling)
 		return

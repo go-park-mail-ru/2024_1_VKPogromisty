@@ -241,7 +241,12 @@ func (p *PublicGroupManager) Upload(stream pgpb.PublicGroup_UploadServer) (err e
 		contentType = req.GetContentType()
 	}
 
-	p.PublicGroupService.UploadAvatar(fileName, file.Name(), contentType)
+	err = p.PublicGroupService.UploadAvatar(fileName, file.Name(), contentType)
+	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
+		return
+	}
 
 	if err = os.Remove(file.Name()); err != nil {
 		customErr := errors.NewCustomError(err)

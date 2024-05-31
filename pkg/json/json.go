@@ -2,18 +2,20 @@ package json
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"socio/errors"
 	"socio/pkg/contextlogger"
+
+	"github.com/mailru/easyjson"
 )
 
+//easyjson:json
 type JSONResponse struct {
 	Body any `json:"body"`
 }
 
 func MarshalResponseBody(value any) (data []byte, err error) {
-	data, err = json.Marshal(map[string]any{"body": value})
+	data, err = easyjson.Marshal(&JSONResponse{Body: value})
 	if err != nil {
 		err = errors.ErrJSONMarshalling
 		return
@@ -23,7 +25,7 @@ func MarshalResponseBody(value any) (data []byte, err error) {
 }
 
 func MarshalResponseError(errMsg string) (data []byte, err error) {
-	data, err = json.Marshal(map[string]string{"error": errMsg})
+	data, err = easyjson.Marshal(&errors.HTTPError{Error: errMsg})
 	if err != nil {
 		err = errors.ErrJSONMarshalling
 		return

@@ -146,7 +146,12 @@ func (u *UserManager) Upload(stream uspb.User_UploadServer) (err error) {
 		contentType = req.GetContentType()
 	}
 
-	u.UserService.UploadAvatar(fileName, file.Name(), contentType)
+	err = u.UserService.UploadAvatar(fileName, file.Name(), contentType)
+	if err != nil {
+		customErr := errors.NewCustomError(err)
+		err = customErr.GRPCStatus().Err()
+		return
+	}
 
 	if err = os.Remove(file.Name()); err != nil {
 		customErr := errors.NewCustomError(err)

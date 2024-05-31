@@ -1,7 +1,6 @@
 package rest
 
 import (
-	defJSON "encoding/json"
 	"net/http"
 	"socio/domain"
 	"socio/errors"
@@ -16,16 +15,20 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
+	easyjson "github.com/mailru/easyjson"
 )
 
+//easyjson:json
 type CreatePublicGroupAdminInput struct {
 	UserID uint64 `json:"userId"`
 }
 
+//easyjson:json
 type DeletePublicGroupAdminInput struct {
 	UserID uint64 `json:"userId"`
 }
 
+//easyjson:json
 type CheckIfUserIsAdminRes struct {
 	IsAdmin bool `json:"isAdmin"`
 }
@@ -750,10 +753,9 @@ func (h *PublicGroupHandler) HandleCreatePublicGroupAdmin(w http.ResponseWriter,
 		return
 	}
 
-	var input CreatePublicGroupAdminInput
+	input := new(CreatePublicGroupAdminInput)
 
-	decoder := defJSON.NewDecoder(r.Body)
-	err = decoder.Decode(&input)
+	err = easyjson.UnmarshalFromReader(r.Body, input)
 	if err != nil {
 		json.ServeJSONError(r.Context(), w, errors.ErrJSONUnmarshalling)
 		return
@@ -805,10 +807,9 @@ func (h *PublicGroupHandler) HandleDeletePublicGroupAdmin(w http.ResponseWriter,
 		return
 	}
 
-	var input DeletePublicGroupAdminInput
+	input := new(DeletePublicGroupAdminInput)
 
-	decoder := defJSON.NewDecoder(r.Body)
-	err = decoder.Decode(&input)
+	err = easyjson.UnmarshalFromReader(r.Body, input)
 	if err != nil {
 		json.ServeJSONError(r.Context(), w, errors.ErrJSONUnmarshalling)
 		return

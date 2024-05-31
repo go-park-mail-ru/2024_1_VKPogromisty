@@ -108,12 +108,112 @@ func ToLikedPosts(likesWithPosts []posts.LikeWithPost) (res []*LikedPostResponse
 	return
 }
 
-func Uint64ToUintSlice(ids []uint64) (res []uint) {
-	res = make([]uint, 0)
+func ToCommentResponse(comment *domain.Comment) (res *CommentResponse) {
+	if comment == nil {
+		return nil
+	}
 
-	for _, id := range ids {
-		res = append(res, uint(id))
+	return &CommentResponse{
+		Id:         uint64(comment.ID),
+		AuthorId:   uint64(comment.AuthorID),
+		PostId:     uint64(comment.PostID),
+		Content:    comment.Content,
+		CreatedAt:  timestamppb.New(comment.CreatedAt.Time),
+		UpdatedAt:  timestamppb.New(comment.UpdatedAt.Time),
+		LikedByIds: comment.LikedByIDs,
+	}
+}
+
+func ToCommentsResponse(comments []*domain.Comment) (res []*CommentResponse) {
+	res = make([]*CommentResponse, 0, len(comments))
+
+	for _, comment := range comments {
+		res = append(res, ToCommentResponse(comment))
 	}
 
 	return
+}
+
+func ToCommentLikeResponse(like *domain.CommentLike) (res *CommentLikeResponse) {
+	if like == nil {
+		return nil
+	}
+
+	return &CommentLikeResponse{
+		Id:        uint64(like.ID),
+		CommentId: uint64(like.CommentID),
+		UserId:    uint64(like.UserID),
+		CreatedAt: timestamppb.New(like.CreatedAt.Time),
+	}
+}
+
+func ToComment(res *CommentResponse) *domain.Comment {
+	if res == nil {
+		return nil
+	}
+
+	return &domain.Comment{
+		ID:         uint(res.Id),
+		AuthorID:   uint(res.AuthorId),
+		PostID:     uint(res.PostId),
+		Content:    res.Content,
+		CreatedAt:  customtime.CustomTime{Time: res.CreatedAt.AsTime()},
+		UpdatedAt:  customtime.CustomTime{Time: res.UpdatedAt.AsTime()},
+		LikedByIDs: res.LikedByIds,
+	}
+}
+
+func ToComments(res []*CommentResponse) (comments []*domain.Comment) {
+	comments = make([]*domain.Comment, 0, len(res))
+
+	for _, comment := range res {
+		comments = append(comments, ToComment(comment))
+	}
+
+	return
+}
+
+func ToCommentLike(res *CommentLikeResponse) *domain.CommentLike {
+	if res == nil {
+		return nil
+	}
+
+	return &domain.CommentLike{
+		ID:        uint(res.Id),
+		CommentID: uint(res.CommentId),
+		UserID:    uint(res.UserId),
+		CreatedAt: customtime.CustomTime{Time: res.CreatedAt.AsTime()},
+	}
+}
+
+func ToGroupPostResponse(groupPost *domain.GroupPost) (res *GroupPostResponse) {
+	if groupPost == nil {
+		return nil
+	}
+
+	return &GroupPostResponse{
+		Id:        uint64(groupPost.ID),
+		PostId:    uint64(groupPost.PostID),
+		GroupId:   uint64(groupPost.GroupID),
+		CreatedAt: timestamppb.New(groupPost.CreatedAt.Time),
+		UpdatedAt: timestamppb.New(groupPost.UpdatedAt.Time),
+	}
+}
+
+func ToGroupPost(res *GroupPostResponse) (groupPost *domain.GroupPost) {
+	if res == nil {
+		return nil
+	}
+
+	return &domain.GroupPost{
+		ID:      uint(res.GetId()),
+		PostID:  uint(res.GetPostId()),
+		GroupID: uint(res.GetGroupId()),
+		CreatedAt: customtime.CustomTime{
+			Time: res.CreatedAt.AsTime(),
+		},
+		UpdatedAt: customtime.CustomTime{
+			Time: res.UpdatedAt.AsTime(),
+		},
+	}
 }

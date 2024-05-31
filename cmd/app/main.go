@@ -25,7 +25,13 @@ func main() {
 	http.Handle("/swagger/*", httpSwagger.Handler(
 		httpSwagger.URL("https://socio-project.ru/swagger/doc.json"),
 	))
-	go http.ListenAndServe(":8001", nil)
+	go func() {
+		err := http.ListenAndServe(":8001", nil)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+	}()
 
 	router := mux.NewRouter()
 	err := routers.MountRootRouter(router)

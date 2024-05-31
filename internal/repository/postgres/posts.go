@@ -6,6 +6,7 @@ import (
 	"socio/errors"
 	"socio/pkg/contextlogger"
 	customtime "socio/pkg/time"
+	"socio/pkg/utils"
 	"socio/usecase/posts"
 
 	"github.com/jackc/pgtype"
@@ -100,10 +101,14 @@ const (
 		created_at,
 		updated_at;
 	`
-	StoreAttachmentQuery = `
+	StorePostAttachmentQuery = `
 	INSERT INTO public.post_attachment (post_id, file_name)
 	VALUES ($1, $2)
 	RETURNING file_name;
+	`
+	DeletePostAttachmentQuery = `
+	DELETE FROM public.post_attachment
+	WHERE file_name = $1;
 	`
 	UpdatePostQuery = `
 	UPDATE public.post
@@ -136,6 +141,15 @@ const (
 	DELETE FROM public.post_like
 	WHERE post_id = $1
 		AND user_id = $2;
+	`
+	GetPostLikeByUserIDAndPostIDQuery = `
+	SELECT id,
+		post_id,
+		user_id,
+		created_at
+	FROM public.post_like
+	WHERE user_id = $1
+		AND post_id = $2;
 	`
 	GetLikedPosts = `
 	SELECT
@@ -181,6 +195,15 @@ const (
 		public_group_id,
 		created_at,
 		updated_at;
+	`
+	GetGroupPostByPostIDQuery = `
+	SELECT id,
+		post_id,
+		public_group_id,
+		created_at,
+		updated_at
+	FROM public.public_group_post
+	WHERE post_id = $1;
 	`
 	DeleteGroupPostQuery = `
 	DELETE FROM public.public_group_post
@@ -314,26 +337,6 @@ func NewPosts(db DBPool, tp customtime.TimeProvider) *Posts {
 	}
 }
 
-func textArrayIntoStringSlice(arr pgtype.TextArray) (res []string) {
-	for _, v := range arr.Elements {
-		if v.Status == pgtype.Present {
-			res = append(res, v.String)
-		}
-	}
-
-	return
-}
-
-func int8ArrayIntoUintSlice(arr pgtype.Int8Array) (res []uint64) {
-	for _, v := range arr.Elements {
-		if v.Status == pgtype.Present {
-			res = append(res, uint64(v.Int))
-		}
-	}
-
-	return
-}
-
 func (p *Posts) GetPostByID(ctx context.Context, postID uint) (post *domain.Post, err error) {
 	post = new(domain.Post)
 
@@ -359,8 +362,8 @@ func (p *Posts) GetPostByID(ctx context.Context, postID uint) (post *domain.Post
 		return
 	}
 
-	post.Attachments = textArrayIntoStringSlice(attachments)
-	post.LikedByIDs = int8ArrayIntoUintSlice(likedByUsers)
+	post.Attachments = utils.TextArrayIntoStringSlice(attachments)
+	post.LikedByIDs = utils.Int8ArrayIntoUintSlice(likedByUsers)
 
 	return
 }
@@ -404,8 +407,8 @@ func (p *Posts) GetUserPosts(ctx context.Context, userID uint, lastPostID uint, 
 			return
 		}
 
-		post.Attachments = textArrayIntoStringSlice(attachments)
-		post.LikedByIDs = int8ArrayIntoUintSlice(likedByUsers)
+		post.Attachments = utils.TextArrayIntoStringSlice(attachments)
+		post.LikedByIDs = utils.Int8ArrayIntoUintSlice(likedByUsers)
 
 		posts = append(posts, post)
 	}
@@ -453,8 +456,8 @@ func (p *Posts) GetUserFriendsPosts(ctx context.Context, userID uint, lastPostID
 			return
 		}
 
-		post.Attachments = textArrayIntoStringSlice(attachments)
-		post.LikedByIDs = int8ArrayIntoUintSlice(likedByUsers)
+		post.Attachments = utils.TextArrayIntoStringSlice(attachments)
+		post.LikedByIDs = utils.Int8ArrayIntoUintSlice(likedByUsers)
 
 		posts = append(posts, post)
 	}
@@ -496,9 +499,9 @@ func (p *Posts) StorePost(ctx context.Context, post *domain.Post) (newPost *doma
 	}
 
 	for _, attachment := range post.Attachments {
-		contextlogger.LogSQL(ctx, StoreAttachmentQuery, newPost.ID, attachment)
+		contextlogger.LogSQL(ctx, StorePostAttachmentQuery, newPost.ID, attachment)
 
-		err = tx.QueryRow(context.Background(), StoreAttachmentQuery, newPost.ID, attachment).Scan(&attachment)
+		err = tx.QueryRow(context.Background(), StorePostAttachmentQuery, newPost.ID, attachment).Scan(&attachment)
 		if err != nil {
 			return
 		}
@@ -533,8 +536,48 @@ func (p *Posts) StoreGroupPost(ctx context.Context, groupPost *domain.GroupPost)
 	return
 }
 
-func (p *Posts) UpdatePost(ctx context.Context, post *domain.Post) (updatedPost *domain.Post, err error) {
+func (p *Posts) GetGroupPostByPostID(ctx context.Context, postID uint) (groupPost *domain.GroupPost, err error) {
+	groupPost = new(domain.GroupPost)
+
+	contextlogger.LogSQL(ctx, GetGroupPostByPostIDQuery, postID)
+
+	err = p.db.QueryRow(context.Background(), GetGroupPostByPostIDQuery, postID).Scan(
+		&groupPost.ID,
+		&groupPost.PostID,
+		&groupPost.GroupID,
+		&groupPost.CreatedAt.Time,
+		&groupPost.UpdatedAt.Time,
+	)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			err = errors.ErrNotFound
+		}
+
+		return
+	}
+
+	return
+}
+
+func (p *Posts) UpdatePost(ctx context.Context, post *domain.Post, attachmentsToDelete []string) (updatedPost *domain.Post, err error) {
 	updatedPost = new(domain.Post)
+
+	tx, err := p.db.BeginTx(context.Background(), pgx.TxOptions{})
+
+	if err != nil {
+		return
+	}
+
+	defer func() {
+		if err != nil {
+			return
+		}
+		if err = tx.Rollback(context.Background()); err != nil && err != pgx.ErrTxClosed {
+			return
+		}
+
+		err = nil
+	}()
 
 	contextlogger.LogSQL(ctx, UpdatePostQuery, post.Content, post.ID)
 
@@ -545,6 +588,31 @@ func (p *Posts) UpdatePost(ctx context.Context, post *domain.Post) (updatedPost 
 		&updatedPost.CreatedAt.Time,
 		&updatedPost.UpdatedAt.Time,
 	)
+	if err != nil {
+		return
+	}
+
+	for _, attachment := range post.Attachments {
+		contextlogger.LogSQL(ctx, StorePostAttachmentQuery, updatedPost.ID, attachment)
+
+		err = tx.QueryRow(context.Background(), StorePostAttachmentQuery, updatedPost.ID, attachment).Scan(&attachment)
+		if err != nil {
+			return
+		}
+
+		updatedPost.Attachments = append(updatedPost.Attachments, attachment)
+	}
+
+	for _, attachment := range attachmentsToDelete {
+		contextlogger.LogSQL(ctx, DeletePostAttachmentQuery, attachment)
+
+		_, err = tx.Exec(context.Background(), DeletePostAttachmentQuery, attachment)
+		if err != nil {
+			return
+		}
+	}
+
+	err = tx.Commit(context.Background())
 	if err != nil {
 		return
 	}
@@ -627,13 +695,35 @@ func (p *Posts) GetLikedPosts(ctx context.Context, userID uint, lastLikeID uint,
 		}
 
 		post.ID = like.PostID
-		post.Attachments = textArrayIntoStringSlice(attachments)
-		post.LikedByIDs = int8ArrayIntoUintSlice(likedByUsers)
+		post.Attachments = utils.TextArrayIntoStringSlice(attachments)
+		post.LikedByIDs = utils.Int8ArrayIntoUintSlice(likedByUsers)
 
 		likedPosts = append(likedPosts, posts.LikeWithPost{
 			Like: like,
 			Post: post,
 		})
+	}
+
+	return
+}
+
+func (p *Posts) GetPostLikeByUserIDAndPostID(ctx context.Context, userID, postID uint) (like *domain.PostLike, err error) {
+	like = new(domain.PostLike)
+
+	contextlogger.LogSQL(ctx, GetPostLikeByUserIDAndPostIDQuery, userID, postID)
+
+	err = p.db.QueryRow(context.Background(), GetPostLikeByUserIDAndPostIDQuery, userID, postID).Scan(
+		&like.ID,
+		&like.PostID,
+		&like.UserID,
+		&like.CreatedAt.Time,
+	)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			err = errors.ErrNotFound
+		}
+
+		return
 	}
 
 	return
@@ -711,8 +801,8 @@ func (p *Posts) GetPostsOfGroup(ctx context.Context, groupID, lastPostID, postsA
 			return
 		}
 
-		post.Attachments = textArrayIntoStringSlice(attachments)
-		post.LikedByIDs = int8ArrayIntoUintSlice(likedByUsers)
+		post.Attachments = utils.TextArrayIntoStringSlice(attachments)
+		post.LikedByIDs = utils.Int8ArrayIntoUintSlice(likedByUsers)
 
 		posts = append(posts, post)
 	}
@@ -766,8 +856,8 @@ func (p *Posts) GetGroupPostsBySubscriptionIDs(ctx context.Context, subIDs []uin
 			return
 		}
 
-		post.Attachments = textArrayIntoStringSlice(attachments)
-		post.LikedByIDs = int8ArrayIntoUintSlice(likedByUsers)
+		post.Attachments = utils.TextArrayIntoStringSlice(attachments)
+		post.LikedByIDs = utils.Int8ArrayIntoUintSlice(likedByUsers)
 
 		posts = append(posts, post)
 	}
@@ -826,8 +916,8 @@ func (p *Posts) GetPostsByGroupSubIDsAndUserSubIDs(ctx context.Context, groupSub
 			return
 		}
 
-		post.Attachments = textArrayIntoStringSlice(attachments)
-		post.LikedByIDs = int8ArrayIntoUintSlice(likedByUsers)
+		post.Attachments = utils.TextArrayIntoStringSlice(attachments)
+		post.LikedByIDs = utils.Int8ArrayIntoUintSlice(likedByUsers)
 
 		posts = append(posts, post)
 	}
@@ -875,8 +965,8 @@ func (p *Posts) GetNewPosts(ctx context.Context, lastPostID, postsAmount uint) (
 			return
 		}
 
-		post.Attachments = textArrayIntoStringSlice(attachments)
-		post.LikedByIDs = int8ArrayIntoUintSlice(likedByUsers)
+		post.Attachments = utils.TextArrayIntoStringSlice(attachments)
+		post.LikedByIDs = utils.Int8ArrayIntoUintSlice(likedByUsers)
 
 		posts = append(posts, post)
 	}
